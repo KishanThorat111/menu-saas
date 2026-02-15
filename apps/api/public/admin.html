@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Menu Admin</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { font-family: system-ui, -apple-system, sans-serif; max-width: 900px; margin: 0 auto; padding: 20px; background: #f5f5f5; line-height: 1.6; }
+        .card { background: white; padding: 20px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        input, button, select, textarea { padding: 12px; margin: 5px 0; border: 1px solid #ddd; border-radius: 8px; width: 100%; font-size: 16px; font-family: inherit; }
+        button { background: #007bff; color: white; border: none; cursor: pointer; font-weight: 600; transition: all 0.2s; }
+        button:hover { background: #0056b3; transform: translateY(-1px); }
+        button:active { transform: translateY(0); }
+        .btn-secondary { background: #6c757d; } .btn-secondary:hover { background: #545b62; }
+        .btn-success { background: #28a745; } .btn-success:hover { background: #218838; }
+        .btn-danger { background: #dc3545; } .btn-danger:hover { background: #c82333; }
+        .btn-warning { background: #ffc107; color: #000; }
+        .btn-sm { padding: 6px 12px; font-size: 14px; width: auto; margin: 2px; }
+        
+        .item { display: flex; flex-direction: column; padding: 15px; border-bottom: 1px solid #eee; background: #fafafa; border-radius: 8px; margin-bottom: 10px; }
+        .item-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .item-info { flex: 1; }
+        .item-name { font-weight: 600; font-size: 16px; margin-bottom: 4px; }
+        .item-meta { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+        .price { color: #28a745; font-weight: bold; font-size: 18px; }
+        .veg { color: #28a745; font-size: 12px; border: 1px solid #28a745; padding: 2px 8px; border-radius: 4px; background: rgba(40, 167, 69, 0.1); }
+        .non-veg { color: #dc3545; font-size: 12px; border: 1px solid #dc3545; padding: 2px 8px; border-radius: 4px; background: rgba(220, 53, 69, 0.1); }
+        .deleted { opacity: 0.6; background: #f8d7da; } .deleted .item-name { text-decoration: line-through; }
+        
+        #loginForm { text-align: center; margin-top: 100px; max-width: 400px; margin-left: auto; margin-right: auto; }
+        .hidden { display: none !important; }
+        .category-title { color: #333; margin-top: 30px; margin-bottom: 15px; border-bottom: 3px solid #007bff; padding-bottom: 10px; font-size: 20px; font-weight: 600; }
+        
+        .image-preview { width: 80px; height: 80px; object-fit: cover; border-radius: 8px; margin-right: 15px; border: 2px solid #ddd; }
+        .image-placeholder { width: 80px; height: 80px; background: #e9ecef; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #6c757d; font-size: 12px; margin-right: 15px; border: 2px dashed #ced4da; }
+        
+        .file-input-wrapper { position: relative; overflow: hidden; display: inline-block; }
+        .file-input-wrapper input[type=file] { position: absolute; left: -9999px; }
+        .file-input-label { background: #17a2b8; color: white; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 14px; display: inline-block; }
+        .file-input-label:hover { background: #138496; }
+        
+        .tabs { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid #dee2e6; }
+        .tab { padding: 10px 20px; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -2px; color: #6c757d; }
+        .tab.active { color: #007bff; border-bottom-color: #007bff; font-weight: 600; }
+        
+        .hotel-info { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 12px; margin-bottom: 20px; }
+        .hotel-info h2 { margin: 0 0 10px 0; } .hotel-meta { opacity: 0.9; font-size: 14px; }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        @media (max-width: 600px) { .form-row { grid-template-columns: 1fr; } .item-header { flex-direction: column; align-items: flex-start; } }
+        
+        .loading { display: inline-block; width: 20px; height: 20px; border: 3px solid rgba(255,255,255,.3); border-radius: 50%; border-top-color: white; animation: spin 1s ease-in-out infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .toast { position: fixed; bottom: 20px; right: 20px; background: #333; color: white; padding: 15px 20px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 1000; transform: translateY(100px); transition: transform 0.3s; }
+        .toast.show { transform: translateY(0); } .toast.success { background: #28a745; } .toast.error { background: #dc3545; }
+        .compressing { display: inline-flex; align-items: center; gap: 8px; color: #666; font-size: 14px; }
+        .compressing::before { content: ''; width: 16px; height: 16px; border: 2px solid #ddd; border-top-color: #007bff; border-radius: 50%; animation: spin 1s linear infinite; }
+    </style>
+</head>
+<body>
+    <div id="loginForm" class="card">
+        <h2>🏨 Hotel Login</h2>
+        <p style="color: #666; margin-bottom: 20px;">Enter your hotel credentials</p>
+        <input type="text" id="slug" placeholder="Hotel Slug">
+        <input type="password" id="pin" placeholder="4-digit PIN" maxlength="4">
+        <button onclick="login()" style="width: 100%; margin-top: 10px;">Login</button>
+        <p id="error" style="color: red; margin-top: 10px;"></p>
+    </div>
+
+    <div id="dashboard" class="hidden">
+        <div class="hotel-info" id="hotelInfo">
+            <h2 id="hotelName">Loading...</h2>
+            <div class="hotel-meta">
+                <span id="hotelCity"></span> • Plan: <span id="hotelPlan"></span> • Status: <span id="hotelStatus"></span>
+            </div>
+        </div>
+
+        <div class="tabs">
+            <div class="tab active" onclick="switchTab('menu', this)">📝 Menu Manager</div>
+            <div class="tab" onclick="switchTab('add', this)">➕ Add Items</div>
+        </div>
+
+        <div id="tab-add" class="hidden">
+            <div class="card">
+                <h3>Add Category</h3>
+                <input type="text" id="catName" placeholder="Category Name (e.g., Starters)">
+                <button onclick="addCategory()">Add Category</button>
+            </div>
+            <div class="card">
+                <h3>Add Menu Item</h3>
+                <select id="catSelect"><option value="">Select Category</option></select>
+                <input type="text" id="itemName" placeholder="Item Name">
+                <div class="form-row">
+                    <input type="number" id="itemPrice" placeholder="Price (₹)">
+                    <input type="text" id="itemDesc" placeholder="Description (optional)">
+                </div>
+                <label style="display: flex; align-items: center; gap: 8px; margin: 10px 0;"><input type="checkbox" id="isVeg" style="width: auto;"> <span>🥬 Vegetarian</span></label>
+                <label style="display: flex; align-items: center; gap: 8px; margin: 10px 0;"><input type="checkbox" id="isPopular" style="width: auto;"> <span>⭐ Popular Item</span></label>
+                <label style="display: block; margin: 15px 0;">
+                    <span style="display:block; margin-bottom:5px; font-weight:600;">Item Image (Optional)</span>
+                    <input type="file" id="newItemImage" accept="image/*" style="padding:8px; background: #fff; border-radius: 8px; border: 1px solid #ddd; width: 100%;">
+                </label>
+                <button onclick="addItem(event)" class="btn-success" id="addItemBtn">Add Item</button>
+            </div>
+        </div>
+
+        <div id="tab-menu">
+            <div class="card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <h3 style="margin: 0;">Your Menu</h3>
+                    <button onclick="logout()" class="btn-danger btn-sm">Logout</button>
+                </div>
+                <div id="menuList"><p>Loading...</p></div>
+            </div>
+        </div>
+    </div>
+    <div id="toast" class="toast"></div>
+
+<script>
+const API = ''; 
+let hotel = null;
+let currentTab = 'menu';
+
+function getToken() { return localStorage.getItem('menu_token'); }
+
+if (getToken()) loadDashboard();
+
+function showToast(message, type = 'success') {
+    const toast = document.getElementById('toast');
+    toast.textContent = message;
+    toast.className = `toast ${type} show`;
+    setTimeout(() => toast.classList.remove('show'), 3000);
+}
+
+function switchTab(tab, el) {
+    currentTab = tab;
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    if (el) el.classList.add('active');
+    document.getElementById('tab-menu').classList.toggle('hidden', tab !== 'menu');
+    document.getElementById('tab-add').classList.toggle('hidden', tab !== 'add');
+    if (tab === 'menu') renderMenu();
+}
+
+// 🐛 BUG FIX: Only attach "application/json" if a body actually exists!
+async function apiFetch(endpoint, options = {}) {
+    if (!options.headers) options.headers = {};
+    
+    // Check if body exists AND is not FormData before setting Content-Type
+    if (options.body && !(options.body instanceof FormData) && !options.headers['Content-Type']) {
+        options.headers['Content-Type'] = 'application/json';
+    }
+    
+    const token = getToken();
+    if (token) options.headers['Authorization'] = `Bearer ${token}`;
+
+    const res = await fetch(`${API}${endpoint}`, options);
+    if (res.status === 401) { showToast('Session expired. Please login again.', 'error'); logout(); throw new Error('401'); }
+    if (!res.ok) { const data = await res.json().catch(() => ({})); throw new Error(data.error || 'Request failed'); }
+    return res;
+}
+
+async function login() {
+    const slug = document.getElementById('slug').value.trim();
+    const pin = document.getElementById('pin').value;
+    if (!slug || !pin) return;
+    try {
+        const res = await fetch(`${API}/auth/login`, {
+            method: 'POST', headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({slug, pin})
+        });
+        const data = await res.json();
+        if (data.error) throw new Error(data.error);
+        localStorage.setItem('menu_token', data.token);
+        showToast('Login successful!');
+        loadDashboard();
+    } catch(e) { document.getElementById('error').textContent = e.message; }
+}
+
+function logout() { localStorage.removeItem('menu_token'); location.reload(); }
+
+async function loadDashboard() {
+    document.getElementById('loginForm').classList.add('hidden');
+    document.getElementById('dashboard').classList.remove('hidden');
+    try {
+        const res = await apiFetch('/me');
+        hotel = await res.json();
+        document.getElementById('hotelName').textContent = hotel.name;
+        document.getElementById('hotelCity').textContent = hotel.city;
+        document.getElementById('hotelPlan').textContent = hotel.plan;
+        document.getElementById('hotelStatus').textContent = hotel.status;
+        renderMenu();
+        updateCategorySelect();
+    } catch(e) { console.error(e); }
+}
+
+function updateCategorySelect() {
+    const select = document.getElementById('catSelect');
+    select.innerHTML = '<option value="">Select Category</option>';
+    if (hotel && hotel.categories) {
+        hotel.categories.forEach(cat => select.innerHTML += `<option value="${cat.id}">${cat.name}</option>`);
+    }
+}
+
+function renderMenu() {
+    const menuDiv = document.getElementById('menuList');
+    menuDiv.innerHTML = '';
+    if (!hotel || !hotel.categories || hotel.categories.length === 0) return menuDiv.innerHTML = '<p style="text-align: center; color: #666; padding: 40px;">No categories yet.</p>';
+    
+    hotel.categories.forEach(cat => {
+        const catDiv = document.createElement('div');
+        catDiv.innerHTML = `<div class="category-title">${cat.name}</div>`;
+        const items = cat.items || [];
+        const visibleItems = items.filter(i => i.isAvailable !== false);
+        const hiddenItems = items.filter(i => i.isAvailable === false);
+        
+        if (items.length === 0) {
+            catDiv.innerHTML += '<p style="color:#666;padding-left:10px;">No items in this category</p>';
+        } else {
+            visibleItems.forEach(item => catDiv.appendChild(createItemElement(item, cat.id)));
+            if (hiddenItems.length > 0) {
+                const hDiv = document.createElement('div');
+                hDiv.innerHTML = `<p style="color: #666; font-size: 14px; margin: 10px 0;">🗑️ Hidden Items (${hiddenItems.length}):</p>`;
+                hiddenItems.forEach(item => hDiv.appendChild(createItemElement(item, cat.id, true)));
+                catDiv.appendChild(hDiv);
+            }
+        }
+        menuDiv.appendChild(catDiv);
+    });
+}
+
+function createItemElement(item, categoryId, isHidden = false) {
+    const itemDiv = document.createElement('div');
+    itemDiv.className = 'item' + (isHidden ? ' deleted' : '');
+    itemDiv.id = `item-${item.id}`;
+    const hasImage = !!item.imageUrl;
+    itemDiv.innerHTML = `
+        <div class="item-header">
+            <div style="display: flex; align-items: center;">
+                ${hasImage ? `<img src="${item.imageUrl}" class="image-preview" loading="lazy">` : `<div class="image-placeholder">No Image</div>`}
+                <div class="item-info">
+                    <div class="item-name">${item.name} 
+                        ${item.isVeg ? '<span class="veg">VEG</span>' : '<span class="non-veg">NON-VEG</span>'}
+                        ${item.isPopular ? '<span class="badge" style="background:#ffc107;color:#000;padding:2px 6px;border-radius:4px;font-size:10px;margin-left:5px;">⭐ POPULAR</span>' : ''}
+                    </div>
+                    <div class="item-meta"><span class="price">₹${item.price}</span> ${item.description ? `<span style="color: #666; font-size: 14px;">• ${item.description}</span>` : ''}</div>
+                </div>
+            </div>
+        </div>
+        <div class="actions">
+            ${!isHidden ? `
+                <button class="btn-warning btn-sm" onclick="togglePopular('${item.id}', ${!item.isPopular})">${item.isPopular ? 'Unmark Popular' : 'Mark Popular'}</button>
+                <button class="btn-danger btn-sm" onclick="deleteItem('${item.id}')">Remove</button>
+            ` : `
+                <button class="btn-success btn-sm" onclick="restoreItem('${item.id}')">Restore</button>
+                <button class="btn-danger btn-sm" onclick="permanentDelete('${item.id}')">Delete Forever</button>
+            `}
+            <div class="file-input-wrapper">
+                <input type="file" id="file-${item.id}" accept="image/*" onchange="uploadImage('${item.id}', this)" ${isHidden ? 'disabled' : ''}>
+                <label for="file-${item.id}" class="file-input-label" id="label-${item.id}">📷 ${hasImage ? 'Change' : 'Add'} Image</label>
+            </div>
+        </div>`;
+    return itemDiv;
+}
+
+async function addCategory() {
+    const name = document.getElementById('catName').value.trim();
+    if (!name) return showToast('Enter category name', 'error');
+    try {
+        await apiFetch(`/categories`, { method: 'POST', body: JSON.stringify({name, sortOrder: 0}) });
+        document.getElementById('catName').value = '';
+        showToast('Category added!');
+        loadDashboard();
+    } catch(e) { showToast(e.message, 'error'); }
+}
+
+async function addItem(event) {
+    const categoryId = document.getElementById('catSelect').value;
+    const name = document.getElementById('itemName').value.trim();
+    const price = parseInt(document.getElementById('itemPrice').value);
+    const desc = document.getElementById('itemDesc').value.trim();
+    const isVeg = document.getElementById('isVeg').checked;
+    const isPopular = document.getElementById('isPopular').checked;
+    const imageInput = document.getElementById('newItemImage');
+    const btn = event.target;
+
+    if (!categoryId || !name || isNaN(price)) return showToast('Fill required fields', 'error');
+    const originalText = btn.innerHTML;
+    btn.innerHTML = 'Saving...'; btn.disabled = true;
+
+    try {
+        let options = { method: 'POST' };
+        if (imageInput.files.length > 0) {
+            btn.innerHTML = 'Compressing...';
+            const compressed = await compressImage(imageInput.files[0], 800, 0.85);
+            const fd = new FormData();
+            fd.append('categoryId', categoryId); fd.append('name', name);
+            fd.append('price', price); fd.append('description', desc);
+            fd.append('isVeg', isVeg); fd.append('isPopular', isPopular);
+            fd.append('image', compressed);
+            options.body = fd;
+        } else {
+            options.body = JSON.stringify({ categoryId, name, price, description: desc, isVeg, isPopular, sortOrder: 0 });
+        }
+        await apiFetch('/items', options);
+        showToast('Item added!');
+        imageInput.value = ''; document.getElementById('itemName').value = ''; document.getElementById('itemPrice').value = '';
+        document.getElementById('itemDesc').value = ''; document.getElementById('isVeg').checked = false;
+        document.getElementById('isPopular').checked = false;
+        loadDashboard();
+    } catch(e) { showToast(e.message, 'error'); }
+    finally { btn.innerHTML = originalText; btn.disabled = false; }
+}
+
+async function compressImage(file, maxWidth, quality) {
+    return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                let w = img.width; let h = img.height;
+                if (w > maxWidth) { h = Math.round((h * maxWidth) / w); w = maxWidth; }
+                canvas.width = w; canvas.height = h;
+                const ctx = canvas.getContext('2d');
+                ctx.fillStyle = '#FFF'; ctx.fillRect(0,0,w,h);
+                ctx.drawImage(img, 0, 0, w, h);
+                canvas.toBlob((b) => resolve(new File([b], file.name.replace(/\.[^/.]+$/, '.jpg'), {type:'image/jpeg'})), 'image/jpeg', quality);
+            };
+            img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+    });
+}
+
+async function uploadImage(itemId, input) {
+    if (!input.files[0]) return;
+    const label = document.getElementById(`label-${itemId}`);
+    const originalText = label.textContent;
+    label.innerHTML = 'Compressing...';
+    try {
+        const compressed = await compressImage(input.files[0], 800, 0.85);
+        const fd = new FormData(); fd.append('image', compressed);
+        label.innerHTML = 'Uploading...';
+        await apiFetch(`/items/${itemId}/image`, { method: 'POST', body: fd });
+        showToast('Image updated!'); loadDashboard();
+    } catch(e) { showToast(e.message, 'error'); label.textContent = originalText; }
+    finally { input.value = ''; }
+}
+
+async function deleteItem(id) {
+    if (!confirm('Remove this item from menu?')) return;
+    try { await apiFetch(`/items/${id}`, { method: 'DELETE' }); showToast('Item removed'); loadDashboard(); } catch(e) {}
+}
+
+async function restoreItem(id) {
+    try { await apiFetch(`/items/${id}/restore`, { method: 'PATCH' }); showToast('Item restored'); loadDashboard(); } catch(e) {}
+}
+
+async function permanentDelete(id) {
+    if (!confirm('⚠️ WARNING: This will permanently delete the item and its image!')) return;
+    try { await apiFetch(`/items/${id}/permanent`, { method: 'DELETE' }); showToast('Item deleted forever'); loadDashboard(); } catch(e) {}
+}
+
+async function togglePopular(id, makePopular) {
+    try { 
+        await apiFetch(`/items/${id}`, { method: 'PATCH', body: JSON.stringify({ isPopular: makePopular }) }); 
+        showToast(makePopular ? 'Marked as popular!' : 'Removed from popular');
+        loadDashboard(); 
+    } catch(e) {}
+}
+
+document.getElementById('pin').addEventListener('keypress', e => { if (e.key === 'Enter') login(); });
+</script>
+</body>
+</html>

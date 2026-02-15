@@ -1,0 +1,11 @@
+ecommerceweb.shop {
+
+    reverse_proxy api:3000
+
+    encode gzip
+
+    header {
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "DENY"
+    }
+}

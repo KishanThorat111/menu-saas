@@ -1,0 +1,63 @@
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: menu-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data
+    ports:
+      - "127.0.0.1:5432:5432"
+    deploy:
+      resources:
+        limits:
+          memory: 400M
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build: ./apps/api
+    container_name: menu-api
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=${NODE_ENV}
+      - PORT=${PORT}
+      - DATABASE_URL=${DATABASE_URL}
+      - JWT_SECRET=${JWT_SECRET}
+      - ADMIN_KEY=${ADMIN_KEY}
+      - R2_ACCOUNT_ID=${R2_ACCOUNT_ID}
+      - R2_ACCESS_KEY_ID=${R2_ACCESS_KEY_ID}
+      - R2_SECRET_ACCESS_KEY=${R2_SECRET_ACCESS_KEY}
+      - R2_BUCKET_NAME=${R2_BUCKET_NAME}
+      - R2_PUBLIC_URL=${R2_PUBLIC_URL}
+    ports:
+      - "3000:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 400M
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: menu-caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./infrastructure/Caddyfile:/etc/caddy/Caddyfile
+      - ./data/caddy-data:/data
+      - ./data/caddy-config:/config
+    depends_on:
+      - api

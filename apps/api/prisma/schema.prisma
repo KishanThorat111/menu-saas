@@ -1,0 +1,127 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Hotel {
+  id            String   @id @default(uuid())
+  tenantId      String   @unique @default(uuid())
+  slug          String   @unique
+
+  name          String
+  city          String
+  phone         String
+
+  pinHash       String
+  pinChangedAt  DateTime @default(now())
+
+  plan          PlanType    @default(STARTER)
+  status        HotelStatus @default(TRIAL)
+  trialEnds     DateTime?
+  paidUntil     DateTime?
+
+  paymentMode       PaymentMode @default(MANUAL)
+  lastPaymentDate   DateTime?
+  lastPaymentAmount Int?
+  lastPaymentNote   String?
+
+  theme         String   @default("classic")
+
+  categories    Category[]
+  auditLogs     AuditLog[]
+
+  views         Int      @default(0)
+  lastViewAt    DateTime?
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([city, status])
+  @@index([paidUntil])
+  @@index([status, trialEnds])
+}
+
+model Category {
+  id        String @id @default(uuid())
+  hotelId   String
+  hotel     Hotel @relation(fields: [hotelId], references: [id], onDelete: Cascade)
+
+  name      String
+  sortOrder Int    @default(0)
+
+  items     Item[]
+
+  createdAt DateTime @default(now())
+
+  @@index([hotelId, sortOrder])
+}
+
+model Item {
+  id          String  @id @default(uuid())
+  categoryId  String
+  category    Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  name        String
+  description String?
+  price       Int
+
+  imageUrl    String?
+
+  isVeg       Boolean @default(false)
+  isAvailable Boolean @default(true)
+  isPopular   Boolean @default(false)
+
+  sortOrder   Int     @default(0)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([categoryId, sortOrder])
+  @@index([categoryId, isAvailable])
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  hotelId   String
+  hotel     Hotel    @relation(fields: [hotelId], references: [id], onDelete: Cascade)
+
+  actorType String
+  actorId   String?
+
+  action    String
+
+  entityType String?
+  entityId   String?
+  oldValue   Json?
+  newValue   Json?
+
+  createdAt DateTime @default(now())
+
+  @@index([hotelId, createdAt])
+  @@index([action, createdAt])
+}
+
+enum PlanType {
+  STARTER
+  STANDARD
+  PRO
+}
+
+enum HotelStatus {
+  TRIAL
+  ACTIVE
+  GRACE
+  EXPIRED
+  SUSPENDED
+}
+
+enum PaymentMode {
+  MANUAL
+  RAZORPAY
+  CASH
+}
