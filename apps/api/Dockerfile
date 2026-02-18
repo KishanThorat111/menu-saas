@@ -1,22 +1,42 @@
 FROM node:20-alpine
 WORKDIR /app
 
-# 1. Install system dependencies needed for Prisma on Alpine
-RUN apk add --no-cache openssl libc6-compat
+# Install system dependencies
+RUN apk add --no-cache openssl libc6-compat wget
 
-# Copy only package files first
+# Create non-root user
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S nodejs -u 1001
+
+# Copy package files
 COPY package*.json ./
 
-# Install dependencies
-RUN npm install --production
+# 1. Install ALL dependencies (including devDependencies so we have Prisma CLI)
+RUN npm ci
 
-# Copy rest of the app
+# 2. Copy application code
+
+COPY prisma ./prisma
+
+
 COPY . .
 
-# 2. Generate Prisma client (This creates the binary engine)
+# 3. Generate Prisma client
 RUN npx prisma generate
+
+# 4. NOW remove devDependencies to keep the image small
+RUN npm prune --production && \
+    npm cache clean --force
+
+# Change ownership
+RUN chown -R nodejs:nodejs /app
+USER nodejs
 
 EXPOSE 3000
 
-# 3. Use the shell form to run migration before starting
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+    CMD wget --quiet --tries=1 --spider http://localhost:3000/health || exit 1
+
+# Start with migration deploy (SAFE for production)
 CMD ["sh", "-c", "npx prisma migrate deploy && node index.js"]

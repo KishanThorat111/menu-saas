@@ -18,4 +18,25 @@ jobs:
           script: |
             cd ~/menu-saas
             git pull origin main
-            sudo docker compose up -d --build api
+            echo 'NODE_ENV=${{ secrets.NODE_ENV }}' > .env
+            echo 'PORT=${{ secrets.PORT }}' >> .env
+            echo 'APP_URL=${{ secrets.APP_URL }}' >> .env
+            echo 'DATABASE_URL=${{ secrets.DATABASE_URL }}' >> .env
+            echo 'JWT_SECRET=${{ secrets.JWT_SECRET }}' >> .env
+            echo 'COOKIE_SECRET=${{ secrets.COOKIE_SECRET }}' >> .env
+            echo 'ADMIN_KEY=${{ secrets.ADMIN_KEY }}' >> .env
+            echo 'R2_ACCOUNT_ID=${{ secrets.R2_ACCOUNT_ID }}' >> .env
+            echo 'R2_ACCESS_KEY_ID=${{ secrets.R2_ACCESS_KEY_ID }}' >> .env
+            echo 'R2_SECRET_ACCESS_KEY=${{ secrets.R2_SECRET_ACCESS_KEY }}' >> .env
+            echo 'R2_BUCKET_NAME=${{ secrets.R2_BUCKET_NAME }}' >> .env
+            echo 'R2_PUBLIC_URL=${{ secrets.R2_PUBLIC_URL }}' >> .env
+            echo 'DB_USER=${{ secrets.DB_USER }}' >> .env
+            echo 'DB_PASSWORD=${{ secrets.DB_PASSWORD }}' >> .env
+            echo 'DB_NAME=${{ secrets.DB_NAME }}' >> .env
+            echo 'COOKIE_DOMAIN=${{ secrets.COOKIE_DOMAIN }}' >> .env
+            echo 'CORS_ORIGINS=${{ secrets.CORS_ORIGINS }}' >> .env
+            echo 'RATE_LIMIT_MAX=${{ secrets.RATE_LIMIT_MAX }}' >> .env
+            echo 'RATE_LIMIT_WINDOW=${{ secrets.RATE_LIMIT_WINDOW }}' >> .env
+            echo 'ADMIN_RATE_LIMIT_MAX=${{ secrets.ADMIN_RATE_LIMIT_MAX }}' >> .env
+            echo 'ADMIN_RATE_LIMIT_WINDOW=${{ secrets.ADMIN_RATE_LIMIT_WINDOW }}' >> .env
+            docker compose up -d --build --remove-orphans

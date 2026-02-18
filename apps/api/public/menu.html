@@ -2,264 +2,96 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Menu</title>
     <style>
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; background: #f8f9fa; color: #333; line-height: 1.6; overscroll-behavior-y: contain; }
-        .header { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); color: white; padding: 30px 20px; text-align: center; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 20px rgba(0,0,0,0.3); }
-        .header h1 { margin: 0; font-size: 28px; font-weight: 700; letter-spacing: -0.5px; }
-        .header p { margin: 8px 0 0; opacity: 0.9; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; }
-        .container { max-width: 600px; margin: 0 auto; padding: 20px; padding-bottom: 40px; }
-        .category { margin-bottom: 35px; animation: fadeIn 0.5s ease-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-        .category h2 { color: #1a1a2e; border-bottom: 3px solid #007bff; padding-bottom: 12px; margin-bottom: 20px; font-size: 22px; font-weight: 700; display: flex; align-items: center; gap: 10px; }
-        .item { background: white; padding: 0; margin-bottom: 16px; border-radius: 16px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); overflow: hidden; transition: transform 0.2s, box-shadow 0.2s; display: flex; flex-direction: column; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: system-ui, -apple-system, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: #f5f5f5; line-height: 1.6; min-height: 100vh; }
+
+        /* Theme: Classic */
+        .theme-classic { background: #f5f5f5; color: #333; }
+        .theme-classic .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .theme-classic .category-title { color: #333; border-bottom-color: #007bff; }
+        .theme-classic .item { background: white; }
+        .theme-classic .price { color: #28a745; }
+
+        /* Theme: Warm */
+        .theme-warm { background: #fdf6ec; color: #4a3728; }
+        .theme-warm .header { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+        .theme-warm .category-title { color: #b8520f; border-bottom-color: #e67e22; }
+        .theme-warm .item { background: #fffaf3; }
+        .theme-warm .price { color: #e67e22; }
+
+        /* Theme: Nature */
+        .theme-nature { background: #f0f7f0; color: #2d4a2d; }
+        .theme-nature .header { background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); }
+        .theme-nature .category-title { color: #2d6a2d; border-bottom-color: #27ae60; }
+        .theme-nature .item { background: #f8fdf8; }
+        .theme-nature .price { color: #27ae60; }
+
+        /* Theme: Elegant */
+        .theme-elegant { background: #1a1a2e; color: #e0e0e0; }
+        .theme-elegant .header { background: linear-gradient(135deg, #c9b037 0%, #e8d47c 50%, #c9b037 100%); color: #1a1a2e; }
+        .theme-elegant .category-title { color: #c9b037; border-bottom-color: #c9b037; }
+        .theme-elegant .item { background: #16213e; }
+        .theme-elegant .price { color: #c9b037; }
+
+        .header { padding: 25px 20px; border-radius: 15px; margin-bottom: 20px; text-align: center; color: white; }
+        .header h1 { font-size: 24px; margin-bottom: 5px; }
+        .header p { opacity: 0.9; font-size: 14px; }
+
+        .category-title { font-size: 20px; font-weight: 700; margin: 25px 0 15px; padding-bottom: 8px; border-bottom: 3px solid; }
+        .item { display: flex; align-items: center; padding: 12px; border-radius: 10px; margin-bottom: 10px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); transition: transform 0.2s; gap: 12px; }
         .item:active { transform: scale(0.98); }
-        .item-image { width: 100%; height: 200px; object-fit: cover; background: #e9ecef; opacity: 0; transition: opacity 0.3s ease; }
-        .item-image.loaded { opacity: 1; }
-        .item-image.error { display: none; }
-        .item-image-placeholder { width: 100%; height: 120px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center; color: white; font-size: 48px; }
-        .item-content { padding: 16px; }
-        .item-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; gap: 12px; }
-        .item-name { font-weight: 700; font-size: 17px; margin: 0; flex: 1; line-height: 1.4; }
-        .price { font-size: 20px; color: #007bff; font-weight: 800; white-space: nowrap; }
-        .item-desc { color: #666; font-size: 14px; margin: 8px 0 0; line-height: 1.5; }
-        .badges { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
-        .veg-badge { display: inline-flex; align-items: center; gap: 4px; color: #28a745; font-size: 12px; font-weight: 600; border: 2px solid #28a745; padding: 4px 10px; border-radius: 20px; background: rgba(40, 167, 69, 0.1); } .veg-badge::before { content: "●"; color: #28a745; }
-        .non-veg-badge { display: inline-flex; align-items: center; gap: 4px; color: #dc3545; font-size: 12px; font-weight: 600; border: 2px solid #dc3545; padding: 4px 10px; border-radius: 20px; background: rgba(220, 53, 69, 0.1); } .non-veg-badge::before { content: "●"; color: #dc3545; }
-        .popular-badge { display: inline-flex; align-items: center; gap: 4px; background: #ffc107; color: #000; font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 20px; }
-        .loading { text-align: center; padding: 60px 20px; color: #666; }
-        .loading-spinner { width: 50px; height: 50px; border: 4px solid #f3f3f3; border-top: 4px solid #007bff; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 20px; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        .error { text-align: center; padding: 60px 20px; color: #dc3545; }
-        .error-icon { font-size: 64px; margin-bottom: 20px; }
-        .empty-menu { text-align: center; padding: 60px 20px; color: #666; }
-        .empty-menu-icon { font-size: 64px; margin-bottom: 20px; opacity: 0.5; }
-        .footer { text-align: center; padding: 40px 20px; color: #999; font-size: 12px; border-top: 1px solid #eee; margin-top: 40px; }
-        body.theme-classic .header { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); }
-        body.theme-warm .header { background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%); } body.theme-warm .category h2 { border-color: #ee5a24; color: #c44569; } body.theme-warm .price { color: #ee5a24; }
-        body.theme-nature .header { background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%); } body.theme-nature .category h2 { border-color: #27ae60; color: #1e8449; } body.theme-nature .price { color: #27ae60; }
-        body.theme-elegant .header { background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%); } body.theme-elegant .category h2 { border-color: #8e44ad; color: #2c3e50; } body.theme-elegant .price { color: #8e44ad; }
-        .image-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 1000; justify-content: center; align-items: center; padding: 20px; }
-        .image-modal.active { display: flex; } .image-modal img { max-width: 100%; max-height: 80vh; border-radius: 8px; object-fit: contain; }
-        .image-modal .close { position: absolute; top: 20px; right: 20px; color: white; font-size: 40px; cursor: pointer; background: none; border: none; padding: 0; width: auto; }
+
+        .item-img { width: 70px; height: 70px; border-radius: 8px; object-fit: cover; flex-shrink: 0; cursor: pointer; border: 1px solid rgba(0,0,0,0.1); }
+        .item-img-placeholder { width: 70px; height: 70px; border-radius: 8px; flex-shrink: 0; background: #e9ecef; display: flex; align-items: center; justify-content: center; font-size: 28px; }
+
+        .item-details { flex: 1; min-width: 0; }
+        .item-name { font-weight: 600; font-size: 15px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+        .item-desc { color: #888; font-size: 13px; margin-top: 2px; }
+        .price { font-weight: 700; font-size: 17px; white-space: nowrap; }
+
+        .badge-veg { display: inline-block; width: 16px; height: 16px; border: 2px solid #28a745; border-radius: 3px; position: relative; flex-shrink: 0; }
+        .badge-veg::after { content: ''; position: absolute; width: 8px; height: 8px; background: #28a745; border-radius: 50%; top: 50%; left: 50%; transform: translate(-50%, -50%); }
+        .badge-nonveg { display: inline-block; width: 16px; height: 16px; border: 2px solid #dc3545; border-radius: 3px; position: relative; flex-shrink: 0; }
+        .badge-nonveg::after { content: ''; position: absolute; width: 0; height: 0; border-left: 5px solid transparent; border-right: 5px solid transparent; border-bottom: 8px solid #dc3545; top: 50%; left: 50%; transform: translate(-50%, -50%); }
+
+        .badge-popular { background: #fff3cd; color: #856404; font-size: 10px; padding: 2px 6px; border-radius: 4px; font-weight: 600; white-space: nowrap; }
+
+        .loading { text-align: center; padding: 60px 20px; }
+        .loading-spinner { width: 40px; height: 40px; border: 4px solid #ddd; border-top-color: #007bff; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 15px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .error { text-align: center; padding: 60px 20px; color: #666; }
+        .error h2 { margin-bottom: 10px; }
+        .error button { margin-top: 15px; padding: 10px 25px; background: #007bff; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; }
+
+        /* Image Modal */
+        .image-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 1000; justify-content: center; align-items: center; cursor: pointer; }
+        .image-modal.active { display: flex; }
+        .image-modal img { max-width: 90vw; max-height: 90vh; border-radius: 8px; object-fit: contain; }
+        .modal-close { position: fixed; top: 15px; right: 20px; color: white; font-size: 32px; cursor: pointer; z-index: 1001; background: rgba(0,0,0,0.5); width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: none; line-height: 1; }
+
+        .powered-by { text-align: center; padding: 30px 0; color: #999; font-size: 12px; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .fade-in { animation: fadeIn 0.3s ease forwards; }
     </style>
 </head>
 <body>
-    <div class="header">
-        <h1 id="hotelName">Loading...</h1>
-        <p id="hotelCity">Please wait</p>
-    </div>
-    
-    <div class="container" id="menuContainer">
-        <div class="loading">
+    <div id="menuContainer">
+        <div class="loading" id="loadingState">
             <div class="loading-spinner"></div>
-            <p>Loading delicious menu...</p>
+            <p>Loading menu...</p>
         </div>
     </div>
-    
-    <div class="footer" id="footer" style="display: none;">
-        Powered by Menu SaaS
+
+    <div class="image-modal" id="imageModal">
+        <button class="modal-close" id="closeModalBtn">&times;</button>
+        <img id="modalImage" src="" alt="Full size image">
     </div>
 
-    <div class="image-modal" id="imageModal" onclick="closeImageModal()">
-        <button class="close" onclick="closeImageModal()">&times;</button>
-        <img src="" alt="Full size" id="modalImage">
-    </div>
-
-<script>
-// Get hotel slug from URL: /menu.html?h=hotel-slug OR /menu/hotel-slug
-function getSlug() {
-    const params = new URLSearchParams(window.location.search);
-    const paramSlug = params.get('h');
-    if (paramSlug) return paramSlug;
-    
-    const path = window.location.pathname;
-    const segments = path.split('/').filter(s => s);
-    const lastSegment = segments[segments.length - 1];
-    
-    if (lastSegment && lastSegment !== 'menu.html') {
-        return lastSegment;
-    }
-    
-    return null;
-}
-
-// 🖼️ Image loading handler with fallback
-function handleImageLoad(img) {
-    img.classList.add('loaded');
-}
-
-function handleImageError(img, itemName, isVeg) {
-    img.classList.add('error');
-    // Show placeholder instead
-    const placeholder = document.createElement('div');
-    placeholder.className = 'item-image-placeholder';
-    placeholder.textContent = isVeg ? '🥗' : '🍖';
-    img.parentNode.insertBefore(placeholder, img);
-}
-
-// 🖼️ Open image in modal
-function openImageModal(src) {
-    const modal = document.getElementById('imageModal');
-    const modalImg = document.getElementById('modalImage');
-    modalImg.src = src;
-    modal.classList.add('active');
-    document.body.style.overflow = 'hidden';
-}
-
-function closeImageModal() {
-    const modal = document.getElementById('imageModal');
-    modal.classList.remove('active');
-    document.body.style.overflow = '';
-}
-
-async function loadMenu() {
-    const slug = getSlug();
-    const container = document.getElementById('menuContainer');
-    
-    if (!slug) {
-        container.innerHTML = `
-            <div class="error">
-                <div class="error-icon">❌</div>
-                <h2>Invalid Menu Link</h2>
-                <p>Please scan the QR code again or check the URL.</p>
-            </div>
-        `;
-        return;
-    }
-    
-    try {
-        const res = await fetch(`/api/menu/${slug}`);
-        
-        if (!res.ok) {
-            if (res.status === 404) {
-                throw new Error('Menu not found. Please check the hotel code.');
-            }
-            throw new Error('Failed to load menu. Please try again.');
-        }
-        
-        const data = await res.json();
-        
-        // Apply theme
-        if (data.theme) {
-            document.body.className = `theme-${data.theme}`;
-        }
-        
-        // Update header
-        document.getElementById('hotelName').textContent = data.name;
-        document.getElementById('hotelCity').textContent = data.city || 'Welcome';
-        document.title = `${data.name} - Menu`;
-        
-        // Render menu
-        container.innerHTML = '';
-        
-        if (!data.categories || data.categories.length === 0) {
-            container.innerHTML = `
-                <div class="empty-menu">
-                    <div class="empty-menu-icon">📋</div>
-                    <h2>Menu Coming Soon</h2>
-                    <p>This restaurant is setting up their menu. Please check back later!</p>
-                </div>
-            `;
-            return;
-        }
-        
-        data.categories.forEach((cat, index) => {
-            // Skip empty categories
-            if (!cat.items || cat.items.length === 0) return;
-            
-            const catDiv = document.createElement('div');
-            catDiv.className = 'category';
-            catDiv.style.animationDelay = `${index * 0.1}s`;
-            
-            catDiv.innerHTML = `<h2>${escapeHtml(cat.name)}</h2>`;
-            
-            cat.items.forEach(item => {
-                const itemDiv = document.createElement('div');
-                itemDiv.className = 'item';
-                
-                // 🖼️ Image handling with R2 optimization
-                let imageHtml = '';
-                if (item.imageUrl) {
-                    // Use R2 public URL directly with lazy loading
-                    imageHtml = `
-                        <img src="${item.imageUrl}" 
-                             class="item-image" 
-                             alt="${escapeHtml(item.name)}" 
-                             loading="lazy"
-                             onload="handleImageLoad(this)"
-                             onerror="handleImageError(this, '${escapeHtml(item.name)}', ${item.isVeg})"
-                             onclick="openImageModal('${item.imageUrl}')"
-                             style="cursor: pointer;">
-                    `;
-                } else {
-                    // Show placeholder with emoji
-                    const emoji = item.isVeg ? '🥗' : '🍖';
-                    imageHtml = `<div class="item-image-placeholder">${emoji}</div>`;
-                }
-                
-                // Badges
-                let badgesHtml = '';
-                if (item.isVeg) {
-                    badgesHtml += '<span class="veg-badge">VEG</span>';
-                } else {
-                    badgesHtml += '<span class="non-veg-badge">NON-VEG</span>';
-                }
-                if (item.isPopular) {
-                    badgesHtml += '<span class="popular-badge">⭐ POPULAR</span>';
-                }
-                
-                itemDiv.innerHTML = `
-                    ${imageHtml}
-                    <div class="item-content">
-                        <div class="item-header">
-                            <div class="item-name">${escapeHtml(item.name)}</div>
-                            <div class="price">₹${item.price}</div>
-                        </div>
-                        ${item.description ? `<div class="item-desc">${escapeHtml(item.description)}</div>` : ''}
-                        <div class="badges">${badgesHtml}</div>
-                    </div>
-                `;
-                
-                catDiv.appendChild(itemDiv);
-            });
-            
-            container.appendChild(catDiv);
-        });
-        
-        document.getElementById('footer').style.display = 'block';
-        
-    } catch(e) {
-        container.innerHTML = `
-            <div class="error">
-                <div class="error-icon">😕</div>
-                <h2>Oops!</h2>
-                <p>${escapeHtml(e.message)}</p>
-                <button onclick="location.reload()" style="margin-top: 20px; padding: 12px 24px; background: #007bff; color: white; border: none; border-radius: 8px; cursor: pointer;">Try Again</button>
-            </div>
-        `;
-    }
-}
-
-function escapeHtml(text) {
-    if (!text) return '';
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-}
-
-// Load menu when page loads
-loadMenu();
-
-// Refresh every 5 minutes (in case menu updates)
-setInterval(loadMenu, 5 * 60 * 1000);
-
-// Close modal on Escape key
-document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') closeImageModal();
-});
-</script>
+<script src="menu.js"></script>
 </body>
 </html>
