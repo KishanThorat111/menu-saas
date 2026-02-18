@@ -31,9 +31,4 @@ ecommerceweb.shop {
         Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
         -Server
     }
-
-    # Automatic HTTPS (Caddy gets Let's Encrypt certificate)
-    tls {
-        # Caddy handles this automatically
-    }
 }

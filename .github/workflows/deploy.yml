@@ -15,28 +15,47 @@ jobs:
           host: ${{ secrets.GCP_HOST }}
           username: ${{ secrets.GCP_USERNAME }}
           key: ${{ secrets.GCP_SSH_PRIVATE_KEY }}
+          timeout: 30m
           script: |
             cd ~/menu-saas
             git pull origin main
-            echo 'NODE_ENV=${{ secrets.NODE_ENV }}' > .env
-            echo 'PORT=${{ secrets.PORT }}' >> .env
-            echo 'APP_URL=${{ secrets.APP_URL }}' >> .env
-            echo 'DATABASE_URL=${{ secrets.DATABASE_URL }}' >> .env
-            echo 'JWT_SECRET=${{ secrets.JWT_SECRET }}' >> .env
-            echo 'COOKIE_SECRET=${{ secrets.COOKIE_SECRET }}' >> .env
-            echo 'ADMIN_KEY=${{ secrets.ADMIN_KEY }}' >> .env
-            echo 'R2_ACCOUNT_ID=${{ secrets.R2_ACCOUNT_ID }}' >> .env
-            echo 'R2_ACCESS_KEY_ID=${{ secrets.R2_ACCESS_KEY_ID }}' >> .env
-            echo 'R2_SECRET_ACCESS_KEY=${{ secrets.R2_SECRET_ACCESS_KEY }}' >> .env
-            echo 'R2_BUCKET_NAME=${{ secrets.R2_BUCKET_NAME }}' >> .env
-            echo 'R2_PUBLIC_URL=${{ secrets.R2_PUBLIC_URL }}' >> .env
-            echo 'DB_USER=${{ secrets.DB_USER }}' >> .env
-            echo 'DB_PASSWORD=${{ secrets.DB_PASSWORD }}' >> .env
-            echo 'DB_NAME=${{ secrets.DB_NAME }}' >> .env
-            echo 'COOKIE_DOMAIN=${{ secrets.COOKIE_DOMAIN }}' >> .env
-            echo 'CORS_ORIGINS=${{ secrets.CORS_ORIGINS }}' >> .env
-            echo 'RATE_LIMIT_MAX=${{ secrets.RATE_LIMIT_MAX }}' >> .env
-            echo 'RATE_LIMIT_WINDOW=${{ secrets.RATE_LIMIT_WINDOW }}' >> .env
-            echo 'ADMIN_RATE_LIMIT_MAX=${{ secrets.ADMIN_RATE_LIMIT_MAX }}' >> .env
-            echo 'ADMIN_RATE_LIMIT_WINDOW=${{ secrets.ADMIN_RATE_LIMIT_WINDOW }}' >> .env
+            
+            # Create required directories
+            mkdir -p data/postgres data/caddy-data data/caddy-config data/logs
+            
+            # Write environment variables
+            cat > .env << 'ENVFILE'
+            NODE_ENV=${{ secrets.NODE_ENV }}
+            PORT=${{ secrets.PORT }}
+            APP_URL=${{ secrets.APP_URL }}
+            DATABASE_URL=${{ secrets.DATABASE_URL }}
+            JWT_SECRET=${{ secrets.JWT_SECRET }}
+            COOKIE_SECRET=${{ secrets.COOKIE_SECRET }}
+            ADMIN_KEY=${{ secrets.ADMIN_KEY }}
+            R2_ACCOUNT_ID=${{ secrets.R2_ACCOUNT_ID }}
+            R2_ACCESS_KEY_ID=${{ secrets.R2_ACCESS_KEY_ID }}
+            R2_SECRET_ACCESS_KEY=${{ secrets.R2_SECRET_ACCESS_KEY }}
+            R2_BUCKET_NAME=${{ secrets.R2_BUCKET_NAME }}
+            R2_PUBLIC_URL=${{ secrets.R2_PUBLIC_URL }}
+            DB_USER=${{ secrets.DB_USER }}
+            DB_PASSWORD=${{ secrets.DB_PASSWORD }}
+            DB_NAME=${{ secrets.DB_NAME }}
+            COOKIE_DOMAIN=${{ secrets.COOKIE_DOMAIN }}
+            CORS_ORIGINS=${{ secrets.CORS_ORIGINS }}
+            RATE_LIMIT_MAX=${{ secrets.RATE_LIMIT_MAX }}
+            RATE_LIMIT_WINDOW=${{ secrets.RATE_LIMIT_WINDOW }}
+            ADMIN_RATE_LIMIT_MAX=${{ secrets.ADMIN_RATE_LIMIT_MAX }}
+            ADMIN_RATE_LIMIT_WINDOW=${{ secrets.ADMIN_RATE_LIMIT_WINDOW }}
+            ENVFILE
+            
+            # Deploy with Docker Compose
+            docker compose down
             docker compose up -d --build --remove-orphans
+            
+            # Wait for services to be healthy
+            echo "Waiting for services to start..."
+            sleep 30
+            
+            # Verify deployment
+            docker compose ps
+            docker compose logs --tail 20 api
