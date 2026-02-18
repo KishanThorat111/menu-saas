@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SaaS Super Admin | Menu Management</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        
+        :root {
+            --bg-primary: #0f172a;
+            --bg-secondary: #1e293b;
+            --bg-tertiary: #334155;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --accent-blue: #3b82f6;
+            --accent-green: #10b981;
+            --accent-red: #ef4444;
+            --accent-yellow: #f59e0b;
+            --accent-purple: #8b5cf6;
+            --border-color: #334155;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+            --radius: 12px;
+        }
+        
+        body { 
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+            background: var(--bg-primary); 
+            color: var(--text-primary); 
+            line-height: 1.6; 
+            min-height: 100vh;
+        }
+        
+        .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+        
+        .header { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            border-bottom: 1px solid var(--border-color); 
+            padding-bottom: 20px; 
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        
+        .header h1 { font-size: 28px; font-weight: 700; }
+        .header p { color: var(--text-secondary); margin-top: 5px; }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .stat-card {
+            background: var(--bg-secondary);
+            padding: 20px;
+            border-radius: var(--radius);
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow);
+        }
+        
+        .stat-card h3 {
+            color: var(--text-secondary);
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+        
+        .stat-card .value {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+        
+        .stat-card .trend {
+            font-size: 12px;
+            margin-top: 5px;
+            color: var(--accent-green);
+        }
+        
+        .card { 
+            background: var(--bg-secondary); 
+            padding: 24px; 
+            border-radius: var(--radius); 
+            margin-bottom: 24px; 
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow);
+        }
+        
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        
+        .card h3 { font-size: 18px; font-weight: 600; }
+        
+        .form-grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); 
+            gap: 20px; 
+        }
+        
+        .form-group { display: flex; flex-direction: column; }
+        
+        .form-group label { 
+            font-size: 14px; 
+            color: var(--text-secondary); 
+            margin-bottom: 6px;
+            font-weight: 500;
+        }
+        
+        input, select, textarea { 
+            padding: 12px; 
+            border: 1px solid var(--border-color); 
+            border-radius: 8px; 
+            background: var(--bg-primary); 
+            color: var(--text-primary); 
+            font-family: inherit;
+            font-size: 15px;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        
+        input::placeholder { color: var(--text-secondary); opacity: 0.5; }
+        
+        .btn { 
+            background: var(--accent-blue); 
+            color: white; 
+            border: none; 
+            padding: 12px 20px; 
+            border-radius: 8px; 
+            cursor: pointer; 
+            font-weight: 600; 
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+        }
+        
+        .btn:hover:not(:disabled) { 
+            transform: translateY(-1px); 
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+        }
+        
+        .btn:active:not(:disabled) { transform: translateY(0); }
+        
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        
+        .btn-success { background: var(--accent-green); }
+        .btn-success:hover:not(:disabled) { box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4); }
+        
+        .btn-danger { background: var(--accent-red); }
+        .btn-danger:hover:not(:disabled) { box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4); }
+        
+        .btn-secondary { background: var(--bg-tertiary); }
+        
+        .btn-sm { padding: 8px 14px; font-size: 13px; }
+        
+        .spinner {
+            display: inline-block;
+            width: 18px;
+            height: 18px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 0.8s linear infinite;
+        }
+        
+        @keyframes spin { to { transform: rotate(360deg); } }
+        
+        .table-container { 
+            overflow-x: auto; 
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+        }
+        
+        table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            font-size: 14px;
+        }
+        
+        th, td { 
+            padding: 14px; 
+            text-align: left; 
+            border-bottom: 1px solid var(--border-color); 
+        }
+        
+        th { 
+            background: var(--bg-primary);
+            color: var(--text-secondary); 
+            font-weight: 600; 
+            font-size: 12px; 
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            white-space: nowrap;
+        }
+        
+        tr:hover { background: rgba(255,255,255,0.02); }
+        tr:last-child td { border-bottom: none; }
+        
+        .badge { 
+            padding: 4px 10px; 
+            border-radius: 20px; 
+            font-size: 12px; 
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        .status-TRIAL { background: rgba(245, 158, 11, 0.15); color: var(--accent-yellow); }
+        .status-ACTIVE { background: rgba(16, 185, 129, 0.15); color: var(--accent-green); }
+        .status-SUSPENDED { background: rgba(239, 68, 68, 0.15); color: var(--accent-red); }
+        .status-EXPIRED { background: rgba(139, 92, 246, 0.15); color: var(--accent-purple); }
+        .status-GRACE { background: rgba(59, 130, 246, 0.15); color: var(--accent-blue); }
+        
+        .plan-badge {
+            background: var(--bg-tertiary);
+            color: var(--text-secondary);
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .toolbar {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .search-box {
+            position: relative;
+            flex: 1;
+            min-width: 250px;
+        }
+        
+        .search-box input {
+            width: 100%;
+            padding-left: 40px;
+        }
+        
+        .search-box::before {
+            content: "🔍";
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            opacity: 0.5;
+        }
+        
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            backdrop-filter: blur(4px);
+        }
+        
+        .modal-overlay.active { display: flex; }
+        
+        .modal {
+            background: var(--bg-secondary);
+            border-radius: var(--radius);
+            max-width: 500px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            border: 1px solid var(--border-color);
+            animation: modalSlide 0.3s ease;
+        }
+        
+        @keyframes modalSlide {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .modal-header {
+            padding: 20px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .modal-body { padding: 20px; }
+        
+        .modal-footer {
+            padding: 20px;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+        
+        .close-btn {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 24px;
+            cursor: pointer;
+            padding: 0;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+        
+        .close-btn:hover {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+        }
+        
+        .toast-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 2000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .toast { 
+            background: var(--bg-secondary); 
+            padding: 16px 20px; 
+            border-radius: 8px; 
+            border-left: 4px solid var(--accent-blue);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            min-width: 300px;
+            animation: toastSlide 0.3s ease;
+            border: 1px solid var(--border-color);
+        }
+        
+        @keyframes toastSlide {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        
+        .toast.success { border-left-color: var(--accent-green); }
+        .toast.error { border-left-color: var(--accent-red); }
+        .toast.warning { border-left-color: var(--accent-yellow); }
+        
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-secondary);
+        }
+        
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+        
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .page-btn {
+            padding: 8px 14px;
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .page-btn:hover:not(:disabled) {
+            border-color: var(--accent-blue);
+            color: var(--text-primary);
+        }
+        
+        .page-btn.active {
+            background: var(--accent-blue);
+            color: white;
+            border-color: var(--accent-blue);
+        }
+        
+        .page-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+        
+        .hotel-info {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        
+        .hotel-name {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        .hotel-meta {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+        
+        .hotel-links {
+            display: flex;
+            gap: 8px;
+            margin-top: 6px;
+        }
+        
+        .hotel-links a {
+            color: var(--accent-blue);
+            text-decoration: none;
+            font-size: 12px;
+            padding: 4px 8px;
+            background: rgba(59, 130, 246, 0.1);
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+        
+        .hotel-links a:hover {
+            background: rgba(59, 130, 246, 0.2);
+        }
+        
+        .date-info {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+        
+        .date-info.overdue {
+            color: var(--accent-red);
+            font-weight: 600;
+        }
+        
+        @media (max-width: 768px) {
+            .header { flex-direction: column; align-items: flex-start; }
+            .stats-grid { grid-template-columns: 1fr; }
+            .form-grid { grid-template-columns: 1fr; }
+            .toolbar { flex-direction: column; }
+            .search-box { width: 100%; }
+            th, td { padding: 10px; font-size: 13px; }
+            .hotel-links { flex-direction: column; }
+        }
+        
+        #authScreen { 
+            max-width: 420px; 
+            margin: 100px auto; 
+            text-align: center;
+            animation: fadeIn 0.5s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .hidden { display: none !important; }
+        
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 23, 42, 0.9);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 3000;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .loading-overlay.active { display: flex; }
+        
+        .loading-overlay .spinner {
+            width: 50px;
+            height: 50px;
+            border-width: 4px;
+        }
+
+        .session-info {
+            background: rgba(59, 130, 246, 0.1);
+            border: 1px solid var(--accent-blue);
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 20px;
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+        
+        .session-info strong {
+            color: var(--accent-blue);
+        }
+    </style>
+</head>
+<body>
+
+<div class="loading-overlay" id="loadingOverlay">
+    <div class="spinner"></div>
+    <p>Processing...</p>
+</div>
+
+<div class="container">
+    <!-- Auth Screen -->
+    <div id="authScreen" class="card">
+        <div style="font-size: 48px; margin-bottom: 16px;">🔐</div>
+        <h2 style="margin-bottom: 8px;">Super Admin Access</h2>
+        <p style="color: var(--text-secondary); margin-bottom: 24px; font-size: 14px;">
+            Enter your master Admin Key to manage tenants
+        </p>
+        <div class="form-group" style="text-align: left;">
+            <label>Admin Key</label>
+            <input type="password" id="adminKey" placeholder="Enter your secure admin key">
+        </div>
+        <button class="btn" style="width: 100%; margin-top: 16px;" id="loginBtn">
+            Access Dashboard
+        </button>
+        <p id="authError" style="color: var(--accent-red); margin-top: 12px; font-size: 14px;"></p>
+    </div>
+
+    <!-- Dashboard -->
+    <div id="dashboardScreen" class="hidden">
+        <div class="header">
+            <div>
+                <h1>Super Admin Dashboard</h1>
+                <p>Manage hotels, subscriptions, and billing</p>
+            </div>
+            <div style="display: flex; gap: 10px;">
+                <button id="checkSessionBtn" class="btn btn-secondary btn-sm">Check Session</button>
+                <button id="logoutBtn" class="btn btn-danger">Logout</button>
+            </div>
+        </div>
+
+        <!-- Session Info -->
+        <div class="session-info" id="sessionInfo">
+            <strong>🔒 Secure Session Active</strong><br>
+            <span id="sessionDetails">Loading session details...</span>
+        </div>
+
+        <!-- Stats -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <h3>Total Hotels</h3>
+                <div class="value" id="statTotal">0</div>
+                <div class="trend">Active tenants</div>
+            </div>
+            <div class="stat-card">
+                <h3>Trial</h3>
+                <div class="value" id="statTrial">0</div>
+                <div class="trend">Converting soon</div>
+            </div>
+            <div class="stat-card">
+                <h3>Active</h3>
+                <div class="value" id="statActive">0</div>
+                <div class="trend">Paying customers</div>
+            </div>
+            <div class="stat-card">
+                <h3>Total Views</h3>
+                <div class="value" id="statViews">0</div>
+                <div class="trend">Menu impressions</div>
+            </div>
+        </div>
+
+        <!-- Create Hotel -->
+        <div class="card">
+            <div class="card-header">
+                <h3>➕ Register New Hotel</h3>
+            </div>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Hotel Name *</label>
+                    <input type="text" id="hName" placeholder="e.g., Kishan Resort">
+                </div>
+                <div class="form-group">
+                    <label>City *</label>
+                    <input type="text" id="hCity" placeholder="e.g., Belagavi">
+                </div>
+                <div class="form-group">
+                    <label>Phone *</label>
+                    <input type="tel" id="hPhone" placeholder="e.g., 9876543210" maxlength="10">
+                </div>
+                <div class="form-group">
+                    <label>URL Slug *</label>
+                    <input type="text" id="hSlug" placeholder="e.g., kishan-resort">
+                </div>
+                <div class="form-group">
+                    <label>Owner PIN (4 digits) *</label>
+                    <input type="text" id="hPin" maxlength="4" placeholder="1234">
+                </div>
+                <div class="form-group">
+                    <label>Plan *</label>
+                    <select id="hPlan">
+                        <option value="STARTER">Starter (₹999/mo)</option>
+                        <option value="STANDARD">Standard (₹1999/mo)</option>
+                        <option value="PRO">Pro (₹3999/mo)</option>
+                    </select>
+                </div>
+            </div>
+            <button class="btn btn-success" style="margin-top: 20px;" id="createBtn">
+                Create Hotel & Start Trial
+            </button>
+        </div>
+
+        <!-- Hotels List -->
+        <div class="card">
+            <div class="card-header">
+                <h3>🏨 Registered Hotels</h3>
+                <div class="toolbar" style="margin: 0;">
+                    <div class="search-box">
+                        <input type="text" id="searchInput" placeholder="Search hotels...">
+                    </div>
+                    <select id="filterStatus" style="width: auto;">
+                        <option value="">All Status</option>
+                        <option value="TRIAL">Trial</option>
+                        <option value="ACTIVE">Active</option>
+                        <option value="GRACE">Grace</option>
+                        <option value="EXPIRED">Expired</option>
+                        <option value="SUSPENDED">Suspended</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Hotel</th>
+                            <th>Plan</th>
+                            <th>Status</th>
+                            <th>Trial/Expiry</th>
+                            <th>Views</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="hotelsBody">
+                        <tr>
+                            <td colspan="6" class="empty-state">
+                                <div class="empty-state-icon">⏳</div>
+                                <p>Loading hotels...</p>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="pagination" id="pagination"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Modal -->
+<div class="modal-overlay" id="editModal">
+    <div class="modal">
+        <div class="modal-header">
+            <h3>Update Hotel Status</h3>
+            <button class="close-btn" id="closeModalBtn">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="form-group" style="margin-bottom: 16px;">
+                <label>Hotel</label>
+                <input type="text" id="editHotelName" readonly style="background: var(--bg-tertiary);">
+            </div>
+            <div class="form-group" style="margin-bottom: 16px;">
+                <label>New Status *</label>
+                <select id="editStatus">
+                    <option value="TRIAL">Trial</option>
+                    <option value="ACTIVE">Active</option>
+                    <option value="GRACE">Grace Period</option>
+                    <option value="EXPIRED">Expired</option>
+                    <option value="SUSPENDED">Suspended</option>
+                </select>
+            </div>
+            <div class="form-group" id="paidUntilGroup" style="margin-bottom: 16px;">
+                <label>Paid Until (for Active/Grace)</label>
+                <input type="date" id="editPaidUntil">
+            </div>
+            <div class="form-group">
+                <label>Note (optional)</label>
+                <textarea id="editNote" rows="3" placeholder="Payment reference or notes..."></textarea>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" id="cancelEditBtn">Cancel</button>
+            <button class="btn btn-success" id="saveStatusBtn">Save Changes</button>
+        </div>
+    </div>
+</div>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<script src="superadmin.js"></script>
+</body>
+</html>

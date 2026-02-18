@@ -1,11 +1,39 @@
 ecommerceweb.shop {
-
-    reverse_proxy api:3000
+    reverse_proxy api:3000 {
+        header_up Host {host}
+        header_up X-Real-IP {remote}
+        header_up X-Forwarded-For {remote}
+        header_up X-Forwarded-Proto {scheme}
+        header_down -Content-Security-Policy
+    }
 
     encode gzip
 
+    # No-cache for admin pages (security-sensitive)
+    header /superadmin.html Cache-Control "no-cache, no-store, must-revalidate"
+    header /admin.html Cache-Control "no-cache, no-store, must-revalidate"
+    header /superadmin.js Cache-Control "no-cache, no-store, must-revalidate"
+    header /admin.js Cache-Control "no-cache, no-store, must-revalidate"
+    header /menu.html Cache-Control "no-cache, must-revalidate"
+    header /menu.js Cache-Control "no-cache, must-revalidate"
+
+    # Security headers - STRICT for production
     header {
+        Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data: https: *.r2.dev; font-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests;"
+        
         X-Content-Type-Options "nosniff"
         X-Frame-Options "DENY"
+        X-XSS-Protection "1; mode=block"
+        Referrer-Policy "strict-origin-when-cross-origin"
+        Permissions-Policy "accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=()"
+        
+        # HTTPS enforcement
+        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+        -Server
+    }
+
+    # Automatic HTTPS (Caddy gets Let's Encrypt certificate)
+    tls {
+        # Caddy handles this automatically
     }
 }
