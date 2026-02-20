@@ -16,9 +16,18 @@ model Hotel {
   name          String
   city          String
   phone         String
+  email         String?
+
+  consentedAt      DateTime?
+  consentVersion   String?
 
   pinHash       String
   pinChangedAt  DateTime @default(now())
+
+  // PIN reset tracking fields (NEW)
+  pinResetCount   Int      @default(0)
+  lastPinResetAt  DateTime?
+  lastPinResetBy  String?
 
   plan          PlanType    @default(STARTER)
   status        HotelStatus @default(TRIAL)
