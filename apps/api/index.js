@@ -1,5 +1,6 @@
 const path = require("path");
 const { appendFile, mkdir } = require('fs/promises');
+const crypto = require('crypto');
 
 async function logError(err) {
   try {
@@ -26,14 +27,14 @@ const REQUIRED_ENV = [
   "COOKIE_SECRET"
 ];
 
-for(const key of REQUIRED_ENV){
-  if(!process.env[key]){
+for (const key of REQUIRED_ENV) {
+  if (!process.env[key]) {
     console.error(`Missing required env variable: ${key}`);
     process.exit(1);
   }
 }
 
-const fastify = require('fastify')({ 
+const fastify = require('fastify')({
   trustProxy: true,
   genReqId: () => `req-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
   logger: {
@@ -51,8 +52,7 @@ const jwt = require('jsonwebtoken');
 const { z } = require('zod');
 const { S3Client, PutObjectCommand, DeleteObjectCommand } = require('@aws-sdk/client-s3');
 
-// ==================== CONFIGURATION ====================
-
+//==================== CONFIGURATION ====================
 const BUCKET_NAME = process.env.R2_BUCKET_NAME;
 const PUBLIC_URL = process.env.R2_PUBLIC_URL;
 const APP_URL = process.env.APP_URL ?? `http://localhost:${process.env.PORT || 3000}`;
@@ -65,22 +65,28 @@ const COOKIE_CONFIG = {
   maxAge: 86400000,
   path: '/'
 };
+
 if (isProduction && process.env.COOKIE_DOMAIN) {
   COOKIE_CONFIG.domain = process.env.COOKIE_DOMAIN;
 }
 
-// ==================== RATE LIMIT CONFIGURATION ====================
-
+//==================== RATE LIMIT CONFIGURATION ====================
 const strictRateLimit = {
   max: parseInt(process.env.ADMIN_RATE_LIMIT_MAX) || 5,
   timeWindow: parseInt(process.env.ADMIN_RATE_LIMIT_WINDOW) || 900000,
   keyGenerator: (req) => req.ip
 };
 
-// ==================== PRISMA WITH RETRY LOGIC ====================
+// [6-DIGIT PIN CHANGE] NEW: Strict rate limit for PIN reset (3 attempts per 15min per hotel)
+const pinResetRateLimit = {
+  max: 3,
+  timeWindow: 900000, // 15 minutes
+  keyGenerator: (req) => `${req.ip}:${req.params.id}`
+};
 
+//==================== PRISMA WITH RETRY LOGIC ====================
 const prisma = new PrismaClient({
-  log: isProduction ? ['error'] : ['query','info','warn','error'],
+  log: isProduction ? ['error'] : ['query', 'info', 'warn', 'error'],
   datasources: {
     db: {
       url: process.env.DATABASE_URL
@@ -102,8 +108,7 @@ async function connectWithRetry(retries = 5, delay = 2000) {
   }
 }
 
-// ==================== R2 CLIENT ====================
-
+//==================== R2 CLIENT ====================
 const r2Client = new S3Client({
   region: 'auto',
   endpoint: `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
@@ -111,16 +116,14 @@ const r2Client = new S3Client({
     accessKeyId: process.env.R2_ACCESS_KEY_ID,
     secretAccessKey: process.env.R2_SECRET_ACCESS_KEY,
   },
-  maxAttempts: 3, 
+  maxAttempts: 3,
 });
 
-// ==================== HELPERS ====================
-
+//==================== HELPERS ====================
 async function uploadToR2(buffer, mimetype, hotelId) {
-  const ext = mimetype === 'image/png' ? '.png' : 
-               mimetype === 'image/webp' ? '.webp' : '.jpg';
-  const key = `hotels/${hotelId}/${Date.now()}-${require("crypto").randomUUID()}${ext}`;
-  
+  const ext = mimetype === 'image/png' ? '.png' :
+    mimetype === 'image/webp' ? '.webp' : '.jpg';
+  const key = `hotels/${hotelId}/${Date.now()}-${crypto.randomBytes(8).toString('hex')}${ext}`;
   const command = new PutObjectCommand({
     Bucket: BUCKET_NAME,
     Key: key,
@@ -128,7 +131,6 @@ async function uploadToR2(buffer, mimetype, hotelId) {
     ContentType: mimetype,
     CacheControl: 'public, max-age=31536000, immutable',
   });
-
   await r2Client.send(command);
   return `${PUBLIC_URL}/${key}`;
 }
@@ -136,7 +138,6 @@ async function uploadToR2(buffer, mimetype, hotelId) {
 async function deleteFromR2(imageUrl) {
   if (!imageUrl || !imageUrl.includes(PUBLIC_URL)) return;
   const key = imageUrl.replace(`${PUBLIC_URL}/`, '');
-  
   const command = new DeleteObjectCommand({
     Bucket: BUCKET_NAME,
     Key: key,
@@ -144,12 +145,11 @@ async function deleteFromR2(imageUrl) {
   await r2Client.send(command);
 }
 
-// ==================== SECURITY PLUGINS ====================
-
+//==================== SECURITY PLUGINS ====================
 async function registerSecurityPlugins() {
-  const allowedOrigins = process.env.CORS_ORIGINS 
+  const allowedOrigins = process.env.CORS_ORIGINS
     ? process.env.CORS_ORIGINS.split(',').map(url => url.trim())
-    : [process.env.APP_URL];
+    : [APP_URL];
 
   await fastify.register(require('@fastify/cors'), {
     origin: isProduction ? allowedOrigins : true,
@@ -160,23 +160,23 @@ async function registerSecurityPlugins() {
 
   await fastify.register(require('@fastify/helmet'), {
     contentSecurityPolicy: {
-        directives: {
-            defaultSrc: ["'self'"],
-            styleSrc: ["'self'", "'unsafe-inline'"],
-            scriptSrc: ["'self'"],
-            imgSrc: ["'self'", 'data:', 'https:', 'blob:'],
-            connectSrc: ["'self'"],
-            fontSrc: ["'self'"],
-            objectSrc: ["'none'"],
-            mediaSrc: ["'self'"],
-            frameSrc: ["'none'"],
-            upgradeInsecureRequests: [],
-        },
+      directives: {
+        defaultSrc: ["'self'"],
+        styleSrc: ["'self'", "'unsafe-inline'"],
+        scriptSrc: ["'self'"],
+        imgSrc: ["'self'", 'data:', 'https:', 'blob:'],
+        connectSrc: ["'self'"],
+        fontSrc: ["'self'"],
+        objectSrc: ["'none'"],
+        mediaSrc: ["'self'"],
+        frameSrc: ["'none'"],
+        upgradeInsecureRequests: [],
+      },
     },
     hsts: isProduction ? {
-        maxAge: 31536000,
-        includeSubDomains: true,
-        preload: true
+      maxAge: 31536000,
+      includeSubDomains: true,
+      preload: true
     } : false,
     referrerPolicy: { policy: 'strict-origin-when-cross-origin' }
   });
@@ -184,9 +184,7 @@ async function registerSecurityPlugins() {
   await fastify.register(require('@fastify/rate-limit'), {
     max: parseInt(process.env.RATE_LIMIT_MAX) || 1000,
     timeWindow: parseInt(process.env.RATE_LIMIT_WINDOW) || 60000,
-
     keyGenerator: (req) => req.ip,
-
     errorResponseBuilder: (req, context) => ({
       statusCode: 429,
       error: 'Too Many Requests',
@@ -195,20 +193,18 @@ async function registerSecurityPlugins() {
     })
   });
 
-
   await fastify.register(require('@fastify/cookie'), {
     secret: process.env.COOKIE_SECRET || process.env.JWT_SECRET,
     parseOptions: COOKIE_CONFIG
   });
 }
 
-// ==================== MULTIPART & STATIC ====================
-
+//==================== MULTIPART & STATIC ====================
 async function registerContentPlugins() {
   await fastify.register(require('@fastify/multipart'), {
     attachFieldsToBody: true,
-    limits: { 
-      fileSize: 2 * 1024 * 1024, 
+    limits: {
+      fileSize: 2 * 1024 * 1024,
       files: 1,
       fields: 10
     }
@@ -221,71 +217,61 @@ async function registerContentPlugins() {
   });
 }
 
-// ==================== AUTH MIDDLEWARE ====================
-
+//==================== AUTH MIDDLEWARE ====================
 async function authenticate(request, reply) {
   try {
     const token = request.headers.authorization?.replace('Bearer ', '');
     if (!token) throw new Error('No token');
-    
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     if (decoded.type !== 'hotel_owner') throw new Error('Invalid token type');
     request.hotelId = decoded.hotelId;
     request.tenantId = decoded.tenantId;
-    
+
     const hotel = await prisma.hotel.findUnique({
       where: { id: decoded.hotelId },
       select: { status: true }
     });
-    
+
     if (hotel?.status === 'SUSPENDED') {
       return reply.code(403).send({ error: 'Account suspended' });
     }
   } catch (err) {
-    return reply.code(401).send({error: 'Unauthorized'})
+    return reply.code(401).send({ error: 'Unauthorized' });
   }
 }
 
 // Hash the admin key for secure cookie comparison
-const crypto = require('crypto');
 function hashAdminKey(key) {
   return crypto.createHmac('sha256', process.env.COOKIE_SECRET).update(key).digest('hex');
 }
 
-async function authenticateSuperAdmin(request, reply){
+async function authenticateSuperAdmin(request, reply) {
   const cookieToken = request.cookies?.superadmin_token;
-  
-  // Verify the hashed token from cookie
   if (!cookieToken || !process.env.ADMIN_KEY) {
-    return reply.code(403).send({error: 'Forbidden'});
+    return reply.code(403).send({ error: 'Forbidden' });
   }
 
   const expectedToken = hashAdminKey(process.env.ADMIN_KEY);
-  
-  // Timing-safe comparison to prevent timing attacks
   try {
     const a = Buffer.from(cookieToken, 'hex');
     const b = Buffer.from(expectedToken, 'hex');
     if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) {
-      return reply.code(403).send({error: 'Forbidden'});
+      return reply.code(403).send({ error: 'Forbidden' });
     }
   } catch {
-    return reply.code(403).send({error: 'Forbidden'});
+    return reply.code(403).send({ error: 'Forbidden' });
   }
 
-  // CSRF protection: verify custom header (fetch APIs can set this, forms cannot)
   const xRequested = request.headers['x-requested-with'];
   if (!xRequested || xRequested !== 'XMLHttpRequest') {
     return reply.code(403).send({ error: 'CSRF check failed' });
   }
-
   request.isSuperAdmin = true;
 }
 
-// ==================== ROUTES ====================
-
+//==================== ROUTES ====================
 function registerRoutes() {
-  // Health - Exempt from rate limiting so Docker doesn't kill the container
+  // Health - Exempt from rate limiting
   fastify.get('/health', { config: { rateLimit: false } }, async () => {
     let dbStatus = 'unknown';
     try {
@@ -294,10 +280,9 @@ function registerRoutes() {
     } catch (e) {
       dbStatus = 'disconnected';
     }
-    
-    return { 
-      status: dbStatus === 'connected' ? 'ok' : 'degraded', 
-      time: new Date().toISOString(), 
+    return {
+      status: dbStatus === 'connected' ? 'ok' : 'degraded',
+      time: new Date().toISOString(),
       database: dbStatus,
       version: process.env.npm_package_version || '1.0.0'
     };
@@ -307,18 +292,16 @@ function registerRoutes() {
   fastify.get('/api/menu/:slug', {
     config: {
       rateLimit: {
-        max: 500, // High limit to allow for shared Restaurant WiFi
+        max: 500,
         timeWindow: '1 minute'
       }
     }
   }, async (request, reply) => {
-      // ... rest of the menu logic
     const { slug } = request.params;
-    
     if (!/^[a-z0-9-]+$/.test(slug)) {
       return reply.code(400).send({ error: 'Invalid slug format' });
     }
-    
+
     const hotel = await prisma.hotel.findUnique({
       where: { slug },
       include: {
@@ -337,69 +320,68 @@ function registerRoutes() {
         }
       }
     });
-    
+
     if (!hotel || hotel.status === 'SUSPENDED') {
       return reply.code(404).send({ error: 'Menu not found' });
     }
-    
+
     prisma.hotel.update({
       where: { id: hotel.id },
       data: { views: { increment: 1 }, lastViewAt: new Date() }
-    }).catch(() => {});
-    
+    }).catch(() => { });
+
     return {
-      name: hotel.name, 
-      city: hotel.city, 
-      theme: hotel.theme, 
+      name: hotel.name,
+      city: hotel.city,
+      theme: hotel.theme,
       categories: hotel.categories
     };
   });
 
-  // Hotel Owner Login
+  // [6-DIGIT PIN CHANGE] UPDATED: Hotel Owner Login - 6 digit PIN validation
   fastify.post('/auth/login', {
     config: { rateLimit: strictRateLimit }
   }, async (request, reply) => {
     const schema = z.object({
       slug: z.string().min(1).max(100),
-      pin: z.string().length(4)
+      //pin: z.string().length(6).regex(/^\d{6}$/) // [6-DIGIT PIN CHANGE] CHANGED: 4 -> 6 digits
+      pin: z.string().min(4).max(6).regex(/^\d{4,6}$/)
     });
-    
+
     const { slug, pin } = schema.parse(request.body);
     const normalizedSlug = slug.toLowerCase().trim();
-    
-    const hotel = await prisma.hotel.findUnique({ 
+
+    const hotel = await prisma.hotel.findUnique({
       where: { slug: normalizedSlug },
       select: { id: true, tenantId: true, slug: true, name: true, status: true, pinHash: true }
     });
-    
+
     if (!hotel) return reply.code(401).send({ error: 'Invalid credentials' });
-    
+
     if (hotel.status === 'SUSPENDED') return reply.code(403).send({ error: 'Account suspended' });
-    
+
     const valid = await bcrypt.compare(pin, hotel.pinHash);
     if (!valid) {
       fastify.log.warn(`Failed login attempt for hotel: ${normalizedSlug} from IP: ${request.ip}`);
       return reply.code(401).send({ error: 'Invalid credentials' });
     }
-    
+
     const token = jwt.sign(
       { hotelId: hotel.id, tenantId: hotel.tenantId, slug: hotel.slug, type: 'hotel_owner' },
       process.env.JWT_SECRET,
       { expiresIn: '24h' }
     );
-    
+
     return {
-      token, 
+      token,
       hotel: { id: hotel.id, name: hotel.name, slug: hotel.slug, status: hotel.status }
     };
   });
 
-  // ==================== PROTECTED HOTEL OWNER ROUTES ====================
-  
-  fastify.register(async function(app) {
-    // CORRECTED: Use authenticate (JWT), NOT authenticateSuperAdmin
+  //==================== PROTECTED HOTEL OWNER ROUTES ====================
+  fastify.register(async function (app) {
     app.addHook('preHandler', authenticate);
-    
+
     app.get('/me', async (request) => {
       return prisma.hotel.findUnique({
         where: { id: request.hotelId },
@@ -409,8 +391,8 @@ function registerRoutes() {
           trialEnds: true, paidUntil: true, createdAt: true, updatedAt: true,
           categories: {
             orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
-            include: { 
-              items: { orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }] } 
+            include: {
+              items: { orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }] }
             }
           }
         }
@@ -418,52 +400,60 @@ function registerRoutes() {
     });
 
     app.patch('/settings/theme', async (request, reply) => {
-      const schema = z.object({ 
-        theme: z.enum(['classic', 'warm', 'nature', 'elegant']) 
+      const schema = z.object({
+        theme: z.enum(['classic', 'warm', 'nature', 'elegant'])
       });
       const { theme } = schema.parse(request.body);
-      
+
       const updated = await prisma.hotel.update({
         where: { id: request.hotelId },
         data: { theme }
       });
-      
+
       await prisma.auditLog.create({
         data: {
-          hotelId: request.hotelId, actorType: 'owner', action: 'theme_changed',
-          entityType: 'Hotel', entityId: request.hotelId, newValue: { theme }
+          hotelId: request.hotelId,
+          actorType: 'owner',
+          action: 'theme_changed',
+          entityType: 'Hotel',
+          entityId: request.hotelId,
+          newValue: { theme }
         }
       });
-      
+
       return { success: true, theme: updated.theme };
     });
-    
+
     app.post('/categories', async (request, reply) => {
       const { name, sortOrder } = z.object({
-        name: z.string().min(1).max(100).trim(), 
+        name: z.string().min(1).max(100).trim(),
         sortOrder: z.number().default(0)
       }).parse(request.body);
-      
+
       const existing = await prisma.category.findFirst({
         where: { hotelId: request.hotelId, name: { equals: name, mode: 'insensitive' } }
       });
-      
+
       if (existing) return reply.code(409).send({ error: 'Category with this name already exists' });
-      
+
       const category = await prisma.category.create({
         data: { hotelId: request.hotelId, name, sortOrder }
       });
 
       await prisma.auditLog.create({
-        data: { 
-          hotelId: request.hotelId, actorType: 'owner', action: 'category_created', 
-          entityType: 'Category', entityId: category.id, newValue: { name } 
+        data: {
+          hotelId: request.hotelId,
+          actorType: 'owner',
+          action: 'category_created',
+          entityType: 'Category',
+          entityId: category.id,
+          newValue: { name }
         }
       });
 
       return category;
     });
-    
+
     app.post('/items', async (request, reply) => {
       let imageUrl = null;
       try {
@@ -481,7 +471,7 @@ function registerRoutes() {
             sortOrder: 0
           };
           imageFile = request.body.image;
-          
+
           if (!data.categoryId || !data.name || isNaN(data.price) || data.price <= 0) {
             return reply.code(400).send({ error: 'Missing required fields or invalid price' });
           }
@@ -501,17 +491,17 @@ function registerRoutes() {
         const category = await prisma.category.findFirst({
           where: { id: data.categoryId, hotelId: request.hotelId }
         });
-        
+
         if (!category) return reply.code(403).send({ error: 'Invalid category' });
 
         if (imageFile) {
           const fileData = Array.isArray(imageFile) ? imageFile[0] : imageFile;
           const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
-          
+
           if (!allowedTypes.includes(fileData.mimetype)) {
             return reply.code(400).send({ error: 'Invalid file type. Only JPG, PNG, WebP allowed.' });
           }
-          
+
           const buffer = await fileData.toBuffer();
           if (buffer.length > 2 * 1024 * 1024) {
             return reply.code(400).send({ error: 'File too large. Max 2MB.' });
@@ -527,140 +517,159 @@ function registerRoutes() {
         const item = await prisma.item.create({ data });
 
         await prisma.auditLog.create({
-          data: { 
-            hotelId: request.hotelId, actorType: 'owner', action: 'item_created', 
-            entityType: 'Item', entityId: item.id, newValue: data 
+          data: {
+            hotelId: request.hotelId,
+            actorType: 'owner',
+            action: 'item_created',
+            entityType: 'Item',
+            entityId: item.id,
+            newValue: data
           }
         });
 
         return item;
       } catch (err) {
-        // Clean up orphaned R2 image if DB write failed after upload
         if (imageUrl) {
-          await deleteFromR2(imageUrl).catch(() => {});
+          await deleteFromR2(imageUrl).catch(() => { });
         }
         request.log.error(err);
         if (err.name === 'ZodError') return reply.code(400).send({ error: "Validation failed", details: err.errors });
         return reply.code(500).send({ error: "Something went wrong" });
       }
     });
-    
+
     app.post('/items/:id/image', async (request, reply) => {
       const { id } = request.params;
-      
       if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
         return reply.code(400).send({ error: 'Invalid item ID format' });
       }
-      
+
       const item = await prisma.item.findFirst({
         where: { id, category: { hotelId: request.hotelId } }
       });
-      
+
       if (!item) return reply.code(404).send({ error: 'Item not found' });
-      
+
       try {
         const fileData = request.body.image;
         if (!fileData) return reply.code(400).send({ error: 'No file uploaded' });
 
         const file = Array.isArray(fileData) ? fileData[0] : fileData;
         const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
-        
+
         if (!allowedTypes.includes(file.mimetype)) {
           return reply.code(400).send({ error: 'Invalid file type. Only JPG, PNG, WebP allowed.' });
         }
-        
+
         const buffer = await file.toBuffer();
         if (buffer.length > 2 * 1024 * 1024) return reply.code(400).send({ error: 'File too large. Max 2MB.' });
 
         const isValidImage = validateImageBuffer(buffer, file.mimetype);
         if (!isValidImage) return reply.code(400).send({ error: 'Invalid image file' });
-        
-        if (item.imageUrl) await deleteFromR2(item.imageUrl).catch(() => {});
-        
+
+        if (item.imageUrl) await deleteFromR2(item.imageUrl).catch(() => { });
+
         const imageUrl = await uploadToR2(buffer, file.mimetype, request.hotelId);
         const updated = await prisma.item.update({ where: { id }, data: { imageUrl } });
 
         await prisma.auditLog.create({
-          data: { 
-            hotelId: request.hotelId, actorType: 'owner', action: 'item_image_uploaded', 
-            entityType: 'Item', entityId: id, newValue: { imageUrl } 
+          data: {
+            hotelId: request.hotelId,
+            actorType: 'owner',
+            action: 'item_image_uploaded',
+            entityType: 'Item',
+            entityId: id,
+            newValue: { imageUrl }
           }
         });
-        
+
         return { success: true, imageUrl, item: updated };
       } catch (err) {
         request.log.error(err);
         return reply.code(400).send({ error: "Image upload failed" });
       }
     });
-    
+
     app.delete('/items/:id', async (request, reply) => {
       const { id } = request.params;
-      
       if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
         return reply.code(400).send({ error: 'Invalid item ID format' });
       }
-      
+
       const item = await prisma.item.findFirst({
         where: { id, category: { hotelId: request.hotelId } }
       });
+
       if (!item) return reply.code(404).send({ error: 'Item not found' });
-      
+
       const updated = await prisma.item.update({ where: { id }, data: { isAvailable: false } });
 
       await prisma.auditLog.create({
-        data: { 
-          hotelId: request.hotelId, actorType: 'owner', action: 'item_soft_deleted', 
-          entityType: 'Item', entityId: id, oldValue: item, newValue: { isAvailable: false } 
+        data: {
+          hotelId: request.hotelId,
+          actorType: 'owner',
+          action: 'item_soft_deleted',
+          entityType: 'Item',
+          entityId: id,
+          oldValue: item,
+          newValue: { isAvailable: false }
         }
       });
+
       return { success: true, message: 'Item removed from menu', item: updated };
     });
 
     app.patch('/items/:id/restore', async (request, reply) => {
       const { id } = request.params;
-      
       if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
         return reply.code(400).send({ error: 'Invalid item ID format' });
       }
-      
+
       const item = await prisma.item.findFirst({
         where: { id, category: { hotelId: request.hotelId } }
       });
+
       if (!item) return reply.code(404).send({ error: 'Item not found' });
-      
+
       const updated = await prisma.item.update({ where: { id }, data: { isAvailable: true } });
 
       await prisma.auditLog.create({
-        data: { 
-          hotelId: request.hotelId, actorType: 'owner', action: 'item_restored', 
-          entityType: 'Item', entityId: id, newValue: { isAvailable: true } 
+        data: {
+          hotelId: request.hotelId,
+          actorType: 'owner',
+          action: 'item_restored',
+          entityType: 'Item',
+          entityId: id,
+          newValue: { isAvailable: true }
         }
       });
+
       return { success: true, message: 'Item restored', item: updated };
     });
 
     app.delete('/items/:id/permanent', async (request, reply) => {
       const { id } = request.params;
-      
       if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
         return reply.code(400).send({ error: 'Invalid item ID format' });
       }
-      
+
       const item = await prisma.item.findFirst({
         where: { id, category: { hotelId: request.hotelId } }
       });
-      
+
       if (!item) return reply.code(404).send({ error: 'Item not found' });
-      
-      if (item.imageUrl) await deleteFromR2(item.imageUrl).catch(() => {});
-      
+
+      if (item.imageUrl) await deleteFromR2(item.imageUrl).catch(() => { });
       await prisma.item.delete({ where: { id } });
 
       await prisma.auditLog.create({
-        data: { 
-          hotelId: request.hotelId, actorType: 'owner', action: 'item_deleted_permanent', 
-          entityType: 'Item', entityId: id, oldValue: item 
+        data: {
+          hotelId: request.hotelId,
+          actorType: 'owner',
+          action: 'item_deleted_permanent',
+          entityType: 'Item',
+          entityId: id,
+          oldValue: item
         }
       });
 
@@ -669,11 +678,10 @@ function registerRoutes() {
 
     app.patch('/items/:id', async (request, reply) => {
       const { id } = request.params;
-      
       if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
         return reply.code(400).send({ error: 'Invalid item ID format' });
       }
-      
+
       const schema = z.object({
         name: z.string().min(1).max(200).trim().optional(),
         description: z.string().max(500).optional(),
@@ -683,55 +691,57 @@ function registerRoutes() {
         isPopular: z.boolean().optional(),
         sortOrder: z.number().optional()
       });
-      
+
       const data = schema.parse(request.body);
       const item = await prisma.item.findFirst({
         where: { id, category: { hotelId: request.hotelId } }
       });
-      
+
       if (!item) return reply.code(404).send({ error: 'Item not found' });
-      
+
       const updated = await prisma.item.update({ where: { id }, data });
 
       await prisma.auditLog.create({
-        data: { 
-          hotelId: request.hotelId, actorType: 'owner', action: 'item_updated', 
-          entityType: 'Item', entityId: id, oldValue: item, newValue: updated 
+        data: {
+          hotelId: request.hotelId,
+          actorType: 'owner',
+          action: 'item_updated',
+          entityType: 'Item',
+          entityId: id,
+          oldValue: item,
+          newValue: updated
         }
       });
+
       return updated;
     });
   });
 
-  // ==================== SUPERADMIN ROUTES ====================
-  
+  //==================== SUPERADMIN ROUTES ====================
+
   // Public Admin Login Route
-  fastify.register(async function(app) {
+  fastify.register(async function (app) {
     app.post('/auth/admin/login', {
       config: { rateLimit: strictRateLimit }
     }, async (request, reply) => {
       const { adminKey } = z.object({ adminKey: z.string().min(1) }).parse(request.body);
-      
+
       if (!process.env.ADMIN_KEY || adminKey !== process.env.ADMIN_KEY) {
-        // Constant-time delay to prevent timing attacks
         await new Promise(r => setTimeout(r, 500 + Math.random() * 500));
         return reply.code(403).send({ error: 'Invalid admin key' });
       }
-      
-      // Store a hashed token in the cookie, NOT the raw admin key
+
       const token = hashAdminKey(adminKey);
       reply.setCookie('superadmin_token', token, COOKIE_CONFIG);
-      
+
       return { success: true, message: 'Authenticated' };
     });
   });
 
   // Protected Superadmin Routes
-  fastify.register(async function(app) {
+  fastify.register(async function (app) {
     app.addHook('preHandler', authenticateSuperAdmin);
-    
-    // REMOVED DUPLICATE /auth/admin/logout - only defined here now
-    
+
     app.post('/auth/admin/logout', async (request, reply) => {
       reply.clearCookie('superadmin_token', COOKIE_CONFIG);
       return { success: true, message: 'Logged out' };
@@ -741,38 +751,48 @@ function registerRoutes() {
       const expiresAt = new Date(Date.now() + 86400000).toISOString();
       return { authenticated: true, session: { expiresAt } };
     });
-    
+
+    // [6-DIGIT PIN CHANGE] UPDATED: 6-digit PIN validation in hotel creation
     app.post('/admin/hotels', async (request, reply) => {
       const schema = z.object({
         name: z.string().min(1).max(200).trim(),
         city: z.string().min(1).max(100).trim(),
         phone: z.string().min(10).max(15).trim(),
+        email: z.string().email().max(200).trim().optional(),
         slug: z.string().min(1).max(100).regex(/^[a-z0-9-]+$/),
-        pin: z.string().length(4).regex(/^\d{4}$/),
+        pin: z.string().length(6).regex(/^\d{6}$/), // [6-DIGIT PIN CHANGE] CHANGED: 4 -> 6 digits
         plan: z.enum(['STARTER', 'STANDARD', 'PRO']).default('STARTER')
       });
-      
-      const { name, city, phone, slug, pin, plan } = schema.parse(request.body);
-      
+
+      const { name, city, phone, email, slug, pin, plan } = schema.parse(request.body);
       const existing = await prisma.hotel.findUnique({ where: { slug } });
       if (existing) return reply.code(409).send({ error: 'Slug already taken' });
-      
+
       const pinHash = await bcrypt.hash(pin, 10);
-      
+
       const hotel = await prisma.hotel.create({
         data: {
           name, city, phone, slug, pinHash, plan,
+          email: email || null,
+          consentedAt: new Date(),
+          consentVersion: '1.0',
           status: 'TRIAL',
-          trialEnds: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+          trialEnds: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+          pinResetCount: 0 // [6-DIGIT PIN CHANGE] Initialize counter
         }
       });
-      
+
       return {
-        id: hotel.id, slug: hotel.slug, pin: pin, trialEnds: hotel.trialEnds,
-        menuUrl: `${APP_URL}/menu.html?h=${hotel.slug}`, adminUrl: `${APP_URL}/admin.html`
+        id: hotel.id,
+        slug: hotel.slug,
+        pin: pin, // Return plain PIN once
+        trialEnds: hotel.trialEnds,
+        menuUrl: `${APP_URL}/menu.html?h=${hotel.slug}`,
+        adminUrl: `${APP_URL}/admin.html`
       };
     });
-    
+
+    // [6-DIGIT PIN CHANGE] UPDATED: Include pinResetCount in select
     app.get('/admin/hotels', async (request, reply) => {
       const { status, search, page = 1, limit = 50 } = z.object({
         status: z.enum(['TRIAL', 'ACTIVE', 'GRACE', 'EXPIRED', 'SUSPENDED']).optional(),
@@ -797,7 +817,9 @@ function registerRoutes() {
           select: {
             id: true, name: true, slug: true, city: true, phone: true,
             status: true, plan: true, trialEnds: true, paidUntil: true,
-            views: true, createdAt: true, theme: true
+            views: true, createdAt: true, theme: true,
+            pinResetCount: true, // [6-DIGIT PIN CHANGE] ADDED: Include reset count
+            lastPinResetAt: true  // [6-DIGIT PIN CHANGE] ADDED: Include last reset
           },
           orderBy: { createdAt: 'desc' },
           skip: (page - 1) * limit,
@@ -811,25 +833,40 @@ function registerRoutes() {
 
     app.patch('/admin/hotels/:id/status', async (request, reply) => {
       const { id } = request.params;
-      
       if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
         return reply.code(400).send({ error: 'Invalid hotel ID format' });
       }
-      
+
       const schema = z.object({
         status: z.enum(['TRIAL', 'ACTIVE', 'GRACE', 'EXPIRED', 'SUSPENDED']),
         paidUntil: z.string().datetime().optional().nullable(),
         note: z.string().max(500).optional()
       });
-      
+
       const { status, paidUntil, note } = schema.parse(request.body);
       
+      // Build update data
       const updateData = { status };
       if (paidUntil !== undefined) updateData.paidUntil = paidUntil ? new Date(paidUntil) : null;
       if (note) updateData.lastPaymentNote = note;
-      
-      const updated = await prisma.hotel.update({
+
+      // Check existence first to get old values for audit
+      const existing = await prisma.hotel.findUnique({ 
         where: { id },
+        select: {
+          status: true,
+          paidUntil: true,
+          lastPaymentNote: true
+        }
+      });
+      
+      if (!existing) {
+        return reply.code(404).send({ error: 'Hotel not found' });
+      }
+
+      // Perform update
+      const updated = await prisma.hotel.update({ 
+        where: { id }, 
         data: updateData,
         select: {
           id: true, name: true, slug: true, city: true, phone: true,
@@ -839,79 +876,204 @@ function registerRoutes() {
           createdAt: true, updatedAt: true
         }
       });
-      
+
+      // Create audit log entry
+      await prisma.auditLog.create({
+        data: {
+          hotelId: id,
+          actorType: 'admin',
+          action: 'status_changed',
+          entityType: 'Hotel',
+          entityId: id,
+          oldValue: { 
+            status: existing.status, 
+            paidUntil: existing.paidUntil,
+            lastPaymentNote: existing.lastPaymentNote 
+          },
+          newValue: { status, paidUntil, note }
+        }
+      });
+
       fastify.log.info(`Hotel ${id} status changed to ${status} by admin`);
       return updated;
     });
-    
+
+    // [6-DIGIT PIN CHANGE] UPDATED: Include PIN reset fields in detail view
     app.get('/admin/hotels/:id', async (request, reply) => {
       const { id } = request.params;
       if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
         return reply.code(400).send({ error: 'Invalid hotel ID format' });
       }
-      
+
       const hotel = await prisma.hotel.findUnique({
         where: { id },
         select: {
           id: true, name: true, slug: true, city: true, phone: true,
           plan: true, status: true, theme: true, views: true,
           trialEnds: true, paidUntil: true, createdAt: true, updatedAt: true,
-          paymentMode: true, lastPaymentDate: true, lastPaymentAmount: true, lastPaymentNote: true,
+          paymentMode: true, lastPaymentDate: true, lastPaymentAmount: true,
+          pinResetCount: true, lastPinResetAt: true, lastPinResetBy: true, // [6-DIGIT PIN CHANGE] ADDED
           categories: {
             include: { items: true }
           },
           auditLogs: { orderBy: { createdAt: 'desc' }, take: 50 }
         }
       });
-      
+
       if (!hotel) return reply.code(404).send({ error: 'Hotel not found' });
       return hotel;
+    });
+
+    // [6-DIGIT PIN CHANGE] NEW ENDPOINT: POST /admin/hotels/:id/reset-pin
+    // Strict rate limiting: 3 attempts per 15 minutes per hotel
+    app.post('/admin/hotels/:id/reset-pin', {
+      config: { rateLimit: pinResetRateLimit }
+    }, async (request, reply) => {
+      const { id } = request.params;
+      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
+        return reply.code(400).send({ error: 'Invalid hotel ID format' });
+      }
+
+      // Fetch current hotel data for audit log
+      const hotel = await prisma.hotel.findUnique({
+        where: { id },
+        select: {
+          id: true,
+          name: true,
+          pinResetCount: true,
+          lastPinResetAt: true
+        }
+      });
+
+      if (!hotel) return reply.code(404).send({ error: 'Hotel not found' });
+
+      // Generate secure 6-digit PIN using crypto
+      const plainPin = crypto.randomInt(100000, 1000000).toString();
+      const pinHash = await bcrypt.hash(plainPin, 10);
+      const now = new Date();
+
+      // Update hotel with new PIN and tracking fields
+      const updated = await prisma.hotel.update({
+        where: { id },
+        data: {
+          pinHash,
+          pinChangedAt: now,
+          pinResetCount: { increment: 1 },
+          lastPinResetAt: now,
+          lastPinResetBy: 'super_admin'
+        }
+      });
+
+      // Create audit log entry (security: don't store old/new PIN hashes)
+      await prisma.auditLog.create({
+        data: {
+          hotelId: id,
+          actorType: 'admin',
+          action: 'pin_reset',
+          entityType: 'Hotel',
+          entityId: id,
+          oldValue: { lastPinResetAt: hotel.lastPinResetAt }, // Only timestamp, no hash
+          newValue: {
+            pinResetCount: hotel.pinResetCount + 1,
+            lastPinResetBy: 'super_admin'
+          }
+        }
+      });
+
+      fastify.log.info(`PIN reset for hotel ${id} (${hotel.name}) by super admin`);
+
+      // Return plain PIN once - display in toast, then gone forever
+      return {
+        success: true,
+        pin: plainPin,
+        message: 'PIN reset successful. Share this PIN with the hotel owner securely.',
+        hotel: {
+          id: updated.id,
+          name: updated.name,
+          pinResetCount: updated.pinResetCount,
+          lastPinResetAt: updated.lastPinResetAt
+        }
+      };
+    });
+
+    // [6-DIGIT PIN CHANGE] NEW ENDPOINT: GET /admin/hotels/:id/pin-reset-count
+    app.get('/admin/hotels/:id/pin-reset-count', async (request, reply) => {
+      const { id } = request.params;
+      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
+        return reply.code(400).send({ error: 'Invalid hotel ID format' });
+      }
+
+      const hotel = await prisma.hotel.findUnique({
+        where: { id },
+        select: {
+          pinResetCount: true,
+          lastPinResetAt: true,
+          lastPinResetBy: true
+        }
+      });
+
+      if (!hotel) return reply.code(404).send({ error: 'Hotel not found' });
+
+      return {
+        pinResetCount: hotel.pinResetCount,
+        lastPinResetAt: hotel.lastPinResetAt,
+        lastPinResetBy: hotel.lastPinResetBy
+      };
     });
   });
 }
 
-// ==================== IMAGE VALIDATION ====================
-
+//==================== IMAGE VALIDATION ====================
 function validateImageBuffer(buffer, mimetype) {
   const signatures = {
     'image/jpeg': [0xFF, 0xD8, 0xFF],
     'image/png': [0x89, 0x50, 0x4E, 0x47],
     'image/webp': [0x52, 0x49, 0x46, 0x46]
   };
-  
+
   const sig = signatures[mimetype];
   if (!sig) return false;
   return sig.every((byte, i) => buffer[i] === byte);
 }
 
-// ==================== ERROR HANDLING ====================
-
+//==================== ERROR HANDLING ====================
 function registerErrorHandlers() {
   fastify.setErrorHandler(async (error, request, reply) => {
     fastify.log.error(error);
     await logError(error);
-    
+
     if (error.statusCode === 429) {
-      return reply.status(429).send({ error: 'Too many requests', retryAfter: error.after });
+      return reply.status(429).send({
+        error: 'Too many requests',
+        retryAfter: error.after,
+        message: `Rate limit exceeded. Retry after ${error.after}`
+      });
     }
-    
+
     if (error.name === 'ZodError') {
       return reply.status(400).send({
         error: 'Validation failed',
         details: error.errors.map(e => `${e.path.join('.')}: ${e.message}`)
       });
     }
-    
+
     if (error.code === 'P2002') {
-      return reply.status(409).send({ error: 'Duplicate entry', message: 'A record with this value already exists' });
+      return reply.status(409).send({
+        error: 'Duplicate entry',
+        message: 'A record with this value already exists'
+      });
     }
-    
+
     if (error.code?.startsWith('P')) {
-      return reply.status(500).send({ error: 'Database error', message: isProduction ? 'Internal server error' : error.message });
+      return reply.status(500).send({
+        error: 'Database error',
+        message: isProduction ? 'Internal server error' : error.message
+      });
     }
-    
+
     reply.status(error.statusCode || 500).send({
-      error: 'Internal server error', message: isProduction ? 'Something went wrong' : error.message
+      error: 'Internal server error',
+      message: isProduction ? 'Something went wrong' : error.message
     });
   });
 
@@ -920,33 +1082,27 @@ function registerErrorHandlers() {
   });
 }
 
-// ==================== LIFECYCLE ====================
-
+//==================== LIFECYCLE ====================
 fastify.addHook('onClose', async () => {
   await prisma.$disconnect();
   fastify.log.info('Server shutting down, database disconnected');
 });
 
-// ==================== STARTUP ====================
-
+//==================== STARTUP ====================
 async function start() {
   try {
     await connectWithRetry();
-    
     await registerSecurityPlugins();
-    await registerContentPlugins(); 
-    
-    await registerErrorHandlers();
-    
+    await registerContentPlugins();
+    registerErrorHandlers();
     registerRoutes();
-    
-    await fastify.listen({ 
-      port: parseInt(process.env.PORT) || 3000, 
-      host: '0.0.0.0' 
+
+    await fastify.listen({
+      port: parseInt(process.env.PORT) || 3000,
+      host: '0.0.0.0'
     });
-    
+
     fastify.log.info(`🚀 Server listening at ${APP_URL}`);
-    
   } catch (err) {
     fastify.log.error(err);
     process.exit(1);
@@ -960,7 +1116,7 @@ process.on('unhandledRejection', (reason, promise) => {
 
 start();
 
-// ==================== GRACEFUL SHUTDOWN ====================
+//==================== GRACEFUL SHUTDOWN ====================
 ['SIGINT', 'SIGTERM'].forEach((signal) => {
   process.on(signal, async () => {
     fastify.log.info(`Received ${signal}, starting graceful shutdown...`);

@@ -16,6 +16,8 @@ ecommerceweb.shop {
     header /admin.js Cache-Control "no-cache, no-store, must-revalidate"
     header /menu.html Cache-Control "no-cache, must-revalidate"
     header /menu.js Cache-Control "no-cache, must-revalidate"
+    header /privacy.html Cache-Control "public, max-age=86400"
+    header /terms.html Cache-Control "public, max-age=86400"
 
     # Security headers - STRICT for production
     header {
