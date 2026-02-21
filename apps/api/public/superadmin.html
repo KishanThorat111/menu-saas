@@ -2656,23 +2656,23 @@
             <div class="form-group">
               <label for="hPlan">Plan</label>
               <select id="hPlan">
-                <option value="STARTER">Starter (₹999)</option>
-                <option value="STANDARD">Standard (₹1,999)</option>
-                <option value="PRO">Pro (₹3,999)</option>
+                <option value="STARTER">Starter (₹299)</option>
+                <option value="STANDARD">Standard (₹499)</option>
+                <option value="PRO">Pro (₹999)</option>
               </select>
             </div>
           </div>
           <div class="form-group" style="max-width:400px;">
-            <label for="hPin">PIN * <span style="font-weight:400;color:var(--text-tertiary);">(6 digits)</span></label>
+            <label for="hPin">PIN * <span style="font-weight:400;color:var(--text-tertiary);">(8 digits)</span></label>
             <div class="pin-input-group">
               <input 
                 type="text" 
                 id="hPin" 
-                placeholder="384729" 
-                maxlength="6"
+                placeholder="38472916" 
+                maxlength="8"
                 style="font-family:var(--font-mono);letter-spacing:0.2em;font-weight:600;"
               >
-              <button id="autoGenPinBtn" class="btn btn-secondary btn-sm" type="button" title="Auto-generate 6-digit PIN">
+              <button id="autoGenPinBtn" class="btn btn-secondary btn-sm" type="button" title="Auto-generate 8-digit PIN">
                 🎲 Generate
               </button>
             </div>
@@ -2795,8 +2795,8 @@
         
         <div id="newPinDisplay" class="hidden">
           <div class="pin-display-box">
-            <div class="pin-display-label">New 6-Digit PIN</div>
-            <div id="newPinValue" class="pin-display-value">------</div>
+            <div class="pin-display-label">New 8-Digit PIN</div>
+            <div id="newPinValue" class="pin-display-value">--------</div>
           </div>
           <p style="text-align:center;color:var(--text-secondary);font-size:0.8125rem;font-weight:500;margin-top:0.75rem;">
             📋 Copy this PIN now. It will not be shown again.

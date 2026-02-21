@@ -84,6 +84,21 @@ const pinResetRateLimit = {
   keyGenerator: (req) => `${req.ip}:${req.params.id}`
 };
 
+// Per-slug rate limit for login: max 20 attempts per hour per slug (blocks parallel proxy attacks)
+const loginSlugRateLimit = {
+  max: 20,
+  timeWindow: 3600000, // 1 hour
+  keyGenerator: (req) => {
+    try {
+      const body = req.body;
+      const slug = (body?.slug || '').toLowerCase().trim();
+      return `login-slug:${slug}`;
+    } catch {
+      return `login-slug:${req.ip}`;
+    }
+  }
+};
+
 //==================== PRISMA WITH RETRY LOGIC ====================
 const prisma = new PrismaClient({
   log: isProduction ? ['error'] : ['query', 'info', 'warn', 'error'],
@@ -328,7 +343,9 @@ function registerRoutes() {
     prisma.hotel.update({
       where: { id: hotel.id },
       data: { views: { increment: 1 }, lastViewAt: new Date() }
-    }).catch(() => { });
+    }).catch((err) => { fastify.log.error(`View increment failed for hotel ${hotel.id}: ${err.message}`); });
+
+    reply.header('Cache-Control', 'public, max-age=60');
 
     return {
       name: hotel.name,
@@ -338,13 +355,13 @@ function registerRoutes() {
     };
   });
 
-  // [6-DIGIT PIN CHANGE] UPDATED: Hotel Owner Login - 6 digit PIN validation
+  // [8-DIGIT PIN] Hotel Owner Login - 8 digit PIN validation
   fastify.post('/auth/login', {
-    config: { rateLimit: strictRateLimit }
+    config: { rateLimit: loginSlugRateLimit }
   }, async (request, reply) => {
     const schema = z.object({
       slug: z.string().min(1).max(100),
-      pin: z.string().length(6).regex(/^\d{6}$/)
+      pin: z.string().length(8).regex(/^\d{8}$/)
     });
 
     const { slug, pin } = schema.parse(request.body);
@@ -759,7 +776,7 @@ function registerRoutes() {
         phone: z.string().min(10).max(15).trim(),
         email: z.string().email().max(200).trim().optional(),
         slug: z.string().min(1).max(100).regex(/^[a-z0-9-]+$/),
-        pin: z.string().length(6).regex(/^\d{6}$/), // [6-DIGIT PIN CHANGE] CHANGED: 4 -> 6 digits
+        pin: z.string().length(8).regex(/^\d{8}$/), // [8-DIGIT PIN] 8 digits for brute-force resistance
         plan: z.enum(['STARTER', 'STANDARD', 'PRO']).default('STARTER')
       });
 
@@ -946,8 +963,8 @@ function registerRoutes() {
 
       if (!hotel) return reply.code(404).send({ error: 'Hotel not found' });
 
-      // Generate secure 6-digit PIN using crypto
-      const plainPin = crypto.randomInt(100000, 1000000).toString();
+      // Generate secure 8-digit PIN using crypto
+      const plainPin = crypto.randomInt(10000000, 100000000).toString();
       const pinHash = await bcrypt.hash(plainPin, 10);
       const now = new Date();
 

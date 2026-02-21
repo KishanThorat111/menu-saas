@@ -52,7 +52,7 @@ async function apiFetch(endpoint, options = {}) {
   return res;
 }
 
-// UPDATED: 6-digit PIN validation
+// UPDATED: 8-digit PIN validation
 async function login() {
   const slug = document.getElementById('slug').value.trim().toLowerCase();
   const pin = document.getElementById('pin').value.trim();
@@ -62,8 +62,8 @@ async function login() {
     return;
   }
   
-  if (pin.length !== 6 || !/^\d{6}$/.test(pin)) {
-    document.getElementById('error').textContent = 'PIN must be exactly 6 digits';
+  if (pin.length !== 8 || !/^\d{8}$/.test(pin)) {
+    document.getElementById('error').textContent = 'PIN must be exactly 8 digits';
     return;
   }
   
