@@ -518,7 +518,7 @@ async function confirmResetPin() {
   }
 }
 
-// UPDATED: 6-digit PIN generation and validation
+// UPDATED: 8-digit PIN generation and validation
 async function createHotel() {
   const payload = {
     name: document.getElementById('hName').value.trim(),
@@ -535,9 +535,9 @@ async function createHotel() {
     return;
   }
   
-  // UPDATED: 6-digit validation
-  if (payload.pin.length !== 6 || !/^\d{6}$/.test(payload.pin)) {
-    showToast('PIN must be exactly 6 digits', 'error');
+  // UPDATED: 8-digit validation
+  if (payload.pin.length !== 8 || !/^\d{8}$/.test(payload.pin)) {
+    showToast('PIN must be exactly 8 digits', 'error');
     return;
   }
   
@@ -572,19 +572,19 @@ async function createHotel() {
   }
 }
 
-// UPDATED: Generate 6-digit PIN
+// UPDATED: Generate 8-digit PIN
 function generateRandomPin() {
   // Use crypto.getRandomValues if available, fallback to Math.random
   if (window.crypto && window.crypto.getRandomValues) {
     const array = new Uint32Array(1);
     window.crypto.getRandomValues(array);
-    return (100000 + (array[0] % 900000)).toString();
+    return (10000000 + (array[0] % 90000000)).toString();
   }
   // Fallback (less secure but functional)
-  return Math.floor(100000 + Math.random() * 900000).toString();
+  return Math.floor(10000000 + Math.random() * 90000000).toString();
 }
 
-// UPDATED: Auto-generate 6-digit PIN in form
+// UPDATED: Auto-generate 8-digit PIN in form
 function autoGeneratePin() {
   const pinInput = document.getElementById('hPin');
   if (pinInput && !pinInput.value) {
@@ -596,9 +596,9 @@ function handleSlugInput(e) {
   e.target.value = e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '');
 }
 
-// UPDATED: 6-digit input handler
+// UPDATED: 8-digit input handler
 function handlePinInput(e) {
-  e.target.value = e.target.value.replace(/[^0-9]/g, '').slice(0, 6);
+  e.target.value = e.target.value.replace(/[^0-9]/g, '').slice(0, 8);
 }
 
 async function init() {
