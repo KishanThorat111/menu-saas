@@ -2331,7 +2331,159 @@
     }
     
     /* ========================================
-       24. PRINT STYLES (just in case)
+       24. CUSTOM STYLED DROPDOWN
+       ======================================== */
+    .custom-select-wrap {
+      position: relative;
+      flex: 1;
+      min-width: 150px;
+    }
+
+    .custom-select-wrap > select {
+      position: absolute !important;
+      width: 1px !important;
+      height: 1px !important;
+      opacity: 0 !important;
+      pointer-events: none !important;
+      overflow: hidden !important;
+    }
+
+    .custom-select-trigger {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+      padding: 0.75rem 1rem;
+      border: 1.5px solid var(--border-light);
+      border-radius: var(--radius-md);
+      background: white;
+      cursor: pointer;
+      min-height: 44px;
+      font-size: 0.9375rem;
+      font-family: var(--font-body);
+      color: var(--text-primary);
+      transition: all var(--duration-fast) var(--ease-in-out);
+      user-select: none;
+    }
+
+    .custom-select-trigger:hover {
+      border-color: var(--saffron-300);
+    }
+
+    .custom-select-trigger.open {
+      border-color: var(--saffron-500);
+      box-shadow: 0 0 0 3px rgba(198,139,82,0.15);
+      border-bottom-left-radius: 0;
+      border-bottom-right-radius: 0;
+    }
+
+    .custom-select-text {
+      flex: 1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .custom-select-text.placeholder {
+      color: var(--slate-400);
+    }
+
+    .custom-select-arrow {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      transition: transform 0.2s var(--ease-out);
+      color: var(--slate-400);
+    }
+
+    .custom-select-trigger:hover .custom-select-arrow { color: var(--saffron-500); }
+
+    .custom-select-trigger.open .custom-select-arrow {
+      transform: rotate(180deg);
+      color: var(--saffron-600);
+    }
+
+    .custom-select-dropdown {
+      position: absolute;
+      top: 100%;
+      left: -1.5px;
+      right: -1.5px;
+      background: white;
+      border: 1.5px solid var(--saffron-400);
+      border-top: 1px solid var(--border-light);
+      border-radius: 0 0 var(--radius-md) var(--radius-md);
+      box-shadow: 0 12px 32px rgba(0,0,0,0.12), 0 4px 8px rgba(0,0,0,0.06);
+      z-index: 500;
+      max-height: 260px;
+      overflow-y: auto;
+      display: none;
+      animation: csDropSlide 0.15s var(--ease-out);
+    }
+
+    @keyframes csDropSlide {
+      from { opacity: 0; transform: translateY(-6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .custom-select-dropdown.open { display: block; }
+
+    .custom-select-dropdown::-webkit-scrollbar { width: 5px; }
+    .custom-select-dropdown::-webkit-scrollbar-thumb { background: var(--saffron-300); border-radius: 3px; }
+    .custom-select-dropdown::-webkit-scrollbar-thumb:hover { background: var(--saffron-400); }
+
+    .custom-select-option {
+      padding: 0.75rem 1rem;
+      font-size: 0.9375rem;
+      font-family: var(--font-body);
+      cursor: pointer;
+      transition: all 0.1s;
+      color: var(--slate-700);
+      border-bottom: 1px solid var(--slate-100);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .custom-select-option:last-child { border-bottom: none; }
+
+    .custom-select-option:hover {
+      background: var(--saffron-50);
+      color: var(--saffron-800);
+    }
+
+    .custom-select-option.selected {
+      background: linear-gradient(135deg, var(--saffron-50), var(--saffron-100));
+      color: var(--saffron-800);
+      font-weight: 700;
+      border-left: 3px solid var(--saffron-500);
+      padding-left: calc(1rem - 3px);
+    }
+
+    .custom-select-option .cs-check {
+      margin-left: auto;
+      color: var(--saffron-500);
+      font-size: 0.75rem;
+      opacity: 0;
+    }
+
+    .custom-select-option.selected .cs-check { opacity: 1; }
+
+    /* Filter variant */
+    .filter-select .custom-select-wrap { min-width: 140px; }
+    .filter-select .custom-select-trigger {
+      font-size: 0.875rem;
+    }
+    .filter-select .custom-select-option {
+      font-size: 0.875rem;
+    }
+
+    /* Modal variant: higher z-index */
+    .modal .custom-select-dropdown {
+      z-index: 600;
+    }
+
+    /* ========================================
+       25. PRINT STYLES (just in case)
        ======================================== */
     @media print {
       .dashboard-header,
@@ -2474,7 +2626,7 @@
       
       <!-- Create Hotel Section -->
       <div class="create-section">
-        <div class="section-header active" id="createSectionToggle" onclick="toggleCreateSection()">
+        <div class="section-header active" id="createSectionToggle">
           <span style="font-size:1.25rem;">✨</span>
           <h2>Create New Hotel</h2>
           <div id="createToggle" class="section-toggle">▾</div>
@@ -2657,18 +2809,6 @@
       </div>
     </div>
   </div>
-  
-  <!-- Toggle Function for Create Section -->
-  <script>
-    function toggleCreateSection() {
-      const content = document.getElementById('createFormContent');
-      const toggle = document.getElementById('createToggle');
-      const header = document.getElementById('createSectionToggle');
-      content.classList.toggle('collapsed');
-      toggle.classList.toggle('rotated');
-      header.classList.toggle('active');
-    }
-  </script>
   
   <script src="superadmin.js"></script>
 </body>

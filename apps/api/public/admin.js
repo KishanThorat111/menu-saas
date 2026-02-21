@@ -62,9 +62,8 @@ async function login() {
     return;
   }
   
-  // TEMPORARY: Accept 4-6 digits until all hotels migrated to 6-digit PINs
-  if (pin.length < 4 || pin.length > 6 || !/^\d{4,6}$/.test(pin)) {
-    document.getElementById('error').textContent = 'PIN must be 4-6 digits';
+  if (pin.length !== 6 || !/^\d{6}$/.test(pin)) {
+    document.getElementById('error').textContent = 'PIN must be exactly 6 digits';
     return;
   }
   
@@ -490,3 +489,101 @@ document.getElementById('themeSelect').addEventListener('change', function() {
   changeTheme(this.value);
 });
 document.getElementById('logoutBtn').addEventListener('click', logout);
+
+// ── Custom Styled Dropdowns ─────────────────────────────────────────────
+(function() {
+  var arrowSvg = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>';
+
+  function initCustomSelect(sel) {
+    if (!sel) return;
+    var wrap = document.createElement('div');
+    wrap.className = 'custom-select-wrap';
+    sel.parentNode.insertBefore(wrap, sel);
+    wrap.appendChild(sel);
+
+    var trigger = document.createElement('div');
+    trigger.className = 'custom-select-trigger';
+
+    var text = document.createElement('span');
+    text.className = 'custom-select-text';
+
+    var arrow = document.createElement('span');
+    arrow.className = 'custom-select-arrow';
+    arrow.innerHTML = arrowSvg;
+
+    trigger.appendChild(text);
+    trigger.appendChild(arrow);
+    wrap.appendChild(trigger);
+
+    var dropdown = document.createElement('div');
+    dropdown.className = 'custom-select-dropdown';
+    wrap.appendChild(dropdown);
+
+    dropdown.addEventListener('click', function(e) { e.stopPropagation(); });
+
+    function refresh() {
+      var opt = sel.options[sel.selectedIndex];
+      if (opt && opt.value) {
+        text.textContent = opt.text;
+        text.classList.remove('placeholder');
+      } else {
+        text.textContent = opt ? opt.text : 'Select...';
+        text.classList.add('placeholder');
+      }
+    }
+
+    function buildOpts() {
+      dropdown.innerHTML = '';
+      Array.from(sel.options).forEach(function(opt, i) {
+        var div = document.createElement('div');
+        div.className = 'custom-select-option' + (i === sel.selectedIndex ? ' selected' : '');
+        var label = document.createTextNode(opt.text);
+        div.appendChild(label);
+        var check = document.createElement('span');
+        check.className = 'cs-check';
+        check.textContent = '\u2713';
+        div.appendChild(check);
+        div.addEventListener('click', function(e) {
+          e.stopPropagation();
+          sel.value = opt.value;
+          sel.dispatchEvent(new Event('change', { bubbles: true }));
+          refresh();
+          closeDD();
+        });
+        dropdown.appendChild(div);
+      });
+    }
+
+    function closeDD() {
+      trigger.classList.remove('open');
+      dropdown.classList.remove('open');
+    }
+
+    trigger.addEventListener('click', function(e) {
+      e.stopPropagation();
+      document.querySelectorAll('.custom-select-trigger.open').forEach(function(t) {
+        if (t !== trigger) {
+          t.classList.remove('open');
+          t.nextElementSibling.classList.remove('open');
+        }
+      });
+      if (trigger.classList.contains('open')) { closeDD(); }
+      else { buildOpts(); trigger.classList.add('open'); dropdown.classList.add('open'); }
+    });
+
+    document.addEventListener('click', closeDD);
+
+    new MutationObserver(refresh).observe(sel, { childList: true, subtree: true, attributes: true });
+
+    var desc = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value');
+    Object.defineProperty(sel, 'value', {
+      get: function() { return desc.get.call(this); },
+      set: function(v) { desc.set.call(this, v); refresh(); }
+    });
+
+    refresh();
+  }
+
+  initCustomSelect(document.getElementById('catSelect'));
+  initCustomSelect(document.getElementById('themeSelect'));
+})();

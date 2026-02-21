@@ -162,11 +162,11 @@ async function registerSecurityPlugins() {
     contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],
-        styleSrc: ["'self'", "'unsafe-inline'"],
+        styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
         scriptSrc: ["'self'"],
         imgSrc: ["'self'", 'data:', 'https:', 'blob:'],
         connectSrc: ["'self'"],
-        fontSrc: ["'self'"],
+        fontSrc: ["'self'", "https://fonts.gstatic.com"],
         objectSrc: ["'none'"],
         mediaSrc: ["'self'"],
         frameSrc: ["'none'"],
@@ -344,8 +344,7 @@ function registerRoutes() {
   }, async (request, reply) => {
     const schema = z.object({
       slug: z.string().min(1).max(100),
-      //pin: z.string().length(6).regex(/^\d{6}$/) // [6-DIGIT PIN CHANGE] CHANGED: 4 -> 6 digits
-      pin: z.string().min(4).max(6).regex(/^\d{4,6}$/)
+      pin: z.string().length(6).regex(/^\d{6}$/)
     });
 
     const { slug, pin } = schema.parse(request.body);
