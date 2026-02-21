@@ -16,6 +16,7 @@ jobs:
           username: ${{ secrets.GCP_USERNAME }}
           key: ${{ secrets.GCP_SSH_PRIVATE_KEY }}
           timeout: 30m
+          command_timeout: 30m
           script: |
             cd ~/menu-saas
             git pull origin main

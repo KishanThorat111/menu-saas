@@ -677,6 +677,122 @@ function setupEventListeners() {
       closeResetPinModal();
     }
   });
+
+  // Create section toggle
+  var createToggleHeader = document.getElementById('createSectionToggle');
+  if (createToggleHeader) {
+    createToggleHeader.addEventListener('click', function() {
+      var content = document.getElementById('createFormContent');
+      var toggle = document.getElementById('createToggle');
+      content.classList.toggle('collapsed');
+      toggle.classList.toggle('rotated');
+      createToggleHeader.classList.toggle('active');
+    });
+  }
+
+  // Custom styled dropdowns
+  initAllCustomSelects();
+}
+
+// ── Custom Styled Dropdown ─────────────────────────────────────────────
+var csArrowSvg = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>';
+
+function initCustomSelect(sel) {
+  if (!sel || sel._csInit) return;
+  sel._csInit = true;
+
+  var wrap = document.createElement('div');
+  wrap.className = 'custom-select-wrap';
+  sel.parentNode.insertBefore(wrap, sel);
+  wrap.appendChild(sel);
+
+  var trigger = document.createElement('div');
+  trigger.className = 'custom-select-trigger';
+
+  var text = document.createElement('span');
+  text.className = 'custom-select-text';
+
+  var arrow = document.createElement('span');
+  arrow.className = 'custom-select-arrow';
+  arrow.innerHTML = csArrowSvg;
+
+  trigger.appendChild(text);
+  trigger.appendChild(arrow);
+  wrap.appendChild(trigger);
+
+  var dropdown = document.createElement('div');
+  dropdown.className = 'custom-select-dropdown';
+  wrap.appendChild(dropdown);
+
+  dropdown.addEventListener('click', function(e) { e.stopPropagation(); });
+
+  function refresh() {
+    var opt = sel.options[sel.selectedIndex];
+    if (opt && opt.value) {
+      text.textContent = opt.text;
+      text.classList.remove('placeholder');
+    } else {
+      text.textContent = opt ? opt.text : 'Select...';
+      text.classList.add('placeholder');
+    }
+  }
+
+  function buildOpts() {
+    dropdown.innerHTML = '';
+    Array.from(sel.options).forEach(function(opt, i) {
+      var div = document.createElement('div');
+      div.className = 'custom-select-option' + (i === sel.selectedIndex ? ' selected' : '');
+      var label = document.createTextNode(opt.text);
+      div.appendChild(label);
+      var check = document.createElement('span');
+      check.className = 'cs-check';
+      check.textContent = '\u2713';
+      div.appendChild(check);
+      div.addEventListener('click', function(e) {
+        e.stopPropagation();
+        sel.value = opt.value;
+        sel.dispatchEvent(new Event('change', { bubbles: true }));
+        refresh();
+        closeDD();
+      });
+      dropdown.appendChild(div);
+    });
+  }
+
+  function closeDD() {
+    trigger.classList.remove('open');
+    dropdown.classList.remove('open');
+  }
+
+  trigger.addEventListener('click', function(e) {
+    e.stopPropagation();
+    document.querySelectorAll('.custom-select-trigger.open').forEach(function(t) {
+      if (t !== trigger) {
+        t.classList.remove('open');
+        t.nextElementSibling.classList.remove('open');
+      }
+    });
+    if (trigger.classList.contains('open')) { closeDD(); }
+    else { buildOpts(); trigger.classList.add('open'); dropdown.classList.add('open'); }
+  });
+
+  document.addEventListener('click', closeDD);
+
+  new MutationObserver(refresh).observe(sel, { childList: true, subtree: true, attributes: true });
+
+  var desc = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value');
+  Object.defineProperty(sel, 'value', {
+    get: function() { return desc.get.call(this); },
+    set: function(v) { desc.set.call(this, v); refresh(); }
+  });
+
+  refresh();
+}
+
+function initAllCustomSelects() {
+  initCustomSelect(document.getElementById('hPlan'));
+  initCustomSelect(document.getElementById('filterStatus'));
+  initCustomSelect(document.getElementById('editStatus'));
 }
 
 // Run init when DOM is ready
