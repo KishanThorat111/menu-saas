@@ -333,6 +333,17 @@ function renderTable(hotels) {
         </button>`;
     } else {
       actionButtons = `
+        <button class="btn btn-sm btn-info edit-hotel-details-btn"
+          data-id="${hotel.id}"
+          data-name="${escapeHtml(hotel.name)}"
+          data-city="${escapeHtml(hotel.city)}"
+          data-phone="${escapeHtml(hotel.phone)}"
+          data-email="${escapeHtml(hotel.email)}"
+          data-plan="${escapeHtml(hotel.plan)}"
+          data-slug="${escapeHtml(hotel.slug)}"
+          title="Edit hotel details">
+          📝 Edit Details
+        </button>
         <button class="btn btn-sm btn-secondary edit-hotel-btn"
           data-id="${hotel.id}" 
           data-name="${escapeHtml(hotel.name)}" 
@@ -381,6 +392,19 @@ function renderTable(hotels) {
   }).join('');
   
   // Attach event listeners to dynamically created buttons
+  tbody.querySelectorAll('.edit-hotel-details-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+      openEditDetailsModal({
+        id: this.dataset.id,
+        name: this.dataset.name,
+        city: this.dataset.city,
+        phone: this.dataset.phone,
+        email: this.dataset.email,
+        plan: this.dataset.plan,
+        slug: this.dataset.slug
+      });
+    });
+  });
   tbody.querySelectorAll('.edit-hotel-btn').forEach(btn => {
     btn.addEventListener('click', function() {
       const id = this.dataset.id;
@@ -389,6 +413,71 @@ function renderTable(hotels) {
       openEditModal(id, name, status);
     });
   });
+  // ============ EDIT DETAILS MODAL LOGIC ============
+  let currentEditDetailsId = null;
+  async function openEditDetailsModal(hotel) {
+    currentEditDetailsId = hotel.id;
+    // Fetch latest hotel details from backend
+    let latestHotel = hotel;
+    try {
+      latestHotel = await fetchAPI(`/admin/hotels/${hotel.id}`);
+    } catch (e) {
+      showToast('Failed to fetch latest hotel details', 'error');
+    }
+    document.getElementById('editDetailsName').value = latestHotel.name || '';
+    document.getElementById('editDetailsCity').value = latestHotel.city || '';
+    document.getElementById('editDetailsPhone').value = latestHotel.phone || '';
+    // Fix: treat null/undefined/empty email as blank
+    document.getElementById('editDetailsEmail').value = latestHotel.email ? latestHotel.email : '';
+    // Only allow STARTER, STANDARD, PRO
+    const allowedPlans = ['STARTER', 'STANDARD', 'PRO'];
+    const planSelect = document.getElementById('editDetailsPlan');
+    Array.from(planSelect.options).forEach(opt => {
+      if (!allowedPlans.includes(opt.value)) opt.remove();
+    });
+    planSelect.value = allowedPlans.includes(latestHotel.plan) ? latestHotel.plan : 'STARTER';
+    if (typeof initCustomSelect === 'function') initCustomSelect(planSelect);
+    document.getElementById('editDetailsCode').value = latestHotel.slug || '';
+    document.getElementById('editDetailsModal').classList.add('active');
+  }
+  function closeEditDetailsModal() {
+    document.getElementById('editDetailsModal').classList.remove('active');
+    currentEditDetailsId = null;
+  }
+  document.getElementById('closeEditDetailsModalBtn').addEventListener('click', closeEditDetailsModal);
+  document.getElementById('cancelEditDetailsBtn').addEventListener('click', closeEditDetailsModal);
+  document.getElementById('saveEditDetailsBtn').addEventListener('click', saveEditDetails);
+
+  async function saveEditDetails() {
+    if (!currentEditDetailsId) return;
+    const emailVal = document.getElementById('editDetailsEmail').value.trim();
+    const payload = {
+      name: document.getElementById('editDetailsName').value.trim(),
+      city: document.getElementById('editDetailsCity').value.trim(),
+      phone: document.getElementById('editDetailsPhone').value.trim(),
+      email: emailVal === '' ? '' : emailVal,
+      plan: document.getElementById('editDetailsPlan').value
+    };
+    if (!payload.name || !payload.city || !payload.phone) {
+      showToast('Name, city, and phone are required', 'error');
+      return;
+    }
+    setLoading('saveEditDetailsBtn', true);
+    try {
+      await fetchAPI(`/admin/hotels/${currentEditDetailsId}`, {
+        method: 'PATCH',
+        body: JSON.stringify(payload)
+      });
+      showToast('Hotel details updated!', 'success');
+      closeEditDetailsModal();
+      await fetchHotels();
+      await fetchGlobalStats();
+    } catch (e) {
+      showToast(e.message, 'error');
+    } finally {
+      setLoading('saveEditDetailsBtn', false, 'Save Changes');
+    }
+  }
   
   // NEW: Attach reset PIN button listeners
   tbody.querySelectorAll('.reset-pin-btn').forEach(btn => {
