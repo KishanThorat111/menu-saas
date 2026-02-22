@@ -84,17 +84,17 @@ const pinResetRateLimit = {
   keyGenerator: (req) => `${req.ip}:${req.params.id}`
 };
 
-// Per-slug rate limit for login: max 20 attempts per hour per slug (blocks parallel proxy attacks)
+// Per-code rate limit for login: max 20 attempts per hour per code (blocks parallel proxy attacks)
 const loginSlugRateLimit = {
   max: 20,
   timeWindow: 3600000, // 1 hour
   keyGenerator: (req) => {
     try {
       const body = req.body;
-      const slug = (body?.slug || '').toLowerCase().trim();
-      return `login-slug:${slug}`;
+      const code = (body?.code || body?.slug || '').toUpperCase().trim();
+      return `login-code:${code}`;
     } catch {
-      return `login-slug:${req.ip}`;
+      return `login-code:${req.ip}`;
     }
   }
 };
@@ -158,6 +158,38 @@ async function deleteFromR2(imageUrl) {
     Key: key,
   });
   await r2Client.send(command);
+}
+
+// Base32 slug generation (A-Z, 2-7) — RFC 4648 alphabet
+// QR codes encode these in Alphanumeric mode (5.5 bits/char) for smallest/fastest scans
+const BASE32_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+const SLUG_LENGTH = 6; // 32^6 = 1,073,741,824 possible codes
+const SLUG_REGEX = /^[A-Z2-7]{6}$/;
+
+async function generateSlug(maxAttempts = 10) {
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    const bytes = crypto.randomBytes(4); // 32 bits of entropy
+    let slug = '';
+    let bits = 0;
+    let value = 0;
+    let byteIndex = 0;
+
+    while (slug.length < SLUG_LENGTH) {
+      if (bits < 5) {
+        value = (value << 8) | (bytes[byteIndex++] || crypto.randomBytes(1)[0]);
+        bits += 8;
+      }
+      bits -= 5;
+      slug += BASE32_ALPHABET[(value >>> bits) & 0x1f];
+    }
+
+    // Check for collision
+    const existing = await prisma.hotel.findUnique({ where: { slug } });
+    if (!existing) return slug;
+
+    fastify.log.warn(`Slug collision on attempt ${attempt + 1}: ${slug}`);
+  }
+  throw new Error('Failed to generate unique slug after maximum attempts');
 }
 
 //==================== SECURITY PLUGINS ====================
@@ -228,7 +260,7 @@ async function registerContentPlugins() {
   await fastify.register(require('@fastify/static'), {
     root: path.join(__dirname, 'public'),
     prefix: '/',
-    decorateReply: false
+    decorateReply: true  // Enable reply.sendFile() for /m/:code short URLs
   });
 }
 
@@ -249,6 +281,9 @@ async function authenticate(request, reply) {
 
     if (hotel?.status === 'SUSPENDED') {
       return reply.code(403).send({ error: 'Account suspended' });
+    }
+    if (hotel?.status === 'DELETED') {
+      return reply.code(401).send({ error: 'Unauthorized' });
     }
   } catch (err) {
     return reply.code(401).send({ error: 'Unauthorized' });
@@ -303,8 +338,8 @@ function registerRoutes() {
     };
   });
 
-  // Public Menu
-  fastify.get('/api/menu/:slug', {
+  // Public Menu API — base32 code lookup
+  fastify.get('/api/menu/:code', {
     config: {
       rateLimit: {
         max: 500,
@@ -312,13 +347,13 @@ function registerRoutes() {
       }
     }
   }, async (request, reply) => {
-    const { slug } = request.params;
-    if (!/^[a-z0-9-]+$/.test(slug)) {
-      return reply.code(400).send({ error: 'Invalid slug format' });
+    const code = (request.params.code || '').toUpperCase().trim();
+    if (!SLUG_REGEX.test(code)) {
+      return reply.code(400).send({ error: 'Invalid menu code format' });
     }
 
     const hotel = await prisma.hotel.findUnique({
-      where: { slug },
+      where: { slug: code },
       include: {
         categories: {
           orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
@@ -336,7 +371,7 @@ function registerRoutes() {
       }
     });
 
-    if (!hotel || hotel.status === 'SUSPENDED') {
+    if (!hotel || hotel.status === 'SUSPENDED' || hotel.status === 'DELETED') {
       return reply.code(404).send({ error: 'Menu not found' });
     }
 
@@ -355,30 +390,77 @@ function registerRoutes() {
     };
   });
 
-  // [8-DIGIT PIN] Hotel Owner Login - 8 digit PIN validation
+  // Short URL: /m/:code — serves menu.html directly (QR code target)
+  fastify.get('/m/:code', {
+    config: {
+      rateLimit: {
+        max: 500,
+        timeWindow: '1 minute'
+      }
+    }
+  }, async (request, reply) => {
+    const code = (request.params.code || '').toUpperCase().trim();
+    if (!SLUG_REGEX.test(code)) {
+      return reply.code(400).send({ error: 'Invalid menu code' });
+    }
+    return reply.sendFile('menu.html');
+  });
+
+  // Professional URL: /dashboard — serves admin.html (hotel owner panel)
+  fastify.get('/dashboard', async (request, reply) => {
+    return reply.sendFile('admin.html');
+  });
+
+  // Professional URL: /superadmin — serves superadmin.html
+  fastify.get('/superadmin', async (request, reply) => {
+    return reply.sendFile('superadmin.html');
+  });
+
+  // Legacy redirect: /admin.html → /dashboard (permanent 301)
+  fastify.get('/admin.html', async (request, reply) => {
+    return reply.redirect(301, '/dashboard');
+  });
+
+  // Legacy redirect: /superadmin.html → /superadmin (permanent 301)
+  fastify.get('/superadmin.html', async (request, reply) => {
+    return reply.redirect(301, '/superadmin');
+  });
+
+  // Legacy redirect: /menu.html?h=CODE → /m/CODE (permanent 301)
+  fastify.get('/menu.html', async (request, reply) => {
+    const code = (request.query.h || '').toUpperCase().trim();
+    if (code && SLUG_REGEX.test(code)) {
+      return reply.redirect(301, `/m/${code}`);
+    }
+    // If no valid code, serve the file normally (fallback)
+    return reply.sendFile('menu.html');
+  });
+
+  // Hotel Owner Login — 6-char base32 code + 8-digit PIN
   fastify.post('/auth/login', {
     config: { rateLimit: loginSlugRateLimit }
   }, async (request, reply) => {
     const schema = z.object({
-      slug: z.string().min(1).max(100),
+      code: z.string().length(6).regex(/^[A-Z2-7]{6}$/, 'Must be a 6-character menu code'),
       pin: z.string().length(8).regex(/^\d{8}$/)
     });
 
-    const { slug, pin } = schema.parse(request.body);
-    const normalizedSlug = slug.toLowerCase().trim();
+    const { code, pin } = schema.parse(request.body);
+    const normalizedCode = code.toUpperCase().trim();
 
     const hotel = await prisma.hotel.findUnique({
-      where: { slug: normalizedSlug },
+      where: { slug: normalizedCode },
       select: { id: true, tenantId: true, slug: true, name: true, status: true, pinHash: true }
     });
 
     if (!hotel) return reply.code(401).send({ error: 'Invalid credentials' });
 
     if (hotel.status === 'SUSPENDED') return reply.code(403).send({ error: 'Account suspended' });
+    if (hotel.status === 'DELETED') return reply.code(401).send({ error: 'Invalid credentials' });
 
     const valid = await bcrypt.compare(pin, hotel.pinHash);
     if (!valid) {
-      fastify.log.warn(`Failed login attempt for hotel: ${normalizedSlug} from IP: ${request.ip}`);
+      fastify.log.warn(`Failed login attempt for hotel: ${normalizedCode} from IP: ${request.ip}`);
       return reply.code(401).send({ error: 'Invalid credentials' });
     }
 
@@ -546,7 +628,9 @@ function registerRoutes() {
         return item;
       } catch (err) {
         if (imageUrl) {
-          await deleteFromR2(imageUrl).catch(() => { });
+          await deleteFromR2(imageUrl).catch((delErr) => {
+            fastify.log.error(`Failed to rollback R2 image upload: ${imageUrl} — ${delErr.message}`);
+          });
         }
         request.log.error(err);
         if (err.name === 'ZodError') return reply.code(400).send({ error: "Validation failed", details: err.errors });
@@ -583,7 +667,11 @@ function registerRoutes() {
         const isValidImage = validateImageBuffer(buffer, file.mimetype);
         if (!isValidImage) return reply.code(400).send({ error: 'Invalid image file' });
 
-        if (item.imageUrl) await deleteFromR2(item.imageUrl).catch(() => { });
+        if (item.imageUrl) {
+          await deleteFromR2(item.imageUrl).catch((err) => {
+            fastify.log.error(`Failed to delete old image from R2 for item ${id}: ${item.imageUrl} — ${err.message}`);
+          });
+        }
 
         const imageUrl = await uploadToR2(buffer, file.mimetype, request.hotelId);
         const updated = await prisma.item.update({ where: { id }, data: { imageUrl } });
@@ -595,6 +683,7 @@ function registerRoutes() {
             action: 'item_image_uploaded',
             entityType: 'Item',
             entityId: id,
+            oldValue: item.imageUrl ? { imageUrl: item.imageUrl } : null,
             newValue: { imageUrl }
           }
         });
@@ -675,7 +764,11 @@ function registerRoutes() {
 
       if (!item) return reply.code(404).send({ error: 'Item not found' });
 
-      if (item.imageUrl) await deleteFromR2(item.imageUrl).catch(() => { });
+      if (item.imageUrl) {
+        await deleteFromR2(item.imageUrl).catch((err) => {
+          fastify.log.error(`Failed to delete R2 image on permanent delete for item ${id}: ${item.imageUrl} — ${err.message}`);
+        });
+      }
       await prisma.item.delete({ where: { id } });
 
       await prisma.auditLog.create({
@@ -768,22 +861,21 @@ function registerRoutes() {
       return { authenticated: true, session: { expiresAt } };
     });
 
-    // [6-DIGIT PIN CHANGE] UPDATED: 6-digit PIN validation in hotel creation
+    // Hotel creation — auto-generates 6-char base32 slug, no manual slug input
     app.post('/admin/hotels', async (request, reply) => {
       const schema = z.object({
         name: z.string().min(1).max(200).trim(),
         city: z.string().min(1).max(100).trim(),
         phone: z.string().min(10).max(15).trim(),
         email: z.string().email().max(200).trim().optional(),
-        slug: z.string().min(1).max(100).regex(/^[a-z0-9-]+$/),
-        pin: z.string().length(8).regex(/^\d{8}$/), // [8-DIGIT PIN] 8 digits for brute-force resistance
+        pin: z.string().length(8).regex(/^\d{8}$/), // 8-digit PIN for brute-force resistance
         plan: z.enum(['STARTER', 'STANDARD', 'PRO']).default('STARTER')
       });
 
-      const { name, city, phone, email, slug, pin, plan } = schema.parse(request.body);
-      const existing = await prisma.hotel.findUnique({ where: { slug } });
-      if (existing) return reply.code(409).send({ error: 'Slug already taken' });
+      const { name, city, phone, email, pin, plan } = schema.parse(request.body);
 
+      // Auto-generate collision-free base32 slug
+      const slug = await generateSlug();
       const pinHash = await bcrypt.hash(pin, 10);
 
       const hotel = await prisma.hotel.create({
@@ -794,7 +886,7 @@ function registerRoutes() {
           consentVersion: '1.0',
           status: 'TRIAL',
           trialEnds: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-          pinResetCount: 0 // [6-DIGIT PIN CHANGE] Initialize counter
+          pinResetCount: 0
         }
       });
 
@@ -803,15 +895,15 @@ function registerRoutes() {
         slug: hotel.slug,
         pin: pin, // Return plain PIN once
         trialEnds: hotel.trialEnds,
-        menuUrl: `${APP_URL}/menu.html?h=${hotel.slug}`,
-        adminUrl: `${APP_URL}/admin.html`
+        menuUrl: `${APP_URL}/m/${hotel.slug}`,
+        adminUrl: `${APP_URL}/dashboard`
       };
     });
 
     // [6-DIGIT PIN CHANGE] UPDATED: Include pinResetCount in select
     app.get('/admin/hotels', async (request, reply) => {
       const { status, search, page = 1, limit = 50 } = z.object({
-        status: z.enum(['TRIAL', 'ACTIVE', 'GRACE', 'EXPIRED', 'SUSPENDED']).optional(),
+        status: z.enum(['TRIAL', 'ACTIVE', 'GRACE', 'EXPIRED', 'SUSPENDED', 'DELETED']).optional(),
         search: z.string().optional(),
         page: z.string().or(z.number()).transform(v => parseInt(v) || 1).optional(),
         limit: z.string().or(z.number()).transform(v => Math.min(parseInt(v) || 50, 100)).optional()
@@ -835,7 +927,8 @@ function registerRoutes() {
             status: true, plan: true, trialEnds: true, paidUntil: true,
             views: true, createdAt: true, theme: true,
             pinResetCount: true, // [6-DIGIT PIN CHANGE] ADDED: Include reset count
-            lastPinResetAt: true  // [6-DIGIT PIN CHANGE] ADDED: Include last reset
+            lastPinResetAt: true,  // [6-DIGIT PIN CHANGE] ADDED: Include last reset
+            deletedAt: true, purgeAfter: true // Soft delete fields
           },
           orderBy: { createdAt: 'desc' },
           skip: (page - 1) * limit,
@@ -854,7 +947,7 @@ function registerRoutes() {
       }
 
       const schema = z.object({
-        status: z.enum(['TRIAL', 'ACTIVE', 'GRACE', 'EXPIRED', 'SUSPENDED']),
+        status: z.enum(['TRIAL', 'ACTIVE', 'GRACE', 'EXPIRED', 'SUSPENDED', 'DELETED']),
         paidUntil: z.string().datetime().optional().nullable(),
         note: z.string().max(500).optional()
       });
@@ -878,6 +971,11 @@ function registerRoutes() {
       
       if (!existing) {
         return reply.code(404).send({ error: 'Hotel not found' });
+      }
+
+      // Prevent reverting a DELETED hotel (PII already anonymized)
+      if (existing.status === 'DELETED' && status !== 'DELETED') {
+        return reply.code(400).send({ error: 'Cannot revert a deleted hotel. PII has been anonymized. Use purge to permanently remove.' });
       }
 
       // Perform update
@@ -929,6 +1027,7 @@ function registerRoutes() {
           trialEnds: true, paidUntil: true, createdAt: true, updatedAt: true,
           paymentMode: true, lastPaymentDate: true, lastPaymentAmount: true,
           pinResetCount: true, lastPinResetAt: true, lastPinResetBy: true, // [6-DIGIT PIN CHANGE] ADDED
+          deletedAt: true, deletedBy: true, purgeAfter: true, // Soft delete fields
           categories: {
             include: { items: true }
           },
@@ -1008,6 +1107,133 @@ function registerRoutes() {
           name: updated.name,
           pinResetCount: updated.pinResetCount,
           lastPinResetAt: updated.lastPinResetAt
+        }
+      };
+    });
+
+    // ==================== HOTEL SOFT DELETE (DPDPA COMPLIANT) ====================
+    // Soft-delete: anonymize PII, set status=DELETED, schedule purge after 180 days
+    app.delete('/admin/hotels/:id', async (request, reply) => {
+      const { id } = request.params;
+      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
+        return reply.code(400).send({ error: 'Invalid hotel ID format' });
+      }
+
+      const hotel = await prisma.hotel.findUnique({
+        where: { id },
+        select: { id: true, name: true, status: true, phone: true, email: true }
+      });
+
+      if (!hotel) return reply.code(404).send({ error: 'Hotel not found' });
+      if (hotel.status === 'DELETED') return reply.code(409).send({ error: 'Hotel already deleted' });
+
+      const now = new Date();
+      const purgeAfter = new Date(now.getTime() + 180 * 24 * 60 * 60 * 1000); // 180 days
+
+      // Anonymize PII + set DELETED status
+      const updated = await prisma.hotel.update({
+        where: { id },
+        data: {
+          status: 'DELETED',
+          name: 'Deleted Hotel',
+          phone: '0000000000',
+          email: null,
+          pinHash: 'INVALIDATED',
+          deletedAt: now,
+          deletedBy: 'super_admin',
+          purgeAfter: purgeAfter
+        }
+      });
+
+      // Anonymize audit logs: replace owner actor references
+      await prisma.auditLog.updateMany({
+        where: { hotelId: id, actorType: 'owner' },
+        data: { actorType: 'deleted_user', actorId: null }
+      });
+
+      // Create deletion audit log
+      await prisma.auditLog.create({
+        data: {
+          hotelId: id,
+          actorType: 'admin',
+          action: 'hotel_deleted',
+          entityType: 'Hotel',
+          entityId: id,
+          oldValue: { name: hotel.name, phone: hotel.phone, email: hotel.email, status: hotel.status },
+          newValue: { status: 'DELETED', deletedAt: now.toISOString(), purgeAfter: purgeAfter.toISOString() }
+        }
+      });
+
+      fastify.log.info(`Hotel ${id} soft-deleted by super admin. PII anonymized. Purge scheduled: ${purgeAfter.toISOString()}`);
+
+      return {
+        success: true,
+        message: 'Hotel deleted. PII anonymized. Data will be purged after 180 days.',
+        hotel: {
+          id: updated.id,
+          status: updated.status,
+          deletedAt: updated.deletedAt,
+          purgeAfter: updated.purgeAfter
+        }
+      };
+    });
+
+    // ==================== HOTEL HARD PURGE ====================
+    // Permanently remove hotel + all related data + R2 images after retention period
+    app.delete('/admin/hotels/:id/purge', async (request, reply) => {
+      const { id } = request.params;
+      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
+        return reply.code(400).send({ error: 'Invalid hotel ID format' });
+      }
+
+      const hotel = await prisma.hotel.findUnique({
+        where: { id },
+        select: {
+          id: true, status: true, deletedAt: true, purgeAfter: true, slug: true,
+          categories: {
+            include: { items: { select: { id: true, imageUrl: true } } }
+          }
+        }
+      });
+
+      if (!hotel) return reply.code(404).send({ error: 'Hotel not found' });
+      if (hotel.status !== 'DELETED') {
+        return reply.code(400).send({ error: 'Hotel must be in DELETED status before purging. Soft-delete it first.' });
+      }
+
+      // Collect all R2 image URLs before deleting DB records
+      const imageUrls = [];
+      for (const cat of hotel.categories) {
+        for (const item of cat.items) {
+          if (item.imageUrl) imageUrls.push(item.imageUrl);
+        }
+      }
+
+      // Delete all R2 images
+      const imageResults = { deleted: 0, failed: 0 };
+      for (const url of imageUrls) {
+        try {
+          await deleteFromR2(url);
+          imageResults.deleted++;
+        } catch (err) {
+          imageResults.failed++;
+          fastify.log.error(`Failed to delete R2 image ${url}: ${err.message}`);
+        }
+      }
+
+      // Hard delete hotel (cascade removes categories, items, audit logs)
+      await prisma.hotel.delete({ where: { id } });
+
+      fastify.log.info(`Hotel ${id} (slug: ${hotel.slug}) permanently purged. Images: ${imageResults.deleted} deleted, ${imageResults.failed} failed.`);
+
+      return {
+        success: true,
+        message: 'Hotel permanently purged from database and storage.',
+        purged: {
+          hotelId: id,
+          slug: hotel.slug,
+          imagesDeleted: imageResults.deleted,
+          imagesFailed: imageResults.failed
         }
       };
     });

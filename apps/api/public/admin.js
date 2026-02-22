@@ -52,13 +52,18 @@ async function apiFetch(endpoint, options = {}) {
   return res;
 }
 
-// UPDATED: 8-digit PIN validation
+// UPDATED: 6-char base32 code + 8-digit PIN validation
 async function login() {
-  const slug = document.getElementById('slug').value.trim().toLowerCase();
+  const code = document.getElementById('slug').value.trim().toUpperCase();
   const pin = document.getElementById('pin').value.trim();
   
-  if (!slug || !pin) {
-    document.getElementById('error').textContent = 'Please enter both slug and PIN';
+  if (!code || !pin) {
+    document.getElementById('error').textContent = 'Please enter both menu code and PIN';
+    return;
+  }
+  
+  if (!/^[A-Z2-7]{6}$/.test(code)) {
+    document.getElementById('error').textContent = 'Menu code must be exactly 6 characters (A-Z, 2-7)';
     return;
   }
   
@@ -71,7 +76,7 @@ async function login() {
     const res = await fetch(`${API}/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ slug, pin })
+      body: JSON.stringify({ code, pin })
     });
     const data = await res.json();
     if (data.error) throw new Error(data.error);

@@ -60,3 +60,8 @@ jobs:
             # Verify deployment
             docker compose ps
             docker compose logs --tail 20 api
+            
+            # Health check validation - fail deploy if API is not healthy
+            echo "Running health check..."
+            curl -sf http://localhost:3000/health || { echo "❌ Health check FAILED! API is not responding."; docker compose logs --tail 50 api; exit 1; }
+            echo "✅ Health check passed!"

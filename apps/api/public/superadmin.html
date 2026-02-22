@@ -1148,13 +1148,13 @@
     }
     
     /* Column-specific alignment & min-widths */
-    th:nth-child(1) { min-width: 220px; } /* Hotel */
-    th:nth-child(2) { min-width: 90px; text-align: center; } /* Plan */
-    th:nth-child(3) { min-width: 100px; text-align: center; } /* Status */
-    th:nth-child(4) { min-width: 150px; } /* Timeline */
-    th:nth-child(5) { min-width: 80px; text-align: center; } /* Views */
-    th:nth-child(6) { min-width: 110px; text-align: center; } /* PIN Resets */
-    th:nth-child(7) { min-width: 200px; text-align: right; } /* Actions */
+    th:nth-child(1) { min-width: 200px; } /* Hotel */
+    th:nth-child(2) { min-width: 80px; text-align: center; } /* Plan */
+    th:nth-child(3) { min-width: 90px; text-align: center; } /* Status */
+    th:nth-child(4) { min-width: 130px; } /* Timeline */
+    th:nth-child(5) { min-width: 65px; text-align: center; } /* Views */
+    th:nth-child(6) { min-width: 100px; text-align: center; } /* PIN Resets */
+    th:nth-child(7) { min-width: 260px; text-align: right; } /* Actions */
     
     td {
       padding: 1rem 1.25rem;
@@ -1305,6 +1305,11 @@
       color: #374151;
       border-color: #d1d5db;
     }
+    .status-DELETED {
+      background: #1e1e1e;
+      color: #ef4444;
+      border-color: #991b1b;
+    }
     
     .plan-badge {
       display: inline-flex;
@@ -1357,7 +1362,7 @@
     
     .action-buttons {
       display: flex;
-      gap: 0.5rem;
+      gap: 0.375rem;
       flex-wrap: wrap;
       justify-content: flex-end;
     }
@@ -1382,14 +1387,14 @@
         table-layout: fixed;
       }
       
-      /* Fixed column proportions via colgroup-like widths */
-      th:nth-child(1) { width: 26%; min-width: 240px; } /* Hotel */
-      th:nth-child(2) { width: 9%; min-width: 90px; }  /* Plan */
-      th:nth-child(3) { width: 11%; min-width: 100px; } /* Status */
-      th:nth-child(4) { width: 16%; min-width: 155px; } /* Timeline */
-      th:nth-child(5) { width: 8%; min-width: 80px; }  /* Views */
-      th:nth-child(6) { width: 12%; min-width: 110px; } /* PIN Resets */
-      th:nth-child(7) { width: 18%; min-width: 200px; } /* Actions */
+      /* Fixed column proportions — optimized for 7 columns with 3 action buttons */
+      th:nth-child(1) { width: 22%; min-width: 200px; } /* Hotel */
+      th:nth-child(2) { width: 7%; min-width: 80px; }   /* Plan */
+      th:nth-child(3) { width: 9%; min-width: 90px; }   /* Status */
+      th:nth-child(4) { width: 14%; min-width: 130px; }  /* Timeline */
+      th:nth-child(5) { width: 7%; min-width: 65px; }   /* Views */
+      th:nth-child(6) { width: 11%; min-width: 100px; }  /* PIN Resets */
+      th:nth-child(7) { width: 30%; min-width: 260px; }  /* Actions */
       
       th {
         padding: 1.125rem 1.5rem;
@@ -1416,12 +1421,14 @@
       }
       
       .action-buttons {
-        gap: 0.625rem;
-        flex-wrap: nowrap;
+        gap: 0.375rem;
+        flex-wrap: wrap;
+        justify-content: flex-end;
       }
       
       .action-buttons .btn-sm {
-        padding: 0.5rem 1rem;
+        padding: 0.4375rem 0.75rem;
+        font-size: 0.75rem;
         white-space: nowrap;
       }
       
@@ -1442,8 +1449,13 @@
       td { padding: 1.375rem 1.75rem; }
       .hotel-name { font-size: 1.0625rem; }
       
-      th:nth-child(1) { width: 25%; }
-      th:nth-child(7) { width: 19%; }
+      th:nth-child(1) { width: 23%; }
+      th:nth-child(7) { width: 28%; }
+      
+      .action-buttons .btn-sm {
+        padding: 0.5rem 0.875rem;
+        font-size: 0.8125rem;
+      }
     }
     
     /* ========================================
@@ -2650,10 +2662,6 @@
               <input type="email" id="hEmail" placeholder="gm@oberoihotels.com" maxlength="200">
             </div>
             <div class="form-group">
-              <label for="hSlug">Slug * <span style="font-weight:400;color:var(--text-tertiary);">(URL identifier)</span></label>
-              <input type="text" id="hSlug" placeholder="oberoi-grand-mumbai" maxlength="100">
-            </div>
-            <div class="form-group">
               <label for="hPlan">Plan</label>
               <select id="hPlan">
                 <option value="STARTER">Starter (₹299)</option>
@@ -2689,7 +2697,7 @@
       <div class="filters">
         <div class="filter-search">
           <svg class="filter-search-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-          <input type="text" id="searchInput" placeholder="Search by name, slug, or city...">
+          <input type="text" id="searchInput" placeholder="Search by name, code, or city...">
         </div>
         <div class="filter-select">
           <select id="filterStatus">
@@ -2699,6 +2707,7 @@
             <option value="GRACE">Grace</option>
             <option value="EXPIRED">Expired</option>
             <option value="SUSPENDED">Suspended</option>
+            <option value="DELETED">Deleted</option>
           </select>
         </div>
       </div>
@@ -2755,6 +2764,7 @@
             <option value="GRACE">Grace Period</option>
             <option value="EXPIRED">Expired</option>
             <option value="SUSPENDED">Suspended</option>
+            <option value="DELETED">Deleted</option>
           </select>
         </div>
         <div id="paidUntilGroup" class="form-group" style="display:none;">
@@ -2806,6 +2816,75 @@
       <div class="modal-footer">
         <button id="cancelResetPinBtn" class="btn btn-secondary">Cancel</button>
         <button id="confirmResetPinBtn" class="btn btn-warning">Confirm Reset</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ DELETE HOTEL MODAL ============ -->
+  <div id="deleteModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>⛔ Delete Hotel</h3>
+        <button id="closeDeleteModalBtn" class="btn btn-icon btn-ghost" aria-label="Close">✕</button>
+      </div>
+      <div class="modal-body">
+        <p style="margin-bottom:1rem;color:var(--text-secondary);line-height:1.6;">
+          Are you sure you want to delete 
+          <strong id="deleteHotelName" style="color:var(--slate-900);">Hotel Name</strong>?
+        </p>
+        
+        <div class="pin-warning" style="border-color:var(--red-500);background:var(--red-50);">
+          <span style="font-size:1.125rem;flex-shrink:0;">🚨</span>
+          <div style="font-size:0.8125rem;line-height:1.6;">
+            <strong>This action will:</strong>
+            <ul style="margin:0.5rem 0 0 1.25rem;padding:0;">
+              <li>Anonymize all personal data (name, phone, email)</li>
+              <li>Invalidate the hotel PIN (login disabled)</li>
+              <li>Hide the public menu page</li>
+              <li>Mark hotel for permanent purge after 180 days</li>
+            </ul>
+            <p style="margin-top:0.5rem;color:#991b1b;"><strong>Menu data and images are preserved until purge.</strong></p>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="cancelDeleteBtn" class="btn btn-secondary">Cancel</button>
+        <button id="confirmDeleteBtn" class="btn btn-danger">⛔ Confirm Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ PURGE HOTEL MODAL ============ -->
+  <div id="purgeModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>🗑️ Permanent Purge</h3>
+        <button id="closePurgeModalBtn" class="btn btn-icon btn-ghost" aria-label="Close">✕</button>
+      </div>
+      <div class="modal-body">
+        <p style="margin-bottom:1rem;color:var(--text-secondary);line-height:1.6;">
+          Permanently purge 
+          <strong id="purgeHotelName" style="color:var(--slate-900);">Deleted Hotel</strong>?
+        </p>
+        
+        <div class="pin-warning" style="border-color:#991b1b;background:#1e1e1e;">
+          <span style="font-size:1.5rem;flex-shrink:0;">☢️</span>
+          <div style="font-size:0.8125rem;line-height:1.6;color:#fca5a5;">
+            <strong style="color:#ef4444;">IRREVERSIBLE ACTION:</strong>
+            <ul style="margin:0.5rem 0 0 1.25rem;padding:0;">
+              <li>Delete ALL categories and menu items</li>
+              <li>Delete ALL images from cloud storage (R2)</li>
+              <li>Delete ALL audit logs for this hotel</li>
+              <li>Remove the hotel record permanently</li>
+              <li>Free up the menu code (slug) for reuse</li>
+            </ul>
+            <p style="margin-top:0.75rem;color:#ef4444;font-weight:700;">This cannot be undone. Data is gone forever.</p>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="cancelPurgeBtn" class="btn btn-secondary">Cancel</button>
+        <button id="confirmPurgeBtn" class="btn btn-danger">🗑️ Confirm Purge</button>
       </div>
     </div>
   </div>
