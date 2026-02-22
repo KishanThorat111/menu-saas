@@ -2646,16 +2646,16 @@
         <div id="createFormContent" class="create-form-content">
           <div class="form-grid">
             <div class="form-group">
-              <label for="hName">Hotel Name *</label>
-              <input type="text" id="hName" placeholder="The Oberoi Grand" maxlength="200">
+              <label for="hName">Hotel Name</label>
+              <input type="text" id="hName" placeholder="Oberoi Grand" maxlength="200" required>
             </div>
             <div class="form-group">
-              <label for="hCity">City *</label>
-              <input type="text" id="hCity" placeholder="Mumbai" maxlength="100">
+              <label for="hCity">City</label>
+              <input type="text" id="hCity" placeholder="Kolkata" maxlength="100" required>
             </div>
             <div class="form-group">
-              <label for="hPhone">Phone *</label>
-              <input type="tel" id="hPhone" placeholder="9876543210" maxlength="15">
+              <label for="hPhone">Phone</label>
+              <input type="tel" id="hPhone" placeholder="9876543210" maxlength="15" required>
             </div>
             <div class="form-group">
               <label for="hEmail">Email</label>
@@ -2783,7 +2783,50 @@
     </div>
   </div>
   
-  <!-- ============ RESET PIN MODAL ============ -->
+  <!-- ============ EDIT DETAILS MODAL ============ -->
+  <div id="editDetailsModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>📝 Edit Hotel Details</h3>
+        <button id="closeEditDetailsModalBtn" class="btn btn-icon btn-ghost" aria-label="Close">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="editDetailsName">Name</label>
+          <input type="text" id="editDetailsName" maxlength="100" required>
+        </div>
+        <div class="form-group">
+          <label for="editDetailsCity">City</label>
+          <input type="text" id="editDetailsCity" maxlength="100" required>
+        </div>
+        <div class="form-group">
+          <label for="editDetailsPhone">Phone</label>
+          <input type="text" id="editDetailsPhone" maxlength="15" required>
+        </div>
+        <div class="form-group">
+          <label for="editDetailsEmail">Email</label>
+          <input type="email" id="editDetailsEmail" maxlength="100">
+        </div>
+        <div class="form-group">
+          <label for="editDetailsPlan">Plan</label>
+          <select id="editDetailsPlan">
+            <option value="STARTER">Starter (₹299)</option>
+            <option value="STANDARD">Standard (₹499)</option>
+            <option value="PRO">Pro (₹999)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="editDetailsCode">Code</label>
+          <input type="text" id="editDetailsCode" readonly style="background:var(--slate-100);font-weight:600;color:var(--slate-700);">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="cancelEditDetailsBtn" class="btn btn-secondary">Cancel</button>
+        <button id="saveEditDetailsBtn" class="btn btn-primary">Save Changes</button>
+      </div>
+    </div>
+  </div>
+
   <div id="resetPinModal" class="modal">
     <div class="modal-content">
       <div class="modal-header">

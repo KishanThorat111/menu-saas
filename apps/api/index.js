@@ -1,3 +1,4 @@
+    // ...existing code...
 const path = require("path");
 const { appendFile, mkdir } = require('fs/promises');
 const crypto = require('crypto');
@@ -861,6 +862,60 @@ function registerRoutes() {
       return { authenticated: true, session: { expiresAt } };
     });
 
+    // PATCH: Edit hotel core details (name, city, phone, email, plan)
+    app.patch('/admin/hotels/:id', async (request, reply) => {
+      const { id } = request.params;
+      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
+        return reply.code(400).send({ error: 'Invalid hotel ID format' });
+      }
+      const schema = z.object({
+        name: z.string().min(1).max(100),
+        city: z.string().min(1).max(100),
+        phone: z.string().min(10).max(15),
+        email: z.string().email().max(100).optional().or(z.literal('')),
+        plan: z.enum(['FREE', 'BASIC', 'PREMIUM', 'STARTER', 'STANDARD', 'PRO'])
+      });
+      let data;
+      try {
+        data = schema.parse(request.body);
+      } catch (err) {
+        if (err.name === 'ZodError') return reply.code(400).send({ error: 'Validation failed', details: err.errors });
+        throw err;
+      }
+      // Get old values for audit
+      const existing = await prisma.hotel.findUnique({
+        where: { id },
+        select: { name: true, city: true, phone: true, email: true, plan: true }
+      });
+      if (!existing) return reply.code(404).send({ error: 'Hotel not found' });
+      // Update
+      const updated = await prisma.hotel.update({
+        where: { id },
+        data: {
+          name: data.name,
+          city: data.city,
+          phone: data.phone,
+          email: data.email || null,
+          plan: data.plan
+        },
+        select: { id: true, name: true, city: true, phone: true, email: true, plan: true, slug: true }
+      });
+      // Audit log
+      await prisma.auditLog.create({
+        data: {
+          hotelId: id,
+          actorType: 'admin',
+          action: 'details_edited',
+          entityType: 'Hotel',
+          entityId: id,
+          oldValue: existing,
+          newValue: updated
+        }
+      });
+      fastify.log.info(`Hotel ${id} details edited by admin`);
+      return updated;
+    });
+
     // Hotel creation — auto-generates 6-char base32 slug, no manual slug input
     app.post('/admin/hotels', async (request, reply) => {
       const schema = z.object({
@@ -1026,8 +1081,9 @@ function registerRoutes() {
           plan: true, status: true, theme: true, views: true,
           trialEnds: true, paidUntil: true, createdAt: true, updatedAt: true,
           paymentMode: true, lastPaymentDate: true, lastPaymentAmount: true,
-          pinResetCount: true, lastPinResetAt: true, lastPinResetBy: true, // [6-DIGIT PIN CHANGE] ADDED
-          deletedAt: true, deletedBy: true, purgeAfter: true, // Soft delete fields
+          pinResetCount: true, lastPinResetAt: true, lastPinResetBy: true,
+          deletedAt: true, deletedBy: true, purgeAfter: true,
+          email: true,
           categories: {
             include: { items: true }
           },
@@ -1036,6 +1092,8 @@ function registerRoutes() {
       });
 
       if (!hotel) return reply.code(404).send({ error: 'Hotel not found' });
+      // Always return email as string (empty if null)
+      hotel.email = hotel.email || '';
       return hotel;
     });
 
