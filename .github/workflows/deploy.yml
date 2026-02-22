@@ -62,6 +62,8 @@ jobs:
             docker compose logs --tail 20 api
             
             # Health check validation - fail deploy if API is not healthy
+            # Port 3000 is NOT exposed to host (Caddy handles external access)
+            # So we check health INSIDE the container
             echo "Running health check..."
-            curl -sf http://localhost:3000/health || { echo "❌ Health check FAILED! API is not responding."; docker compose logs --tail 50 api; exit 1; }
+            docker compose exec -T api wget -qO- http://127.0.0.1:3000/health || { echo "❌ Health check FAILED! API is not responding."; docker compose logs --tail 50 api; exit 1; }
             echo "✅ Health check passed!"
