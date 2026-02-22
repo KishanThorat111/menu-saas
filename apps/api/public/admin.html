@@ -1696,18 +1696,19 @@
       <div class="login-box">
         <div class="auth-logo">🔐</div>
         <h2>Hotel Admin Login</h2>
-        <p>Enter your hotel slug and PIN to access your dashboard</p>
+        <p>Enter your 6-character menu code and PIN to access your dashboard</p>
 
         <div class="form-group">
-          <label for="slug">Hotel Slug</label>
+          <label for="slug">Menu Code</label>
           <div class="input-with-icon">
-            <span class="input-icon">🏨</span>
+            <span class="input-icon">🎨</span>
             <input
               type="text"
               id="slug"
-              placeholder="your-hotel-name"
+              placeholder="ABC234"
+              maxlength="6"
               autocomplete="off"
-              style="text-transform: lowercase;"
+              style="text-transform: uppercase; font-family: var(--font-mono); letter-spacing: 0.2em; font-weight: 600;"
             >
           </div>
         </div>

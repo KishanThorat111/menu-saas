@@ -11,7 +11,7 @@ datasource db {
 model Hotel {
   id            String   @id @default(uuid())
   tenantId      String   @unique @default(uuid())
-  slug          String   @unique
+  slug          String   @unique @db.Char(6)  // Base32 menu code (A-Z, 2-7) for QR-optimized short URLs
 
   name          String
   city          String
@@ -47,10 +47,16 @@ model Hotel {
   views         Int      @default(0)
   lastViewAt    DateTime?
 
+  // Soft delete fields (DPDPA compliance)
+  deletedAt     DateTime?
+  deletedBy     String?
+  purgeAfter    DateTime?
+
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
   @@index([city, status])
+  @@index([status, deletedAt])
   @@index([paidUntil])
   @@index([status, trialEnds])
 }
@@ -127,6 +133,7 @@ enum HotelStatus {
   GRACE
   EXPIRED
   SUSPENDED
+  DELETED
 }
 
 enum PaymentMode {

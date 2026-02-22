@@ -5,6 +5,7 @@ const ITEMS_PER_PAGE = 10;
 let currentPage = 1;
 let currentEditId = null;
 let currentResetPinId = null; // NEW: Track which hotel is being reset
+let currentDeleteId = null; // Track which hotel is being deleted
 let searchDebounceTimer = null;
 let isLoggingIn = false;
 let currentSearchQuery = '';
@@ -219,12 +220,13 @@ async function fetchGlobalStats() {
   try {
     const response = await fetchAPI('/admin/hotels?limit=1000');
     const allHotels = response.hotels || [];
+    const nonDeleted = allHotels.filter(h => h.status !== 'DELETED');
     
     globalStats = {
-      total: response.total || allHotels.length,
-      trial: allHotels.filter(h => h.status === 'TRIAL').length,
-      active: allHotels.filter(h => h.status === 'ACTIVE').length,
-      views: allHotels.reduce((sum, h) => sum + (h.views || 0), 0)
+      total: nonDeleted.length,
+      trial: nonDeleted.filter(h => h.status === 'TRIAL').length,
+      active: nonDeleted.filter(h => h.status === 'ACTIVE').length,
+      views: nonDeleted.reduce((sum, h) => sum + (h.views || 0), 0)
     };
     
     updateStatsDisplay();
@@ -288,9 +290,21 @@ function renderTable(hotels) {
     const trialInfo = hotel.trialEnds ? formatDate(hotel.trialEnds) : null;
     const paidInfo = hotel.paidUntil ? formatDate(hotel.paidUntil) : null;
     const lastResetText = formatRelativeTime(hotel.lastPinResetAt);
+    const isDeleted = hotel.status === 'DELETED';
     
     let dateDisplay = '';
-    if (hotel.status === 'TRIAL' && trialInfo) {
+    if (isDeleted && hotel.deletedAt) {
+      const deletedDate = formatDate(hotel.deletedAt);
+      const purgeDate = hotel.purgeAfter ? formatDate(hotel.purgeAfter) : null;
+      dateDisplay = `<div class="date-info">
+        Deleted: ${deletedDate.formatted}
+      </div>`;
+      if (purgeDate) {
+        dateDisplay += `<div class="date-info ${purgeDate.isOverdue ? 'overdue' : ''}">
+          Purge after: ${purgeDate.formatted}
+        </div>`;
+      }
+    } else if (hotel.status === 'TRIAL' && trialInfo) {
       dateDisplay = `<div class="date-info ${trialInfo.isOverdue ? 'overdue' : ''}">
         Trial ends: ${trialInfo.formatted}
       </div>`;
@@ -306,18 +320,50 @@ function renderTable(hotels) {
           🔑 ${hotel.pinResetCount} reset${hotel.pinResetCount > 1 ? 's' : ''}
          </span>`
       : '<span class="reset-count-badge zero">🔑 0 resets</span>';
+
+    // Action buttons: different for DELETED hotels
+    let actionButtons = '';
+    if (isDeleted) {
+      actionButtons = `
+        <button class="btn btn-sm btn-danger purge-hotel-btn"
+          data-id="${hotel.id}"
+          data-name="${escapeHtml(hotel.name)}"
+          title="Permanently remove all data and images">
+          🗑️ Purge Now
+        </button>`;
+    } else {
+      actionButtons = `
+        <button class="btn btn-sm btn-secondary edit-hotel-btn"
+          data-id="${hotel.id}" 
+          data-name="${escapeHtml(hotel.name)}" 
+          data-status="${hotel.status}">
+          ✏️ Edit Status
+        </button>
+        <button class="btn btn-sm btn-warning reset-pin-btn"
+          data-id="${hotel.id}"
+          data-name="${escapeHtml(hotel.name)}"
+          title="Reset PIN - Current PIN will be invalidated">
+          🔑 Reset PIN
+        </button>
+        <button class="btn btn-sm btn-danger delete-hotel-btn"
+          data-id="${hotel.id}"
+          data-name="${escapeHtml(hotel.name)}"
+          title="Soft delete - Anonymize PII, disable access">
+          ⛔ Delete
+        </button>`;
+    }
     
     return `
-      <tr>
+      <tr${isDeleted ? ' style="opacity:0.6;"' : ''}>
         <td data-label="Hotel">
           <div class="hotel-info">
             <span class="hotel-name">${escapeHtml(hotel.name)}</span>
             <span class="hotel-meta">${escapeHtml(hotel.city)} • ${escapeHtml(hotel.phone || 'No phone')}</span>
             <code class="hotel-slug">${escapeHtml(hotel.slug)}</code>
-            <div class="hotel-links">
-              <a href="/admin.html" target="_blank">Admin</a>
-              <a href="/menu.html?h=${escapeHtml(hotel.slug)}" target="_blank">Menu</a>
-            </div>
+            ${!isDeleted ? `<div class="hotel-links">
+              <a href="/dashboard" target="_blank">Dashboard</a>
+              <a href="/m/${escapeHtml(hotel.slug)}" target="_blank">Menu</a>
+            </div>` : ''}
           </div>
         </td>
         <td data-label="Plan"><span class="plan-badge">${hotel.plan}</span></td>
@@ -327,18 +373,7 @@ function renderTable(hotels) {
         <td data-label="PIN Resets">${resetBadge}</td>
         <td data-label="Actions">
           <div class="action-buttons">
-            <button class="btn btn-sm btn-secondary edit-hotel-btn"
-              data-id="${hotel.id}" 
-              data-name="${escapeHtml(hotel.name)}" 
-              data-status="${hotel.status}">
-              ✏️ Edit Status
-            </button>
-            <button class="btn btn-sm btn-warning reset-pin-btn"
-              data-id="${hotel.id}"
-              data-name="${escapeHtml(hotel.name)}"
-              title="Reset PIN - Current PIN will be invalidated">
-              🔑 Reset PIN
-            </button>
+            ${actionButtons}
           </div>
         </td>
       </tr>
@@ -361,6 +396,20 @@ function renderTable(hotels) {
       const id = this.dataset.id;
       const name = this.dataset.name;
       openResetPinModal(id, name);
+    });
+  });
+
+  // Attach delete button listeners
+  tbody.querySelectorAll('.delete-hotel-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+      openDeleteModal(this.dataset.id, this.dataset.name);
+    });
+  });
+
+  // Attach purge button listeners
+  tbody.querySelectorAll('.purge-hotel-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+      openPurgeModal(this.dataset.id, this.dataset.name);
     });
   });
 }
@@ -518,6 +567,71 @@ async function confirmResetPin() {
   }
 }
 
+// ==================== DELETE HOTEL MODAL ====================
+function openDeleteModal(hotelId, hotelName) {
+  currentDeleteId = hotelId;
+  document.getElementById('deleteHotelName').textContent = hotelName;
+  document.getElementById('deleteModal').classList.add('active');
+}
+
+function closeDeleteModal() {
+  document.getElementById('deleteModal').classList.remove('active');
+  currentDeleteId = null;
+}
+
+async function confirmDeleteHotel() {
+  if (!currentDeleteId) return;
+  
+  setLoading('confirmDeleteBtn', true);
+  try {
+    const result = await fetchAPI(`/admin/hotels/${currentDeleteId}`, {
+      method: 'DELETE'
+    });
+    
+    showToast(result.message || 'Hotel deleted and PII anonymized.', 'success', 5000);
+    closeDeleteModal();
+    await fetchHotels();
+    await fetchGlobalStats();
+  } catch (e) {
+    showToast(e.message || 'Failed to delete hotel', 'error');
+  } finally {
+    setLoading('confirmDeleteBtn', false, '⛔ Confirm Delete');
+  }
+}
+
+// ==================== PURGE HOTEL MODAL ====================
+function openPurgeModal(hotelId, hotelName) {
+  currentDeleteId = hotelId; // reuse state
+  document.getElementById('purgeHotelName').textContent = hotelName || 'Deleted Hotel';
+  document.getElementById('purgeModal').classList.add('active');
+}
+
+function closePurgeModal() {
+  document.getElementById('purgeModal').classList.remove('active');
+  currentDeleteId = null;
+}
+
+async function confirmPurgeHotel() {
+  if (!currentDeleteId) return;
+  
+  setLoading('confirmPurgeBtn', true);
+  try {
+    const result = await fetchAPI(`/admin/hotels/${currentDeleteId}/purge`, {
+      method: 'DELETE'
+    });
+    
+    const msg = `Hotel purged. ${result.purged?.imagesDeleted || 0} images deleted from storage.`;
+    showToast(msg, 'success', 5000);
+    closePurgeModal();
+    await fetchHotels();
+    await fetchGlobalStats();
+  } catch (e) {
+    showToast(e.message || 'Failed to purge hotel', 'error');
+  } finally {
+    setLoading('confirmPurgeBtn', false, '🗑️ Confirm Purge');
+  }
+}
+
 // UPDATED: 8-digit PIN generation and validation
 async function createHotel() {
   const payload = {
@@ -525,12 +639,11 @@ async function createHotel() {
     city: document.getElementById('hCity').value.trim(),
     phone: document.getElementById('hPhone').value.trim(),
     email: document.getElementById('hEmail').value.trim() || undefined,
-    slug: document.getElementById('hSlug').value.trim(),
     pin: document.getElementById('hPin').value.trim(),
     plan: document.getElementById('hPlan').value
   };
   
-  if (!payload.name || !payload.city || !payload.phone || !payload.slug || !payload.pin) {
+  if (!payload.name || !payload.city || !payload.phone || !payload.pin) {
     showToast('Please fill all required fields', 'error');
     return;
   }
@@ -553,11 +666,11 @@ async function createHotel() {
       body: JSON.stringify(payload)
     });
     
-    // Show PIN for 5 seconds
-    showToast(`Hotel created! PIN: ${result.pin}`, 'success', 5000);
+    // Show menu code + PIN + short URL
+    showToast(`Hotel created! Code: ${result.slug} | PIN: ${result.pin} | URL: ${result.menuUrl}`, 'success', 8000);
     
     // Clear form
-    ['hName', 'hCity', 'hPhone', 'hEmail', 'hSlug', 'hPin'].forEach(id => {
+    ['hName', 'hCity', 'hPhone', 'hEmail', 'hPin'].forEach(id => {
       document.getElementById(id).value = '';
     });
     
@@ -592,11 +705,6 @@ function autoGeneratePin() {
   }
 }
 
-function handleSlugInput(e) {
-  e.target.value = e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '');
-}
-
-// UPDATED: 8-digit input handler
 function handlePinInput(e) {
   e.target.value = e.target.value.replace(/[^0-9]/g, '').slice(0, 8);
 }
@@ -636,7 +744,6 @@ function setupEventListeners() {
   
   // Create hotel form
   document.getElementById('createBtn').addEventListener('click', createHotel);
-  document.getElementById('hSlug').addEventListener('input', handleSlugInput);
   document.getElementById('hPin').addEventListener('input', handlePinInput);
   
   // NEW: Auto-generate PIN button if exists
@@ -669,12 +776,30 @@ function setupEventListeners() {
   document.getElementById('resetPinModal').addEventListener('click', function(e) {
     if (e.target.id === 'resetPinModal') closeResetPinModal();
   });
+  document.getElementById('deleteModal').addEventListener('click', function(e) {
+    if (e.target.id === 'deleteModal') closeDeleteModal();
+  });
+  document.getElementById('purgeModal').addEventListener('click', function(e) {
+    if (e.target.id === 'purgeModal') closePurgeModal();
+  });
   
+  // Delete Modal
+  document.getElementById('closeDeleteModalBtn').addEventListener('click', closeDeleteModal);
+  document.getElementById('cancelDeleteBtn').addEventListener('click', closeDeleteModal);
+  document.getElementById('confirmDeleteBtn').addEventListener('click', confirmDeleteHotel);
+
+  // Purge Modal
+  document.getElementById('closePurgeModalBtn').addEventListener('click', closePurgeModal);
+  document.getElementById('cancelPurgeBtn').addEventListener('click', closePurgeModal);
+  document.getElementById('confirmPurgeBtn').addEventListener('click', confirmPurgeHotel);
+
   // Escape key to close modals
   document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {
       closeEditModal();
       closeResetPinModal();
+      closeDeleteModal();
+      closePurgeModal();
     }
   });
 

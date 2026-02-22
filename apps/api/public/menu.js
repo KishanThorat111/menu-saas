@@ -11,7 +11,11 @@
   function $(id) { return document.getElementById(id); }
 
   function getSlug() {
-    return new URLSearchParams(window.location.search).get('h');
+    // Support both /m/:code short URLs and legacy ?h= query param
+    var pathMatch = window.location.pathname.match(/^\/m\/([A-Za-z2-7]{6})$/);
+    if (pathMatch) return pathMatch[1].toUpperCase();
+    var param = new URLSearchParams(window.location.search).get('h');
+    return param ? param.toUpperCase().trim() : null;
   }
 
   function esc(text) {
