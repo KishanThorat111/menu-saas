@@ -1,4 +1,4 @@
-const API = '';
+const API = window.location.origin;
 let hotel = null;
 let currentTab = 'menu';
 
@@ -52,7 +52,7 @@ async function apiFetch(endpoint, options = {}) {
   return res;
 }
 
-// UPDATED: 6-char base32 code + 8-digit PIN validation
+// LOGIN: 6-char base32 code + 8-digit PIN
 async function login() {
   const code = document.getElementById('slug').value.trim().toUpperCase();
   const pin = document.getElementById('pin').value.trim();
@@ -260,27 +260,57 @@ function createItemElement(item, categoryId, isHidden = false) {
   actionsDiv.className = 'actions';
   
   if (!isHidden) {
-    const toggleBtn = document.createElement('button');
-    toggleBtn.className = 'btn btn-warning btn-sm';
-    toggleBtn.textContent = item.isPopular ? 'Unmark Popular' : 'Mark Popular';
-    toggleBtn.addEventListener('click', () => togglePopular(item.id, !item.isPopular));
-    actionsDiv.appendChild(toggleBtn);
+  const toggleBtn = document.createElement('button');
+  toggleBtn.className = 'btn btn-warning btn-sm';
+  toggleBtn.innerHTML = `<span class="btn-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="12 2 15 9 22 9 17 14 19 21 12 17 5 21 7 14 2 9 9 9"></polygon></svg></span><span class="btn-text">${item.isPopular ? 'Popular' : 'Mark'}</span>`;
+  toggleBtn.title = item.isPopular ? 'Unmark Popular' : 'Mark Popular';
+  toggleBtn.setAttribute('aria-pressed', item.isPopular ? 'true' : 'false');
+  toggleBtn.addEventListener('click', () => togglePopular(item.id, !item.isPopular));
+  actionsDiv.appendChild(toggleBtn);
     
     const deleteBtn = document.createElement('button');
     deleteBtn.className = 'btn btn-danger btn-sm';
-    deleteBtn.textContent = 'Remove';
+    deleteBtn.innerHTML = `<span class="btn-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path></svg></span><span class="btn-text">Remove</span>`;
+    deleteBtn.title = 'Remove item';
     deleteBtn.addEventListener('click', () => deleteItem(item.id));
     actionsDiv.appendChild(deleteBtn);
+
+    // Toggle Veg Button
+    const vegBtn = document.createElement('button');
+    vegBtn.className = 'btn btn-secondary btn-sm';
+    vegBtn.dataset.action = 'toggle-veg';
+    vegBtn.innerHTML = `<span class="btn-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 10c0 7-9 11-9 11s-9-4-9-11c0-4 4-8 9-8 5 0 9 4 9 8z"></path><path d="M7 10c0 4 5 7 5 7"></path></svg></span><span class="btn-text">${item.isVeg ? 'Veg' : 'Non-Veg'}</span>`;
+    vegBtn.title = item.isVeg ? 'Make Non-Veg' : 'Make Veg';
+    vegBtn.setAttribute('aria-pressed', item.isVeg ? 'true' : 'false');
+    vegBtn.addEventListener('click', () => toggleVeg(item.id, item.isVeg));
+    actionsDiv.appendChild(vegBtn);
+
+    // Edit Price Button (use Indian rupee symbol)
+    const priceBtn = document.createElement('button');
+    priceBtn.className = 'btn btn-primary btn-sm';
+    priceBtn.innerHTML = `<span class="btn-icon" aria-hidden="true">₹</span><span class="btn-text">Price</span>`;
+    priceBtn.title = 'Edit price (₹)';
+    priceBtn.addEventListener('click', () => editPrice(item.id, item.price));
+    actionsDiv.appendChild(priceBtn);
+
+    // Edit Description Button
+    const descBtn = document.createElement('button');
+    descBtn.className = 'btn btn-secondary btn-sm';
+    descBtn.innerHTML = `<span class="btn-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"></path></svg></span><span class="btn-text">Desc</span>`;
+    descBtn.title = 'Edit description';
+    descBtn.addEventListener('click', () => editDescription(item.id, item.description));
+    actionsDiv.appendChild(descBtn);
   } else {
     const restoreBtn = document.createElement('button');
     restoreBtn.className = 'btn btn-success btn-sm';
-    restoreBtn.textContent = 'Restore';
+    restoreBtn.innerHTML = `<span class="btn-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.13-3.36L23 10"></path><path d="M20.49 15a9 9 0 0 1-14.13 3.36L1 14"></path></svg></span><span class="btn-text">Restore</span>`;
     restoreBtn.addEventListener('click', () => restoreItem(item.id));
     actionsDiv.appendChild(restoreBtn);
     
     const permDeleteBtn = document.createElement('button');
     permDeleteBtn.className = 'btn btn-danger btn-sm';
-    permDeleteBtn.textContent = 'Delete Forever';
+    permDeleteBtn.innerHTML = `<span class="btn-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path></svg></span><span class="btn-text">Delete</span>`;
+    permDeleteBtn.title = 'Delete forever (irreversible)';
     permDeleteBtn.addEventListener('click', () => permanentDelete(item.id));
     actionsDiv.appendChild(permDeleteBtn);
   }
@@ -299,7 +329,8 @@ function createItemElement(item, categoryId, isHidden = false) {
   fileLabel.htmlFor = `file-${item.id}`;
   fileLabel.className = 'file-input-label';
   fileLabel.id = `label-${item.id}`;
-  fileLabel.textContent = `📷 ${hasImage ? 'Change' : 'Add'} Image`;
+  fileLabel.innerHTML = `<span class="btn-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="7" width="18" height="14" rx="2" ry="2"></rect><circle cx="12" cy="13" r="3"></circle><path d="M8 7l2-3h4l2 3"></path></svg></span><span class="btn-text">Image</span>`;
+  fileLabel.title = hasImage ? 'Change image' : 'Add image';
   
   fileWrapper.appendChild(fileInput);
   fileWrapper.appendChild(fileLabel);
@@ -331,7 +362,9 @@ async function addItem() {
   const name = document.getElementById('itemName').value.trim();
   const price = parseInt(document.getElementById('itemPrice').value);
   const desc = document.getElementById('itemDesc').value.trim();
-  const isVeg = document.getElementById('isVeg').checked;
+  // Veg option: read from radio (veg/non-veg). Default: non-veg when nothing selected.
+  const vegRadio = document.querySelector('input[name="vegOption"]:checked');
+  const isVeg = vegRadio ? (vegRadio.value === 'veg') : false;
   const isPopular = document.getElementById('isPopular').checked;
   const imageInput = document.getElementById('newItemImage');
   const btn = document.getElementById('addItemBtn');
@@ -347,8 +380,15 @@ async function addItem() {
   try {
     let options = { method: 'POST' };
     if (imageInput.files.length > 0) {
+      const file = imageInput.files[0];
+      if (file.size > 5 * 1024 * 1024) {
+        showToast('Image must be less than 5MB', 'error');
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+        return;
+      }
       btn.innerHTML = 'Compressing...';
-      const compressed = await compressImage(imageInput.files[0], 800, 0.85);
+      const compressed = await compressImage(file, 800, 0.85);
       const fd = new FormData();
       fd.append('categoryId', categoryId);
       fd.append('name', name);
@@ -370,7 +410,11 @@ async function addItem() {
     document.getElementById('itemName').value = '';
     document.getElementById('itemPrice').value = '';
     document.getElementById('itemDesc').value = '';
-    document.getElementById('isVeg').checked = false;
+    // reset veg radios to default non-veg
+    const nonVegRadio = document.getElementById('vegOptionNonVeg');
+    const vegRadioReset = document.getElementById('vegOptionVeg');
+    if (nonVegRadio) nonVegRadio.checked = true;
+    if (vegRadioReset) vegRadioReset.checked = false;
     document.getElementById('isPopular').checked = false;
     loadDashboard();
   } catch (e) {
@@ -378,7 +422,24 @@ async function addItem() {
   } finally {
     btn.innerHTML = originalText;
     btn.disabled = false;
+    // reset file upload label/preview
+    resetNewItemFileLabel();
   }
+}
+
+// reset Add Item file label and preview helper
+function resetNewItemFileLabel() {
+  try {
+    const imageInput = document.getElementById('newItemImage');
+    if (!imageInput) return;
+    imageInput.value = '';
+    const fileLabel = imageInput.parentNode && imageInput.parentNode.querySelector('.file-upload-text');
+    if (fileLabel) fileLabel.textContent = 'Choose Dish Image';
+    const fileLabelWrap = imageInput.parentNode && imageInput.parentNode.querySelector('.file-upload-label');
+    if (fileLabelWrap) fileLabelWrap.classList.remove('file-selected');
+    const prev = imageInput.parentNode && imageInput.parentNode.querySelector('.file-preview-thumb');
+    if (prev && prev.parentNode) prev.parentNode.removeChild(prev);
+  } catch (_) {}
 }
 
 async function compressImage(file, maxWidth, quality) {
@@ -432,8 +493,59 @@ async function uploadImage(itemId, input) {
   }
 }
 
+// Show selected filename / preview for Add Item image input
+function handleNewItemImageChange(e) {
+  const input = e.target;
+  const wrapper = input.parentNode;
+  if (!wrapper) return;
+  const label = wrapper.querySelector('.file-upload-label');
+  const text = wrapper.querySelector('.file-upload-text');
+  if (!label || !text) return;
+
+  const file = input.files && input.files[0];
+  if (!file) {
+    text.textContent = 'Choose Dish Image';
+    label.classList.remove('file-selected');
+    const prev = wrapper.querySelector('.file-preview-thumb');
+    if (prev && prev.parentNode) prev.parentNode.removeChild(prev);
+    return;
+  }
+
+  text.textContent = file.name.length > 28 ? file.name.slice(0, 24) + '...' : file.name;
+  label.classList.add('file-selected');
+
+  if (file.type.startsWith('image/')) {
+    const reader = new FileReader();
+    reader.onload = function(evt) {
+      let prev = wrapper.querySelector('.file-preview-thumb');
+      if (!prev) {
+        prev = document.createElement('img');
+        prev.className = 'file-preview-thumb';
+        prev.style.width = '40px';
+        prev.style.height = '40px';
+        prev.style.objectFit = 'cover';
+        prev.style.borderRadius = '6px';
+        prev.style.marginRight = '0.5rem';
+        const icon = label.querySelector('.file-upload-icon');
+        if (icon) label.insertBefore(prev, icon);
+        else label.insertBefore(prev, label.firstChild);
+      }
+      prev.src = evt.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  const newItemImageInput = document.getElementById('newItemImage');
+  if (newItemImageInput) newItemImageInput.addEventListener('change', handleNewItemImageChange);
+});
+
 async function deleteItem(id) {
-  if (!confirm('Remove this item from menu?')) return;
+  if (!confirm('Remove this item from menu?')) {
+    try { document.activeElement && document.activeElement.blur && document.activeElement.blur(); } catch(e){}
+    return;
+  }
   try {
     await apiFetch(`/items/${id}`, { method: 'DELETE' });
     showToast('Item removed');
@@ -477,25 +589,305 @@ async function togglePopular(id, makePopular) {
   }
 }
 
-// Event listeners
-document.getElementById('loginBtn').addEventListener('click', login);
-document.getElementById('pin').addEventListener('keypress', e => {
-  if (e.key === 'Enter') login();
-});
-document.getElementById('tabMenu').addEventListener('click', function() {
-  switchTab('menu', this);
-});
-document.getElementById('tabAdd').addEventListener('click', function() {
-  switchTab('add', this);
-});
-document.getElementById('addCatBtn').addEventListener('click', addCategory);
-document.getElementById('addItemBtn').addEventListener('click', addItem);
-document.getElementById('themeSelect').addEventListener('change', function() {
-  changeTheme(this.value);
-});
-document.getElementById('logoutBtn').addEventListener('click', logout);
+// Toggle Veg Status
+async function toggleVeg(id, currentIsVeg) {
+  try {
+    const newVeg = !currentIsVeg;
+    await apiFetch(`/items/${id}`, { 
+      method: 'PATCH', 
+      body: JSON.stringify({ isVeg: newVeg }) 
+    });
 
-// ── Custom Styled Dropdowns ─────────────────────────────────────────────
+    showToast(newVeg ? 'Marked as Veg' : 'Marked as Non-Veg');
+
+    // Update local state and DOM immediately
+    if (hotel && hotel.categories) {
+      for (const cat of hotel.categories) {
+        const item = cat.items?.find(i => i.id === id);
+        if (item) {
+          item.isVeg = newVeg;
+          
+          const itemDiv = document.getElementById(`item-${id}`);
+          if (itemDiv) {
+            // Update VEG/NON-VEG badge - SAFER SELECTOR (first span in item-name)
+            const badge = itemDiv.querySelector('.item-name span');
+            if (badge) {
+              badge.className = newVeg ? 'veg' : 'non-veg';
+              badge.textContent = newVeg ? 'VEG' : 'NON-VEG';
+            }
+
+            // Update button markup (keep icon + text structure), title and pressed state
+            const vegBtn = itemDiv.querySelector('button[data-action="toggle-veg"]');
+            if (vegBtn) {
+              vegBtn.innerHTML = `<span class="btn-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 10c0 7-9 11-9 11s-9-4-9-11c0-4 4-8 9-8 5 0 9 4 9 8z"></path><path d="M7 10c0 4 5 7 5 7"></path></svg></span><span class="btn-text">${newVeg ? 'Veg' : 'Non-Veg'}</span>`;
+              vegBtn.title = newVeg ? 'Make Non-Veg' : 'Make Veg';
+              vegBtn.setAttribute('aria-pressed', newVeg ? 'true' : 'false');
+            }
+          }
+          break;
+        }
+      }
+    }
+  } catch (e) {
+    showToast(e.message, 'error');
+  }
+}
+
+// Edit Price
+async function editPrice(id, currentPrice) {
+  try {
+    const result = await openEditModal({
+      title: 'Edit Price',
+      type: 'number',
+      value: String(currentPrice),
+      placeholder: 'Enter price (₹)'
+    });
+    if (result == null) return; // cancelled
+
+    const parsed = parseInt(result, 10);
+    if (isNaN(parsed) || parsed <= 0) {
+      showToast('Invalid price', 'error');
+      return;
+    }
+
+    await apiFetch(`/items/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ price: parsed })
+    });
+    showToast('Price updated!');
+
+    // Update local state and DOM
+    if (hotel && hotel.categories) {
+      for (const cat of hotel.categories) {
+        const item = cat.items?.find(i => i.id === id);
+        if (item) {
+          item.price = parsed;
+          const itemDiv = document.getElementById(`item-${id}`);
+          if (itemDiv) {
+            const priceEl = itemDiv.querySelector('.price');
+            if (priceEl) priceEl.textContent = `₹${parsed}`;
+          }
+          break;
+        }
+      }
+    }
+  } catch (e) {
+    showToast(e.message, 'error');
+  }
+}
+
+// Edit Description
+async function editDescription(id, currentDesc) {
+  try {
+    const result = await openEditModal({
+      title: 'Edit Description',
+      type: 'textarea',
+      value: currentDesc || '',
+      placeholder: 'Enter description',
+      maxLength: 500
+    });
+    if (result == null) return; // cancelled
+
+    await apiFetch(`/items/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ description: result })
+    });
+    showToast('Description updated!');
+
+    // Update local state and DOM
+    if (hotel && hotel.categories) {
+      for (const cat of hotel.categories) {
+        const item = cat.items?.find(i => i.id === id);
+        if (item) {
+          item.description = result;
+          const itemDiv = document.getElementById(`item-${id}`);
+          if (itemDiv) {
+            const metaDiv = itemDiv.querySelector('.item-meta');
+            if (metaDiv) {
+              const priceSpan = document.createElement('span');
+              priceSpan.className = 'price';
+              priceSpan.textContent = `₹${item.price}`;
+              metaDiv.innerHTML = '';
+              metaDiv.appendChild(priceSpan);
+              if (result) {
+                const descSpan = document.createElement('span');
+                descSpan.style.cssText = 'color:#64748b;font-size:0.8125rem;';
+                descSpan.textContent = ` • ${result}`;
+                metaDiv.appendChild(descSpan);
+              }
+            }
+          }
+          break;
+        }
+      }
+    }
+  } catch (e) {
+    showToast(e.message, 'error');
+  }
+}
+
+// Modal helpers
+function openEditModal({ title = 'Edit', type = 'text', value = '', placeholder = '', maxLength = 0 } = {}) {
+  return new Promise((resolve) => {
+    const overlay = document.getElementById('editModalOverlay');
+    const titleEl = document.getElementById('editModalTitle');
+    const input = document.getElementById('editModalInput');
+    const textarea = document.getElementById('editModalTextarea');
+    const errorEl = document.getElementById('editModalError');
+    const saveBtn = document.getElementById('editModalSave');
+    const cancelBtn = document.getElementById('editModalCancel');
+    const closeBtn = document.getElementById('editModalClose');
+
+    titleEl.textContent = title;
+    input.classList.add('hidden');
+    textarea.classList.add('hidden');
+    input.value = '';
+    textarea.value = '';
+
+    let activeElBefore = document.activeElement;
+
+    function cleanup() {
+      overlay.classList.remove('show');
+      overlay.setAttribute('aria-hidden', 'true');
+      document.removeEventListener('keydown', onKeyDown);
+      document.removeEventListener('keydown', trapHandler);
+      saveBtn.removeEventListener('click', onSave);
+      cancelBtn.removeEventListener('click', onCancel);
+      closeBtn.removeEventListener('click', onCancel);
+      if (activeElBefore && activeElBefore.focus) activeElBefore.focus();
+    }
+
+    function finish(val) {
+      cleanup();
+      resolve(val);
+    }
+
+    function onSave(e) {
+      e && e.preventDefault();
+      // validation
+      if (type === 'textarea' && maxLength > 0) {
+        if (textarea.value.trim().length > maxLength) {
+          errorEl.style.display = 'block';
+          errorEl.textContent = `Description must be ${maxLength} characters or less`;
+          textarea.focus();
+          return;
+        }
+      }
+
+      // disable save and show busy state
+      saveBtn.disabled = true;
+      const origSaveText = saveBtn.textContent;
+      saveBtn.textContent = 'Saving...';
+
+      try {
+        if (type === 'number') finish(input.value.trim());
+        else if (type === 'textarea') finish(textarea.value.trim());
+        else finish(input.value.trim());
+      } finally {
+        saveBtn.disabled = false;
+        saveBtn.textContent = origSaveText;
+      }
+    }
+
+    function onCancel(e) {
+      e && e.preventDefault();
+      finish(null);
+    }
+
+    function onKeyDown(e) {
+      if (e.key === 'Escape') onCancel();
+      if (e.key === 'Enter' && type !== 'textarea') {
+        e.preventDefault();
+        onSave(e);
+      }
+    }
+
+    // clear error
+    if (errorEl) { errorEl.style.display = 'none'; errorEl.textContent = ''; }
+
+    // Setup fields
+    if (type === 'textarea') {
+      textarea.classList.remove('hidden');
+      textarea.placeholder = placeholder || '';
+      textarea.value = value || '';
+      setTimeout(() => textarea.focus(), 0);
+    } else {
+      input.type = type === 'number' ? 'number' : 'text';
+      input.classList.remove('hidden');
+      input.placeholder = placeholder || '';
+      input.value = value || '';
+      setTimeout(() => { input.focus(); input.select && input.select(); }, 0);
+    }
+
+    // show
+    overlay.classList.add('show');
+    overlay.setAttribute('aria-hidden', 'false');
+
+    // focus trap (simple)
+    const trapHandler = function(e) {
+      const focusable = overlay.querySelectorAll('button, [href], input, textarea, select, [tabindex]:not([tabindex="-1"])');
+      if (!focusable.length) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (e.key === 'Tab') {
+        if (e.shiftKey) {
+          if (document.activeElement === first) { e.preventDefault(); last.focus(); }
+        } else {
+          if (document.activeElement === last) { e.preventDefault(); first.focus(); }
+        }
+      }
+    };
+
+    document.addEventListener('keydown', onKeyDown);
+    document.addEventListener('keydown', trapHandler);
+    saveBtn.addEventListener('click', onSave);
+    cancelBtn.addEventListener('click', onCancel);
+    closeBtn.addEventListener('click', onCancel);
+  });
+}
+
+// SAFE Event listeners (null-checked)
+const loginBtn = document.getElementById('loginBtn');
+if (loginBtn) loginBtn.addEventListener('click', login);
+
+const pinInput = document.getElementById('pin');
+if (pinInput) {
+  pinInput.addEventListener('keypress', e => {
+    if (e.key === 'Enter') login();
+  });
+}
+
+const tabMenu = document.getElementById('tabMenu');
+if (tabMenu) {
+  tabMenu.addEventListener('click', function() {
+    switchTab('menu', this);
+  });
+}
+
+const tabAdd = document.getElementById('tabAdd');
+if (tabAdd) {
+  tabAdd.addEventListener('click', function() {
+    switchTab('add', this);
+  });
+}
+
+const addCatBtn = document.getElementById('addCatBtn');
+if (addCatBtn) addCatBtn.addEventListener('click', addCategory);
+
+const addItemBtn = document.getElementById('addItemBtn');
+if (addItemBtn) addItemBtn.addEventListener('click', addItem);
+
+const themeSelect = document.getElementById('themeSelect');
+if (themeSelect) {
+  themeSelect.addEventListener('change', function() {
+    changeTheme(this.value);
+  });
+}
+
+const logoutBtn = document.getElementById('logoutBtn');
+if (logoutBtn) logoutBtn.addEventListener('click', logout);
+
+// Custom Styled Dropdowns
 (function() {
   var arrowSvg = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>';
 
@@ -560,6 +952,7 @@ document.getElementById('logoutBtn').addEventListener('click', logout);
     }
 
     function closeDD() {
+      // close dropdown
       trigger.classList.remove('open');
       dropdown.classList.remove('open');
     }

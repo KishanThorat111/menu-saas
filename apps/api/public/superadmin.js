@@ -1,4 +1,10 @@
 const API = '';
+// Load DOMPurify
+// For production, use import or CDN
+let DOMPurify;
+if (window.DOMPurify) {
+  DOMPurify = window.DOMPurify;
+}
 const ITEMS_PER_PAGE = 10;
 
 // State management
@@ -372,7 +378,7 @@ function renderTable(hotels) {
             <span class="hotel-meta">${escapeHtml(hotel.city)} • ${escapeHtml(hotel.phone || 'No phone')}</span>
             <code class="hotel-slug">${escapeHtml(hotel.slug)}</code>
             ${!isDeleted ? `<div class="hotel-links">
-              <a href="/dashboard" target="_blank">Dashboard</a>
+              <a href="/admin" target="_blank">Admin</a>
               <a href="/m/${escapeHtml(hotel.slug)}" target="_blank">Menu</a>
             </div>` : ''}
           </div>
@@ -776,14 +782,10 @@ async function createHotel() {
 
 // UPDATED: Generate 8-digit PIN
 function generateRandomPin() {
-  // Use crypto.getRandomValues if available, fallback to Math.random
-  if (window.crypto && window.crypto.getRandomValues) {
-    const array = new Uint32Array(1);
-    window.crypto.getRandomValues(array);
-    return (10000000 + (array[0] % 90000000)).toString();
-  }
-  // Fallback (less secure but functional)
-  return Math.floor(10000000 + Math.random() * 90000000).toString();
+  // Use crypto.getRandomValues only for secure PIN generation
+  const array = new Uint32Array(1);
+  window.crypto.getRandomValues(array);
+  return (10000000 + (array[0] % 90000000)).toString();
 }
 
 // UPDATED: Auto-generate 8-digit PIN in form
