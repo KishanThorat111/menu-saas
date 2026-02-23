@@ -1,27 +1,3 @@
-  // ── Focus Trap for Modal ─────────────────────────────────────────────
-  function trapFocus(element) {
-    const focusableSelectors = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
-    const focusableElements = element.querySelectorAll(focusableSelectors);
-    if (focusableElements.length === 0) return;
-    const first = focusableElements[0];
-    const last = focusableElements[focusableElements.length - 1];
-    element.addEventListener('keydown', function(e) {
-      if (e.key === 'Tab') {
-        if (e.shiftKey) {
-          if (document.activeElement === first) {
-            e.preventDefault();
-            last.focus();
-          }
-        } else {
-          if (document.activeElement === last) {
-            e.preventDefault();
-            first.focus();
-          }
-        }
-      }
-    });
-  }
-
 /* ==========================================================================
    MENUSAAS — PUBLIC MENU ENGINE v2.0
    Performance-first · CSP-compliant · Progressive enhancement
@@ -63,8 +39,6 @@
     modal.classList.add('open');
     modal.setAttribute('aria-hidden', 'false');
     document.body.style.overflow = 'hidden';
-    trapFocus(modal);
-    modalImg.focus();
   }
 
   function closeModal() {
