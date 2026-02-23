@@ -10,7 +10,7 @@ ecommerceweb.shop {
     encode gzip
 
     # No-cache for admin pages (security-sensitive)
-    header /dashboard Cache-Control "no-cache, no-store, must-revalidate"
+    header /admin Cache-Control "no-cache, no-store, must-revalidate"
     header /superadmin Cache-Control "no-cache, no-store, must-revalidate"
     header /superadmin.html Cache-Control "no-cache, no-store, must-revalidate"
     header /admin.html Cache-Control "no-cache, no-store, must-revalidate"
