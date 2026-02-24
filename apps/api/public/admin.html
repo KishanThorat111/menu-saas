@@ -1912,6 +1912,10 @@
       border-radius: var(--radius-xl);
       box-shadow: var(--shadow-2xl);
       padding: 1.25rem;
+      /* Keep modal visible when mobile keyboard opens */
+      max-height: calc(100vh - 3.5rem);
+      overflow: auto;
+      -webkit-overflow-scrolling: touch;
       border: 1px solid var(--border-light);
       animation: modalIn 180ms var(--ease-out);
     }
@@ -1927,6 +1931,22 @@
     .modal-body textarea { min-height:120px; resize:vertical }
     .modal-footer { display:flex; gap:0.5rem; justify-content:flex-end }
     .modal .btn { min-width:110px }
+
+    /* Mobile: pin modal near bottom so keyboard doesn't cover it */
+    @media (max-width: 640px) {
+      .modal-overlay {
+        align-items: flex-end;
+        padding: 0.5rem 0.75rem;
+      }
+      .modal {
+        width: calc(100% - 1rem);
+        max-width: 100%;
+        border-radius: var(--radius-lg);
+        max-height: calc(100vh - 2.5rem);
+      }
+      .modal-header, .modal-footer { position: relative; z-index: 2 }
+      .modal-body { overflow: auto }
+    }
 
     /* ========================================
        19. SCROLLBAR
