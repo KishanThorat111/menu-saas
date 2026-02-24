@@ -731,6 +731,15 @@ async function editDescription(id, currentDesc) {
 // Modal helpers
 function openEditModal({ title = 'Edit', type = 'text', value = '', placeholder = '', maxLength = 0 } = {}) {
   return new Promise((resolve) => {
+    // prevent re-entrancy if modal already open
+    const overlayEl = document.getElementById('editModalOverlay');
+    if (overlayEl && overlayEl.classList.contains('show')) {
+      // already open - focus existing input and return a cancelled promise
+      const existingInput = overlayEl.querySelector('input, textarea');
+      if (existingInput) existingInput.focus();
+      resolve(null);
+      return;
+    }
     const overlay = document.getElementById('editModalOverlay');
     const titleEl = document.getElementById('editModalTitle');
     const input = document.getElementById('editModalInput');
@@ -747,6 +756,7 @@ function openEditModal({ title = 'Edit', type = 'text', value = '', placeholder 
     textarea.value = '';
 
     let activeElBefore = document.activeElement;
+    let handled = false;
 
     function cleanup() {
       overlay.classList.remove('show');
@@ -760,6 +770,8 @@ function openEditModal({ title = 'Edit', type = 'text', value = '', placeholder 
     }
 
     function finish(val) {
+      if (handled) return;
+      handled = true;
       cleanup();
       resolve(val);
     }
@@ -777,6 +789,7 @@ function openEditModal({ title = 'Edit', type = 'text', value = '', placeholder 
       }
 
       // disable save and show busy state
+      if (handled) return;
       saveBtn.disabled = true;
       const origSaveText = saveBtn.textContent;
       saveBtn.textContent = 'Saving...';
@@ -852,6 +865,16 @@ function openEditModal({ title = 'Edit', type = 'text', value = '', placeholder 
 function openConfirmModal({ title = 'Confirm', message = '', confirmText = 'OK' } = {}) {
     return new Promise((resolve) => {
       const overlay = document.getElementById('confirmModalOverlay');
+      if (overlay && overlay.classList.contains('show')) {
+        // already open - focus cancel and return false
+        const cancel = overlay.querySelector('#confirmModalCancel');
+        if (cancel) cancel.focus();
+        resolve(false);
+        return;
+      }
+      let handled = false;
+      
+      // ensure confirm only resolves once
       const titleEl = document.getElementById('confirmModalTitle');
       const messageEl = document.getElementById('confirmModalMessage');
       const confirmBtn = document.getElementById('confirmModalConfirm');
@@ -877,11 +900,15 @@ function openConfirmModal({ title = 'Confirm', message = '', confirmText = 'OK' 
 
       function onConfirm(e) {
         e && e.preventDefault();
+        if (handled) return;
+        handled = true;
         cleanup();
         resolve(true);
       }
       function onCancel(e) {
         e && e.preventDefault();
+        if (handled) return;
+        handled = true;
         cleanup();
         resolve(false);
       }
