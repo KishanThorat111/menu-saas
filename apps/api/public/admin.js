@@ -863,7 +863,7 @@ function openEditModal({ title = 'Edit', type = 'text', value = '', placeholder 
 
 // Confirmation modal helper (uses the same modal styles)
 function openConfirmModal({ title = 'Confirm', message = '', confirmText = 'OK' } = {}) {
-    return new Promise((resolve) => {
+    return new Promise(async (resolve) => {
       const overlay = document.getElementById('confirmModalOverlay');
       if (overlay && overlay.classList.contains('show')) {
         // already open - focus cancel and return false
@@ -873,7 +873,20 @@ function openConfirmModal({ title = 'Confirm', message = '', confirmText = 'OK' 
         return;
       }
       let handled = false;
-      
+
+      // If an input is focused (mobile keyboard up), blur it so keyboard hides
+      // then wait briefly before showing the confirm modal to avoid it being pushed off-screen.
+      const prevActive = document.activeElement;
+      const tag = prevActive && prevActive.tagName && prevActive.tagName.toLowerCase();
+      if (prevActive && (tag === 'input' || tag === 'textarea' || prevActive.isContentEditable)) {
+        try { prevActive.blur(); } catch (_) {}
+        await new Promise(r => setTimeout(r, 180));
+      }
+
+      // Center the confirm modal explicitly so it isn't pinned to bottom under keyboards
+      const prevAlign = overlay && overlay.style ? overlay.style.alignItems : null;
+      if (overlay && overlay.style) overlay.style.alignItems = 'center';
+
       // ensure confirm only resolves once
       const titleEl = document.getElementById('confirmModalTitle');
       const messageEl = document.getElementById('confirmModalMessage');
@@ -895,6 +908,7 @@ function openConfirmModal({ title = 'Confirm', message = '', confirmText = 'OK' 
         confirmBtn.removeEventListener('click', onConfirm);
         cancelBtn.removeEventListener('click', onCancel);
         closeBtn.removeEventListener('click', onCancel);
+        if (overlay && overlay.style) overlay.style.alignItems = prevAlign || '';
         if (activeElBefore && activeElBefore.focus) activeElBefore.focus();
       }
 
