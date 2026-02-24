@@ -542,7 +542,8 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 async function deleteItem(id) {
-  if (!confirm('Remove this item from menu?')) {
+  const ok = await openConfirmModal({ title: 'Remove Item', message: 'Remove this item from menu?', confirmText: 'Remove' });
+  if (!ok) {
     try { document.activeElement && document.activeElement.blur && document.activeElement.blur(); } catch(e){}
     return;
   }
@@ -566,7 +567,8 @@ async function restoreItem(id) {
 }
 
 async function permanentDelete(id) {
-  if (!confirm('WARNING: This will permanently delete the item and its image!')) return;
+  const ok = await openConfirmModal({ title: 'Delete Item', message: 'WARNING: This will permanently delete the item and its image!', confirmText: 'Delete' });
+  if (!ok) return;
   try {
     await apiFetch(`/items/${id}/permanent`, { method: 'DELETE' });
     showToast('Item deleted forever');
@@ -845,6 +847,79 @@ function openEditModal({ title = 'Edit', type = 'text', value = '', placeholder 
     closeBtn.addEventListener('click', onCancel);
   });
 }
+
+// Confirmation modal helper (uses the same modal styles)
+function openConfirmModal({ title = 'Confirm', message = '', confirmText = 'OK' } = {}) {
+    return new Promise((resolve) => {
+      const overlay = document.getElementById('confirmModalOverlay');
+      const titleEl = document.getElementById('confirmModalTitle');
+      const messageEl = document.getElementById('confirmModalMessage');
+      const confirmBtn = document.getElementById('confirmModalConfirm');
+      const cancelBtn = document.getElementById('confirmModalCancel');
+      const closeBtn = document.getElementById('confirmModalClose');
+
+      if (titleEl) titleEl.textContent = title;
+      if (messageEl) messageEl.textContent = message;
+      if (confirmBtn) confirmBtn.textContent = confirmText;
+
+      let activeElBefore = document.activeElement;
+
+      function cleanup() {
+        overlay.classList.remove('show');
+        overlay.setAttribute('aria-hidden', 'true');
+        document.removeEventListener('keydown', onKeyDown);
+        document.removeEventListener('keydown', trapHandler);
+        confirmBtn.removeEventListener('click', onConfirm);
+        cancelBtn.removeEventListener('click', onCancel);
+        closeBtn.removeEventListener('click', onCancel);
+        if (activeElBefore && activeElBefore.focus) activeElBefore.focus();
+      }
+
+      function onConfirm(e) {
+        e && e.preventDefault();
+        cleanup();
+        resolve(true);
+      }
+      function onCancel(e) {
+        e && e.preventDefault();
+        cleanup();
+        resolve(false);
+      }
+
+      function onKeyDown(e) {
+        if (e.key === 'Escape') onCancel();
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          onConfirm();
+        }
+      }
+
+      const trapHandler = function(e) {
+        const focusable = overlay.querySelectorAll('button, [href], input, textarea, select, [tabindex]:not([tabindex="-1"])');
+        if (!focusable.length) return;
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (e.key === 'Tab') {
+          if (e.shiftKey) {
+            if (document.activeElement === first) { e.preventDefault(); last.focus(); }
+          } else {
+            if (document.activeElement === last) { e.preventDefault(); first.focus(); }
+          }
+        }
+      };
+
+      document.addEventListener('keydown', onKeyDown);
+      document.addEventListener('keydown', trapHandler);
+      confirmBtn.addEventListener('click', onConfirm);
+      cancelBtn.addEventListener('click', onCancel);
+      closeBtn.addEventListener('click', onCancel);
+
+      overlay.classList.add('show');
+      overlay.setAttribute('aria-hidden', 'false');
+
+      setTimeout(() => { if (cancelBtn) cancelBtn.focus(); }, 0);
+    });
+  }
 
 // SAFE Event listeners (null-checked)
 const loginBtn = document.getElementById('loginBtn');

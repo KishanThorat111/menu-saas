@@ -1792,7 +1792,7 @@
     }
 
     /* ========================================
-       18. LARGE DESKTOP (1440px+)
+       18. LARGE DESKTOP (1440px+) Handled
        ======================================== */
     @media (min-width: 1440px) {
       .dashboard {
@@ -2161,7 +2161,22 @@
       </div>
     </div>
   </div>
-
+  <!-- Modal for confirmations (Remove / Delete) -->
+  <div id="confirmModalOverlay" class="modal-overlay" aria-hidden="true">
+    <div role="dialog" aria-modal="true" aria-labelledby="confirmModalTitle" class="modal">
+      <div class="modal-header">
+        <div id="confirmModalTitle" class="modal-title">Confirm</div>
+        <button id="confirmModalClose" class="btn btn-secondary btn-sm" aria-label="Close">✕</button>
+      </div>
+      <div class="modal-body">
+        <div id="confirmModalMessage" style="color:var(--slate-700);"></div>
+      </div>
+      <div class="modal-footer">
+        <button id="confirmModalCancel" class="btn btn-secondary">Cancel</button>
+        <button id="confirmModalConfirm" class="btn btn-danger">Delete</button>
+      </div>
+    </div>
+  </div>
   <script src="admin.js"></script>
 </body>
 </html>
