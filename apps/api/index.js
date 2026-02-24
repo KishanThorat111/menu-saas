@@ -151,52 +151,6 @@ async function uploadToR2(buffer, mimetype, hotelId) {
   return `${PUBLIC_URL}/${key}`;
 }
 
-// Optional: Purge CDN cache (Cloudflare) for a hotel's menu URLs
-async function purgeMenuCacheForHotel(hotelId, attempts = 3) {
-  const cfToken = process.env.CF_API_TOKEN;
-  const cfZone = process.env.CF_ZONE_ID;
-  if (!cfToken || !cfZone) return;
-
-  const hotel = await prisma.hotel.findUnique({ where: { id: hotelId }, select: { slug: true } });
-  if (!hotel || !hotel.slug) return;
-
-  const base = APP_URL.replace(/\/$/, '');
-  const urls = [
-    `${base}/api/menu/${hotel.slug}`,
-    `${base}/m/${hotel.slug}`,
-    `${base}/menu.html?h=${hotel.slug}`,
-    `${base}/m/${hotel.slug}/` // trailing slash variant
-  ];
-
-  for (let i = 0; i < attempts; i++) {
-    try {
-      const resp = await fetch(`https://api.cloudflare.com/client/v4/zones/${cfZone}/purge_cache`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${cfToken}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ files: urls })
-      });
-
-      const data = await resp.json().catch(() => null);
-      if (resp.ok && data && data.success) {
-        fastify.log.info('Cloudflare purge requested', { urls });
-        return;
-      }
-
-      fastify.log.warn('Cloudflare purge attempt failed', { attempt: i + 1, status: resp.status, data });
-    } catch (err) {
-      fastify.log.warn('Cloudflare purge error', { attempt: i + 1, error: err.message || err });
-    }
-
-    // Exponential backoff before retry
-    await new Promise(resolve => setTimeout(resolve, 200 * Math.pow(2, i)));
-  }
-
-  fastify.log.warn('Cloudflare purge did not succeed after retries');
-}
-
 async function deleteFromR2(imageUrl) {
   if (!imageUrl || !imageUrl.includes(PUBLIC_URL)) return;
   const key = imageUrl.replace(`${PUBLIC_URL}/`, '');
@@ -427,8 +381,7 @@ function registerRoutes() {
       data: { views: { increment: 1 }, lastViewAt: new Date() }
     }).catch((err) => { fastify.log.error(`View increment failed for hotel ${hotel.id}: ${err.message}`); });
 
-    // Force revalidation so clients see updates immediately after writes
-    reply.header('Cache-Control', 'no-cache, must-revalidate');
+    reply.header('Cache-Control', 'public, max-age=60');
 
     return {
       name: hotel.name,
@@ -454,8 +407,8 @@ function registerRoutes() {
     return reply.sendFile('menu.html');
   });
 
-  // Professional URL: /admin — serves admin.html (hotel owner panel)
-  fastify.get('/admin', async (request, reply) => {
+  // Professional URL: /dashboard — serves admin.html (hotel owner panel)
+  fastify.get('/dashboard', async (request, reply) => {
     return reply.sendFile('admin.html');
   });
 
@@ -464,9 +417,9 @@ function registerRoutes() {
     return reply.sendFile('superadmin.html');
   });
 
-  // Legacy redirect: /admin.html → /admin (permanent 301)
+  // Legacy redirect: /admin.html → /dashboard (permanent 301)
   fastify.get('/admin.html', async (request, reply) => {
-    return reply.redirect(301, '/admin');
+    return reply.redirect(301, '/dashboard');
   });
 
   // Legacy redirect: /superadmin.html → /superadmin (permanent 301)
@@ -607,28 +560,13 @@ function registerRoutes() {
         let imageFile = null;
 
         if (request.isMultipart()) {
-          // Accept both fastify-multipart attached field shape ({ value })
-          // and plain string values depending on client FormData handling.
-          const fieldValue = (f) => {
-            if (f == null) return undefined;
-            if (typeof f === 'object' && 'value' in f) return f.value;
-            return f;
-          };
-
-          const rawCategory = fieldValue(request.body.categoryId);
-          const rawName = fieldValue(request.body.name);
-          const rawPrice = fieldValue(request.body.price);
-          const rawDesc = fieldValue(request.body.description);
-          const rawIsVeg = fieldValue(request.body.isVeg);
-          const rawIsPopular = fieldValue(request.body.isPopular);
-
           data = {
-            categoryId: rawCategory,
-            name: rawName?.trim(),
-            price: parseInt(rawPrice),
-            description: rawDesc?.trim() || null,
-            isVeg: String(rawIsVeg) === 'true' || rawIsVeg === true,
-            isPopular: String(rawIsPopular) === 'true' || rawIsPopular === true,
+            categoryId: request.body.categoryId?.value,
+            name: request.body.name?.value?.trim(),
+            price: parseInt(request.body.price?.value),
+            description: request.body.description?.value?.trim() || null,
+            isVeg: request.body.isVeg?.value === 'true',
+            isPopular: request.body.isPopular?.value === 'true',
             sortOrder: 0
           };
           imageFile = request.body.image;
@@ -687,9 +625,6 @@ function registerRoutes() {
             newValue: data
           }
         });
-
-        // Purge CDN cache so new item appears immediately
-        try { await purgeMenuCacheForHotel(request.hotelId); } catch (e) { fastify.log.warn('purge error', e.message || e); }
 
         return item;
       } catch (err) {
@@ -754,9 +689,6 @@ function registerRoutes() {
           }
         });
 
-        // Purge CDN cache so updated image appears immediately
-        try { await purgeMenuCacheForHotel(request.hotelId); } catch (e) { fastify.log.warn('purge error', e.message || e); }
-
         return { success: true, imageUrl, item: updated };
       } catch (err) {
         request.log.error(err);
@@ -790,9 +722,6 @@ function registerRoutes() {
         }
       });
 
-      // Try to purge CDN cache for this hotel's menu (best-effort)
-      try { await purgeMenuCacheForHotel(request.hotelId); } catch (e) { fastify.log.warn('purge error', e.message || e); }
-
       return { success: true, message: 'Item removed from menu', item: updated };
     });
 
@@ -820,9 +749,6 @@ function registerRoutes() {
           newValue: { isAvailable: true }
         }
       });
-
-      // Purge CDN cache for this hotel's menu so restored item appears immediately
-      try { await purgeMenuCacheForHotel(request.hotelId); } catch (e) { fastify.log.warn('purge error', e.message || e); }
 
       return { success: true, message: 'Item restored', item: updated };
     });
@@ -856,9 +782,6 @@ function registerRoutes() {
           oldValue: item
         }
       });
-
-      // Purge CDN cache so deletion is reflected immediately
-      try { await purgeMenuCacheForHotel(request.hotelId); } catch (e) { fastify.log.warn('purge error', e.message || e); }
 
       return { success: true, message: 'Item permanently deleted' };
     });
@@ -899,9 +822,6 @@ function registerRoutes() {
           newValue: updated
         }
       });
-
-      // Purge CDN cache so updates reflect immediately
-      try { await purgeMenuCacheForHotel(request.hotelId); } catch (e) { fastify.log.warn('purge error', e.message || e); }
 
       return updated;
     });
@@ -1031,7 +951,7 @@ function registerRoutes() {
         pin: pin, // Return plain PIN once
         trialEnds: hotel.trialEnds,
         menuUrl: `${APP_URL}/m/${hotel.slug}`,
-        adminUrl: `${APP_URL}/admin`
+        adminUrl: `${APP_URL}/dashboard`
       };
     });
 
