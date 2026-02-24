@@ -2,6 +2,9 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https://pub-ee32ad45508049beb4f451f5b6f33d47.r2.dev; connect-src 'self'; font-src 'self' https://fonts.gstatic.com;">
+  <meta http-equiv="X-XSS-Protection" content="1; mode=block">
+  <meta name="referrer" content="no-referrer">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>MenuSaaS - Hotel Admin</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -998,17 +1001,78 @@
     }
 
     .actions {
-      display: flex;
+      /* Mobile-first: compact grid so buttons stack nicely on small screens */
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(95px, 1fr));
       gap: 0.5rem;
-      flex-wrap: wrap;
-      align-items: stretch;
-      flex-shrink: 0;
+      align-items: center;
+      box-sizing: border-box;
+      width: 100%;
     }
 
+    .actions .btn,
     .actions .btn-sm,
     .actions .file-input-label {
       min-height: 36px;
       line-height: 1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* Desktop/tablet: show actions in a compact horizontal row to avoid the stretched look */
+    /* Tablet: make buttons a bit wider and image slightly larger */
+    @media (min-width: 768px) {
+      .actions { grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 0.5rem; }
+      .image-preview, .image-placeholder { width: 84px; height: 84px; }
+    }
+
+    @media (min-width: 900px) {
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        width: auto;
+        max-width: 520px; /* limit action column width on large layouts */
+        align-items: center;
+        justify-content: flex-end;
+      }
+
+      /* Buttons should size to content on larger screens */
+      .actions .btn,
+      .actions .btn-sm,
+      .actions .file-input-label {
+        width: auto; /* allow natural width */
+        flex: 0 0 auto;
+      }
+
+      /* Slightly increase icon spacing on larger viewports */
+      .actions .btn .btn-icon { margin-right: 0.5rem; }
+
+      /* Align item header content better on desktop */
+      .item-header { align-items: center; }
+    }
+
+    /* Desktop: tighten layout gutters and ensure consistent button heights */
+    @media (min-width: 1024px) {
+      .dashboard { padding: 1.5rem 2rem; }
+      .item { padding: 1.25rem 1.5rem; gap: 1.25rem; }
+      .actions { max-width: 440px; }
+      .btn, .btn-sm { min-height: 44px; padding: 0.6rem 1rem; }
+      .image-preview, .image-placeholder { width: 84px; height: 84px; }
+    }
+
+    /* Large desktops: set comfortable max widths and action column size */
+    @media (min-width: 1200px) {
+      .dashboard { max-width: 1100px; }
+      .actions { flex: 0 0 420px; max-width: 420px; }
+      .image-preview, .image-placeholder { width: 96px; height: 96px; }
+    }
+
+    /* Very large displays */
+    @media (min-width: 1440px) {
+      .dashboard { max-width: 1280px; }
+      .actions { flex: 0 0 480px; max-width: 480px; }
     }
 
     /* ========================================
@@ -1100,6 +1164,15 @@
       background: var(--saffron-50);
       color: var(--saffron-700);
       box-shadow: 0 2px 12px rgba(198,139,82,0.1);
+    }
+
+    /* Selected file visual state */
+    .file-upload-label.file-selected {
+      border-style: solid;
+      border-color: var(--saffron-400);
+      background: linear-gradient(135deg, var(--saffron-50), #fffaf0);
+      color: var(--saffron-800);
+      box-shadow: 0 4px 12px rgba(198,139,82,0.08);
     }
 
     /* ========================================
@@ -1348,6 +1421,16 @@
       color: var(--saffron-800);
     }
 
+    /* Veg toggle specific styling: keep radio controls inline on desktop */
+    .veg-toggle { align-items: center; }
+    .veg-toggle .veg-option { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0.8rem; border-radius: var(--radius-sm); border: 1.25px solid var(--border-light); background: white; font-weight:700; }
+    .veg-toggle input[type="radio"] { margin-right: 0.35rem; width: 16px; height: 16px; }
+
+    @media (max-width: 639px) {
+      .veg-toggle { flex-direction: column; }
+      .veg-toggle .veg-option { width: 100%; }
+    }
+
     .checkbox-group input[type="checkbox"] {
       appearance: none;
       -webkit-appearance: none;
@@ -1464,15 +1547,16 @@
         gap: 0.5rem;
       }
 
+      /* keep image control as a normal grid cell (beside Edit Desc) */
       .actions .file-input-wrapper {
-        grid-column: 1 / -1;
+        grid-column: auto;
       }
 
       .actions .btn-sm,
       .actions .file-input-label {
         width: 100%;
-        justify-content: center;
-        text-align: center;
+        justify-content: flex-start;
+        text-align: left;
         min-height: 40px;
         font-size: 0.8125rem;
       }
@@ -1498,15 +1582,140 @@
         font-size: 0.75rem;
       }
 
+      /* Mobile: make veg options and popular checkbox sit compactly in one row */
       .checkbox-group {
-        flex-direction: column;
+        flex-direction: row;
         gap: 0.5rem;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+
+      .veg-toggle {
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+        flex: 1 1 auto;
+      }
+
+      /* Prevent long labels from expanding the controls: truncate and cap width */
+      .veg-toggle .veg-option {
+        flex: 0 1 calc(50% - 0.5rem);
+        max-width: calc(50% - 0.5rem);
+        padding: 0.45rem 0.6rem;
+        border-radius: 8px;
+        text-align: left;
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+        font-size: 0.95rem;
+      }
+
+      /* Popular checkbox: make it full-width under the veg options on mobile */
+      .checkbox-group > label:last-child {
+        flex: 1 1 100% !important;
+        width: 100% !important;
+        margin-left: 0 !important;
+        padding: 0.6rem 0.9rem !important;
+        border-radius: 8px;
+        box-sizing: border-box;
       }
 
       .file-upload-label {
         min-height: 48px;
         font-size: 0.9375rem;
       }
+    }
+
+    /* Desktop: make actions a 3-column grid for nicer layout */
+    @media (min-width: 1024px) {
+      .actions {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 0.75rem;
+        align-items: stretch;
+      }
+
+      .actions .btn-sm,
+      .actions .file-input-label {
+        width: 100%;
+        justify-content: center;
+        padding: 0.45rem 0.55rem;
+        min-height: 40px;
+        border-radius: 10px;
+        font-size: 0.9rem;
+      }
+
+      /* Elevated, modern button look for action buttons */
+      .actions .btn-primary {
+        background: linear-gradient(135deg, var(--saffron-500), var(--saffron-600));
+        color: #fff;
+        box-shadow: 0 8px 20px rgba(198,139,82,0.18);
+        border: 1px solid rgba(198,139,82,0.12);
+      }
+
+      .actions .btn-secondary {
+        background: linear-gradient(180deg, #ffffff, #fbfbfb);
+        color: var(--slate-700);
+        border: 1px solid var(--border-light);
+        box-shadow: 0 6px 18px rgba(15,23,42,0.04);
+      }
+
+      .actions .btn-warning {
+        background: linear-gradient(135deg, var(--amber-100), #fcd34d);
+        color: #92400e;
+        border: 1px solid rgba(245,158,11,0.12);
+      }
+
+      .actions .btn-danger {
+        background: linear-gradient(135deg, #fff1f2, #fee2e2);
+        color: #991b1b;
+        border: 1px solid rgba(220,38,38,0.08);
+      }
+
+      .actions .btn:hover {
+        transform: translateY(-2px);
+      }
+    }
+
+    /* Button icon + text
+       Mobile-first: large stacked full-width touch targets
+    */
+    .btn-icon { display:inline-flex; align-items:center; justify-content:center; margin-right:0.5rem; width:32px; }
+    .btn-icon svg { width:16px; height:16px; }
+    .btn-text { display:inline-block }
+
+    /* prevent text wrapping and overflow on small buttons */
+    .actions .btn, .actions .file-input-label {
+      min-width: 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* Mobile: two-column grid (original behaviour) with image input spanning full width */
+    @media (max-width: 639px) {
+      .actions { grid-template-columns: 1fr 1fr; gap: 0.5rem; }
+      .actions .btn-sm, .actions .file-input-label { width: 100%; text-align: left; padding: 0.6rem 0.75rem; font-size: 0.95rem; }
+      /* consistent icon container */
+      .btn-icon { width: 34px; display:inline-flex; align-items:center; justify-content:center; flex-shrink:0; margin-right:0.5rem }
+      .btn-icon svg { width:16px; height:16px; }
+      .btn-text { display:inline-block; font-size:0.96rem }
+      .actions .btn { border-radius: 10px; display:flex; align-items:center; gap:0.5rem; }
+      /* place image control as a normal grid cell so it sits beside Edit Desc */
+      .file-input-wrapper { grid-column: auto; }
+      .file-input-wrapper .file-input-label { display:flex; align-items:center; gap:0.5rem; }
+    }
+
+    /* Desktop slight refinement for label alignment */
+    @media (min-width: 1024px) {
+      .btn-text { font-weight: 700 }
+      .btn-icon { width: 28px; text-align: center; margin-right:0.5rem; display:inline-flex; align-items:center; justify-content:center }
+      .btn-icon svg { width:16px; height:16px; }
+      .actions .btn { display: inline-flex; align-items: center; }
+
+    /* tighten small-button look for premium compact feel */
+    .actions .btn-sm { padding: 0.48rem 0.6rem; font-size: 0.92rem; }
+    .actions .file-input-label { padding: 0.48rem 0.6rem; }
     }
 
     /* ========================================
@@ -1583,7 +1792,7 @@
     }
 
     /* ========================================
-       18. LARGE DESKTOP (1440px+)
+       18. LARGE DESKTOP (1440px+) Handled
        ======================================== */
     @media (min-width: 1440px) {
       .dashboard {
@@ -1633,6 +1842,91 @@
 
       .form-section { padding: 2rem 2.5rem; }
     }
+
+    /*
+      Fix for split-screen / intermediate-width windows (e.g. when app
+      window is snapped to half the desktop). This is intentionally narrow
+      and scoped so it won't change the mobile (<=639px), tablet (>=640 &
+      <900px) or desktop (>=1024px+) layouts the app already uses.
+      It improves wrapping of the item/action columns and prevents buttons
+      and images from overlapping when the viewport is between ~760–1100px.
+    */
+    @media (min-width: 760px) and (max-width: 1100px) {
+      .item {
+        flex-wrap: wrap;
+        align-items: flex-start;
+      }
+
+      .item-header {
+        min-width: 0;
+        flex: 1 1 auto;
+      }
+
+      .item-info {
+        min-width: 0;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+      }
+
+      .actions {
+        flex: 1 1 100%;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+        gap: 0.5rem;
+        max-width: 100%;
+      }
+
+      .actions .btn,
+      .actions .btn-sm,
+      .actions .file-input-label {
+        white-space: normal;
+      }
+
+      .image-preview,
+      .image-placeholder {
+        width: 72px;
+        height: 72px;
+        flex-shrink: 0;
+      }
+
+      .file-input-wrapper { width: auto; }
+    }
+
+    /* MODAL */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(2,6,23,0.6);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1100;
+      padding: 1rem;
+    }
+    .modal-overlay.show { display: flex; }
+
+    .modal {
+      width: 100%;
+      max-width: 640px;
+      background: var(--bg-card);
+      border-radius: var(--radius-xl);
+      box-shadow: var(--shadow-2xl);
+      padding: 1.25rem;
+      border: 1px solid var(--border-light);
+      animation: modalIn 180ms var(--ease-out);
+    }
+
+    @keyframes modalIn { from { transform: translateY(8px) scale(0.99); opacity: 0 } to { transform: translateY(0) scale(1); opacity: 1 } }
+
+    .modal-header { display:flex; align-items:center; justify-content:space-between; gap:0.5rem; margin-bottom:0.75rem }
+    .modal-title { font-family:var(--font-display); font-size:1.125rem; font-weight:700; color:var(--slate-900) }
+    .modal-body { margin-bottom:0.75rem }
+    .modal-body input[type="number"], .modal-body textarea {
+      width:100%; padding:0.75rem 1rem; border-radius:var(--radius-md); border:1.5px solid var(--border-light); font-size:0.95rem; font-family:var(--font-body);
+    }
+    .modal-body textarea { min-height:120px; resize:vertical }
+    .modal-footer { display:flex; gap:0.5rem; justify-content:flex-end }
+    .modal .btn { min-width:110px }
 
     /* ========================================
        19. SCROLLBAR
@@ -1821,10 +2115,14 @@
         <div class="form-row">
           <input type="text" id="itemDesc" placeholder="Description (optional)" style="flex: 2;">
         </div>
-        <div class="checkbox-group">
-          <label>
-            <input type="checkbox" id="isVeg">
-            <span>🥬 Vegetarian</span>
+        <div class="checkbox-group veg-toggle">
+          <label class="veg-option">
+            <input type="radio" name="vegOption" id="vegOptionNonVeg" value="non-veg" checked>
+            <span>Non-Veg</span>
+          </label>
+          <label class="veg-option">
+            <input type="radio" name="vegOption" id="vegOptionVeg" value="veg">
+            <span>Veg</span>
           </label>
           <label>
             <input type="checkbox" id="isPopular">
@@ -1841,6 +2139,42 @@
           </div>
           <button id="addItemBtn" class="btn btn-primary" style="width:auto;">Add Item</button>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal for editing price/description -->
+  <div id="editModalOverlay" class="modal-overlay" aria-hidden="true">
+    <div role="dialog" aria-modal="true" aria-labelledby="editModalTitle" class="modal">
+      <div class="modal-header">
+        <div id="editModalTitle" class="modal-title">Edit</div>
+        <button id="editModalClose" class="btn btn-secondary btn-sm" aria-label="Close">✕</button>
+      </div>
+      <div class="modal-body">
+        <div id="editModalError" class="error-message" style="display:none;margin-bottom:0.75rem;"></div>
+        <input id="editModalInput" class="hidden" />
+        <textarea id="editModalTextarea" class="hidden"></textarea>
+      </div>
+      <div class="modal-footer">
+        <button id="editModalCancel" class="btn btn-secondary">Cancel</button>
+        <button id="editModalSave" class="btn btn-primary">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal for confirmations (Remove / Delete) -->
+  <div id="confirmModalOverlay" class="modal-overlay" aria-hidden="true">
+    <div role="dialog" aria-modal="true" aria-labelledby="confirmModalTitle" class="modal">
+      <div class="modal-header">
+        <div id="confirmModalTitle" class="modal-title">Confirm</div>
+        <button id="confirmModalClose" class="btn btn-secondary btn-sm" aria-label="Close">✕</button>
+      </div>
+      <div class="modal-body">
+        <div id="confirmModalMessage" style="color:var(--slate-700);"></div>
+      </div>
+      <div class="modal-footer">
+        <button id="confirmModalCancel" class="btn btn-secondary">Cancel</button>
+        <button id="confirmModalConfirm" class="btn btn-danger">Delete</button>
       </div>
     </div>
   </div>
