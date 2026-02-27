@@ -2,6 +2,35 @@ const API = window.location.origin;
 let hotel = null;
 let currentTab = 'menu';
 
+// ==================== WEAK PIN DETECTION (mirrors server-side) ====================
+var WEAK_PIN_SET = new Set([
+  '12345678','87654321','00000000','11111111','22222222','33333333','44444444',
+  '55555555','66666666','77777777','88888888','99999999','12341234','11223344',
+  '00000001','11112222','12121212','13131313','98765432','01234567','76543210',
+  '01011990','01012000','01011980','11111112','10000000','20000000'
+]);
+function isWeakPinClient(pin) {
+  if (WEAK_PIN_SET.has(pin)) return true;
+  if (/^(.)\1{7}$/.test(pin)) return true;
+  var d = pin.split('').map(Number), asc = true, desc = true;
+  for (var i = 1; i < d.length; i++) {
+    if (d[i] !== (d[i-1]+1)%10) asc = false;
+    if (d[i] !== (d[i-1]-1+10)%10) desc = false;
+  }
+  if (asc || desc) return true;
+  if (pin.length === 8 && pin.slice(0,4) === pin.slice(4)) return true;
+  if (pin.length === 8 && pin.slice(0,2) === pin.slice(2,4) && pin.slice(0,2) === pin.slice(4,6) && pin.slice(0,2) === pin.slice(6)) return true;
+  return false;
+}
+
+// ==================== FORGOT PIN STATE ====================
+let forgotPinState = {
+  code: '',
+  resetToken: '',
+  otpTimer: null,
+  otpExpiresAt: null
+};
+
 function getToken() {
   return localStorage.getItem('menu_token');
 }
@@ -1101,3 +1130,267 @@ if (logoutBtn) logoutBtn.addEventListener('click', logout);
   initCustomSelect(document.getElementById('catSelect'));
   initCustomSelect(document.getElementById('themeSelect'));
 })();
+
+// ==================== FORGOT PIN FUNCTIONS ====================
+
+function getFingerprint() {
+  try {
+    return JSON.stringify({
+      screen: `${screen.width}x${screen.height}`,
+      tz: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      lang: navigator.language,
+      platform: navigator.platform
+    });
+  } catch { return ''; }
+}
+
+function showForgotStep(step) {
+  ['loginFields', 'forgotStep1', 'forgotStep2', 'forgotStep3', 'forgotSuccess'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.classList.add('hidden');
+  });
+  var target = document.getElementById(step);
+  if (target) target.classList.remove('hidden');
+}
+
+function backToLogin() {
+  if (forgotPinState.otpTimer) {
+    clearInterval(forgotPinState.otpTimer);
+    forgotPinState.otpTimer = null;
+  }
+  forgotPinState = { code: '', resetToken: '', otpTimer: null, otpExpiresAt: null };
+  showForgotStep('loginFields');
+  // Clear all forgot pin inputs and errors
+  ['forgotCode', 'forgotEmail', 'forgotOtp', 'newPin', 'confirmPin'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  ['forgotStep1Error', 'forgotStep2Error', 'forgotStep3Error'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.textContent = '';
+  });
+  var countdown = document.getElementById('otpCountdown');
+  if (countdown) { countdown.textContent = '10:00'; countdown.style.color = ''; }
+}
+
+function startOtpTimer() {
+  forgotPinState.otpExpiresAt = Date.now() + 10 * 60 * 1000;
+  var countdownEl = document.getElementById('otpCountdown');
+  if (!countdownEl) return;
+
+  if (forgotPinState.otpTimer) clearInterval(forgotPinState.otpTimer);
+  countdownEl.style.color = '';
+
+  forgotPinState.otpTimer = setInterval(function() {
+    var remaining = Math.max(0, forgotPinState.otpExpiresAt - Date.now());
+    var mins = Math.floor(remaining / 60000);
+    var secs = Math.floor((remaining % 60000) / 1000);
+    countdownEl.textContent = mins + ':' + String(secs).padStart(2, '0');
+
+    if (remaining <= 0) {
+      clearInterval(forgotPinState.otpTimer);
+      forgotPinState.otpTimer = null;
+      countdownEl.textContent = 'Expired';
+      countdownEl.style.color = 'var(--red-500)';
+    }
+  }, 1000);
+}
+
+async function forgotPinRequest() {
+  var code = document.getElementById('forgotCode').value.trim().toUpperCase();
+  var email = document.getElementById('forgotEmail').value.trim();
+  var errorEl = document.getElementById('forgotStep1Error');
+  var btn = document.getElementById('forgotStep1Btn');
+
+  errorEl.textContent = '';
+
+  if (!code || !/^[A-Z2-7]{6}$/.test(code)) {
+    errorEl.textContent = 'Enter a valid 6-character menu code (A-Z, 2-7)';
+    return;
+  }
+
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    errorEl.textContent = 'Enter a valid email address';
+    return;
+  }
+
+  var originalText = btn.innerHTML;
+  btn.innerHTML = 'Sending...';
+  btn.disabled = true;
+
+  try {
+    var res = await fetch(API + '/auth/forgot-pin/request', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code: code, email: email, fingerprint: getFingerprint() })
+    });
+
+    var data = await res.json();
+
+    if (!res.ok) {
+      errorEl.textContent = data.error || 'Request failed. Please try again.';
+      return;
+    }
+
+    forgotPinState.code = code;
+    showForgotStep('forgotStep2');
+    startOtpTimer();
+    showToast('If your details match, a reset code has been sent to your email.');
+  } catch (e) {
+    errorEl.textContent = 'Network error. Please check your connection and try again.';
+  } finally {
+    btn.innerHTML = originalText;
+    btn.disabled = false;
+  }
+}
+
+async function forgotPinVerify() {
+  var otp = document.getElementById('forgotOtp').value.trim();
+  var errorEl = document.getElementById('forgotStep2Error');
+  var btn = document.getElementById('forgotStep2Btn');
+
+  errorEl.textContent = '';
+
+  if (!otp || !/^\d{6}$/.test(otp)) {
+    errorEl.textContent = 'Enter the 6-digit code from your email';
+    return;
+  }
+
+  var originalText = btn.innerHTML;
+  btn.innerHTML = 'Verifying...';
+  btn.disabled = true;
+
+  try {
+    var res = await fetch(API + '/auth/forgot-pin/verify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code: forgotPinState.code, otp: otp, fingerprint: getFingerprint() })
+    });
+
+    var data = await res.json();
+
+    if (!res.ok) {
+      var msg = data.error || 'Verification failed';
+      if (data.remainingAttempts !== undefined && data.remainingAttempts >= 0) {
+        msg += ' (' + data.remainingAttempts + ' attempt' + (data.remainingAttempts !== 1 ? 's' : '') + ' remaining)';
+      }
+      errorEl.textContent = msg;
+      return;
+    }
+
+    forgotPinState.resetToken = data.resetToken;
+    if (forgotPinState.otpTimer) {
+      clearInterval(forgotPinState.otpTimer);
+      forgotPinState.otpTimer = null;
+    }
+    showForgotStep('forgotStep3');
+    showToast('Code verified! Set your new PIN.');
+  } catch (e) {
+    errorEl.textContent = 'Network error. Please check your connection and try again.';
+  } finally {
+    btn.innerHTML = originalText;
+    btn.disabled = false;
+  }
+}
+
+async function forgotPinReset() {
+  var newPin = document.getElementById('newPin').value.trim();
+  var confirmPin = document.getElementById('confirmPin').value.trim();
+  var errorEl = document.getElementById('forgotStep3Error');
+  var btn = document.getElementById('forgotStep3Btn');
+
+  errorEl.textContent = '';
+
+  if (!newPin || !/^\d{8}$/.test(newPin)) {
+    errorEl.textContent = 'PIN must be exactly 8 digits';
+    return;
+  }
+
+  if (newPin !== confirmPin) {
+    errorEl.textContent = 'PINs do not match';
+    return;
+  }
+
+  // Reject weak PINs client-side (mirrors server-side isWeakPin)
+  if (isWeakPinClient(newPin)) {
+    errorEl.textContent = 'PIN is too simple. Choose a stronger PIN.';
+    return;
+  }
+
+  var originalText = btn.innerHTML;
+  btn.innerHTML = 'Resetting...';
+  btn.disabled = true;
+
+  try {
+    var res = await fetch(API + '/auth/forgot-pin/reset', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        code: forgotPinState.code,
+        resetToken: forgotPinState.resetToken,
+        newPin: newPin,
+        fingerprint: getFingerprint()
+      })
+    });
+
+    var data = await res.json();
+
+    if (!res.ok) {
+      errorEl.textContent = data.error || 'Reset failed. Please start over.';
+      return;
+    }
+
+    forgotPinState = { code: '', resetToken: '', otpTimer: null, otpExpiresAt: null };
+    showForgotStep('forgotSuccess');
+    showToast('PIN reset successful!');
+  } catch (e) {
+    errorEl.textContent = 'Network error. Please check your connection and try again.';
+  } finally {
+    btn.innerHTML = originalText;
+    btn.disabled = false;
+  }
+}
+
+// ==================== FORGOT PIN EVENT LISTENERS ====================
+var forgotPinLink = document.getElementById('forgotPinLink');
+if (forgotPinLink) forgotPinLink.addEventListener('click', function(e) { e.preventDefault(); showForgotStep('forgotStep1'); });
+
+var backToLogin1 = document.getElementById('backToLogin1');
+if (backToLogin1) backToLogin1.addEventListener('click', function(e) { e.preventDefault(); backToLogin(); });
+
+var backToLogin2 = document.getElementById('backToLogin2');
+if (backToLogin2) backToLogin2.addEventListener('click', function(e) { e.preventDefault(); backToLogin(); });
+
+var backToLogin3 = document.getElementById('backToLogin3');
+if (backToLogin3) backToLogin3.addEventListener('click', function(e) { e.preventDefault(); backToLogin(); });
+
+var forgotStep1Btn = document.getElementById('forgotStep1Btn');
+if (forgotStep1Btn) forgotStep1Btn.addEventListener('click', forgotPinRequest);
+
+var forgotStep2Btn = document.getElementById('forgotStep2Btn');
+if (forgotStep2Btn) forgotStep2Btn.addEventListener('click', forgotPinVerify);
+
+var forgotStep3Btn = document.getElementById('forgotStep3Btn');
+if (forgotStep3Btn) forgotStep3Btn.addEventListener('click', forgotPinReset);
+
+var forgotSuccessBtn = document.getElementById('forgotSuccessBtn');
+if (forgotSuccessBtn) forgotSuccessBtn.addEventListener('click', backToLogin);
+
+// Enter key support for forgot pin inputs
+var forgotEmailInput = document.getElementById('forgotEmail');
+if (forgotEmailInput) forgotEmailInput.addEventListener('keypress', function(e) { if (e.key === 'Enter') forgotPinRequest(); });
+
+var forgotCodeInput = document.getElementById('forgotCode');
+if (forgotCodeInput) forgotCodeInput.addEventListener('keypress', function(e) { if (e.key === 'Enter') forgotPinRequest(); });
+
+var forgotOtpInput = document.getElementById('forgotOtp');
+if (forgotOtpInput) forgotOtpInput.addEventListener('keypress', function(e) { if (e.key === 'Enter') forgotPinVerify(); });
+
+var confirmPinInput = document.getElementById('confirmPin');
+if (confirmPinInput) confirmPinInput.addEventListener('keypress', function(e) { if (e.key === 'Enter') forgotPinReset(); });
+
+var newPinInput = document.getElementById('newPin');
+if (newPinInput) newPinInput.addEventListener('keypress', function(e) { if (e.key === 'Enter') {
+  var cp = document.getElementById('confirmPin');
+  if (cp) cp.focus();
+}});

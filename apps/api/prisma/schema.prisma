@@ -43,6 +43,7 @@ model Hotel {
 
   categories    Category[]
   auditLogs     AuditLog[]
+  pinResetOtps  PinResetOtp[]
 
   views         Int      @default(0)
   lastViewAt    DateTime?
@@ -140,4 +141,33 @@ enum PaymentMode {
   MANUAL
   RAZORPAY
   CASH
+}
+
+model PinResetOtp {
+  id          String   @id @default(uuid())
+  hotelId     String
+  hotel       Hotel    @relation(fields: [hotelId], references: [id], onDelete: Cascade)
+
+  otpHash     String
+  expiresAt   DateTime
+
+  attempts    Int      @default(0)
+  maxAttempts Int      @default(5)
+
+  ipAddress   String
+  userAgent   String   @default("")
+  fingerprint String   @default("")
+
+  used        Boolean  @default(false)
+  usedAt      DateTime?
+
+  // Reset token issued after OTP verification
+  resetTokenHash  String?
+  resetExpiresAt  DateTime?
+  resetUsed       Boolean  @default(false)
+
+  createdAt   DateTime @default(now())
+
+  @@index([hotelId, used, expiresAt])
+  @@index([hotelId, createdAt])
 }

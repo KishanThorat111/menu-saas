@@ -48,6 +48,7 @@ services:
       - JWT_SECRET=${JWT_SECRET}
       - COOKIE_SECRET=${COOKIE_SECRET}
       - ADMIN_KEY=${ADMIN_KEY}
+      - PIN_PEPPER=${PIN_PEPPER}
       - R2_ACCOUNT_ID=${R2_ACCOUNT_ID}
       - R2_ACCESS_KEY_ID=${R2_ACCESS_KEY_ID}
       - R2_SECRET_ACCESS_KEY=${R2_SECRET_ACCESS_KEY}
@@ -55,6 +56,10 @@ services:
       - R2_PUBLIC_URL=${R2_PUBLIC_URL}
       - APP_URL=${APP_URL}
       - COOKIE_DOMAIN=${COOKIE_DOMAIN:-}
+      - SES_SMTP_HOST=${SES_SMTP_HOST:-}
+      - SES_SMTP_USER=${SES_SMTP_USER:-}
+      - SES_SMTP_PASS=${SES_SMTP_PASS:-}
+      - SES_FROM_EMAIL=${SES_FROM_EMAIL:-}
     # ❌ REMOVED: ports: - "3000:3000"  (Security leak - Caddy handles this)
     depends_on:
       db:
