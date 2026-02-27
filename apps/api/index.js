@@ -25,7 +25,8 @@ const REQUIRED_ENV = [
   "R2_BUCKET_NAME",
   "R2_PUBLIC_URL",
   "ADMIN_KEY",
-  "COOKIE_SECRET"
+  "COOKIE_SECRET",
+  "PIN_PEPPER"
 ];
 
 for (const key of REQUIRED_ENV) {
@@ -52,12 +53,52 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const { z } = require('zod');
 const { S3Client, PutObjectCommand, DeleteObjectCommand } = require('@aws-sdk/client-s3');
+const nodemailer = require('nodemailer');
 
 //==================== CONFIGURATION ====================
 const BUCKET_NAME = process.env.R2_BUCKET_NAME;
 const PUBLIC_URL = process.env.R2_PUBLIC_URL;
 const APP_URL = process.env.APP_URL ?? `http://localhost:${process.env.PORT || 3000}`;
 const isProduction = process.env.NODE_ENV === 'production';
+
+//==================== SECURITY CONSTANTS ====================
+const BCRYPT_COST = 12;
+const PIN_PEPPER = process.env.PIN_PEPPER; // Server-side pepper — DB breach alone cannot crack PINs
+
+// Pepper a PIN before bcrypt hashing/comparing (HMAC with server secret)
+function pepperPin(pin) {
+  return crypto.createHmac('sha256', PIN_PEPPER).update(pin).digest('hex');
+}
+
+// Weak PIN detection — shared across all PIN creation/reset paths
+const WEAK_PIN_BLACKLIST = new Set([
+  '12345678', '87654321', '00000000', '11111111', '22222222',
+  '33333333', '44444444', '55555555', '66666666', '77777777',
+  '88888888', '99999999', '12341234', '11223344', '00000001',
+  '11112222', '12121212', '13131313', '98765432', '01234567',
+  '76543210', '01011990', '01012000', '01011980', '11111112',
+  '10000000', '20000000'
+]);
+
+function isWeakPin(pin) {
+  // Blacklist check
+  if (WEAK_PIN_BLACKLIST.has(pin)) return true;
+  // All same digit: 11111111, 22222222, etc.
+  if (/^(.)\1{7}$/.test(pin)) return true;
+  // Ascending sequence: 01234567, 12345678, 23456789, 34567890
+  const digits = pin.split('').map(Number);
+  let asc = true, desc = true;
+  for (let i = 1; i < digits.length; i++) {
+    if (digits[i] !== (digits[i - 1] + 1) % 10) asc = false;
+    if (digits[i] !== (digits[i - 1] - 1 + 10) % 10) desc = false;
+  }
+  if (asc || desc) return true;
+  // Repeating 4-char pattern: 12341234, 56785678
+  if (pin.length === 8 && pin.slice(0, 4) === pin.slice(4)) return true;
+  // Repeating 2-char pattern: 12121212, 34343434
+  if (pin.length === 8 && pin.slice(0, 2) === pin.slice(2, 4) && pin.slice(0, 2) === pin.slice(4, 6) && pin.slice(0, 2) === pin.slice(6)) return true;
+  return false;
+}
 
 const COOKIE_CONFIG = {
   httpOnly: true,
@@ -100,6 +141,27 @@ const loginSlugRateLimit = {
   }
 };
 
+// Forgot PIN: OTP request rate limit (3 per 15 min per IP)
+const forgotPinRequestRateLimit = {
+  max: 3,
+  timeWindow: 900000,
+  keyGenerator: (req) => `forgot-req:${req.ip}`
+};
+
+// Forgot PIN: OTP verify rate limit (10 per hour per IP)
+const forgotPinVerifyRateLimit = {
+  max: 10,
+  timeWindow: 3600000,
+  keyGenerator: (req) => `forgot-verify:${req.ip}`
+};
+
+// Forgot PIN: PIN reset rate limit (5 per hour per IP)
+const forgotPinResetRateLimit = {
+  max: 5,
+  timeWindow: 3600000,
+  keyGenerator: (req) => `forgot-reset:${req.ip}`
+};
+
 //==================== PRISMA WITH RETRY LOGIC ====================
 const prisma = new PrismaClient({
   log: isProduction ? ['error'] : ['query', 'info', 'warn', 'error'],
@@ -134,6 +196,76 @@ const r2Client = new S3Client({
   },
   maxAttempts: 3,
 });
+
+//==================== EMAIL (SES SMTP) ====================
+let sesTransporter = null;
+
+function getSesTransporter() {
+  if (sesTransporter) return sesTransporter;
+  const host = process.env.SES_SMTP_HOST;
+  const user = process.env.SES_SMTP_USER;
+  const pass = process.env.SES_SMTP_PASS;
+  if (!host || !user || !pass) return null;
+
+  sesTransporter = nodemailer.createTransport({
+    host,
+    port: 465,
+    secure: true,
+    auth: { user, pass },
+    pool: true,
+    maxConnections: 3,
+    maxMessages: 100
+  });
+  return sesTransporter;
+}
+
+const SES_FROM = process.env.SES_FROM_EMAIL || 'noreply@mail.ecommerceweb.shop';
+const OTP_EXPIRY_MINUTES = 10;
+const RESET_TOKEN_EXPIRY_MINUTES = 5;
+const OTP_MAX_ATTEMPTS = 5;
+const OTP_DAILY_LIMIT = 10;
+const OTP_COOLDOWN_MS = 60000; // 60 seconds between OTP requests
+
+function escapeEmailHtml(str) {
+  if (!str) return '';
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function buildOtpEmailHtml(hotelName, otp, expiryMinutes) {
+  return `<!DOCTYPE html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#f4f4f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f5;padding:40px 20px;">
+    <tr><td align="center">
+      <table width="100%" cellpadding="0" cellspacing="0" style="max-width:480px;background:#ffffff;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,0.06);overflow:hidden;">
+        <tr><td style="background:linear-gradient(135deg,#c68b52,#b07440);padding:32px 32px 24px;text-align:center;">
+          <div style="font-size:28px;margin-bottom:8px;">&#x1F510;</div>
+          <h1 style="margin:0;color:#ffffff;font-size:22px;font-weight:700;">PIN Reset Code</h1>
+        </td></tr>
+        <tr><td style="padding:32px;">
+          <p style="margin:0 0 8px;color:#374151;font-size:15px;">Hello,</p>
+          <p style="margin:0 0 24px;color:#374151;font-size:15px;">A PIN reset was requested for <strong>${escapeEmailHtml(hotelName)}</strong>. Use the code below:</p>
+          <div style="background:#f9fafb;border:2px dashed #d1d5db;border-radius:10px;padding:20px;text-align:center;margin:0 0 24px;">
+            <div style="font-family:'Courier New',monospace;font-size:36px;font-weight:800;letter-spacing:0.3em;color:#1f2937;">${otp}</div>
+          </div>
+          <p style="margin:0 0 4px;color:#6b7280;font-size:13px;">&#x23F1; This code expires in <strong>${expiryMinutes} minutes</strong>.</p>
+          <p style="margin:0 0 24px;color:#6b7280;font-size:13px;">&#x1F512; Do not share this code with anyone.</p>
+          <div style="border-top:1px solid #e5e7eb;padding-top:20px;">
+            <p style="margin:0;color:#9ca3af;font-size:12px;">If you did not request this, you can safely ignore this email. Your PIN will not change.</p>
+          </div>
+        </td></tr>
+        <tr><td style="background:#f9fafb;padding:16px 32px;text-align:center;border-top:1px solid #e5e7eb;">
+          <p style="margin:0;color:#9ca3af;font-size:11px;">MenuSaaS &mdash; Secure Hotel Menu Management</p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body></html>`;
+}
+
+function buildOtpEmailText(hotelName, otp, expiryMinutes) {
+  return `PIN Reset Code for ${hotelName}\n\nYour reset code: ${otp}\n\nThis code expires in ${expiryMinutes} minutes.\n\nDo not share this code with anyone.\n\nIf you did not request this, ignore this email.\n\n-- MenuSaaS`;
+}
 
 //==================== HELPERS ====================
 async function uploadToR2(buffer, mimetype, hotelId) {
@@ -323,7 +455,7 @@ async function authenticate(request, reply) {
 
     const hotel = await prisma.hotel.findUnique({
       where: { id: decoded.hotelId },
-      select: { status: true }
+      select: { status: true, pinChangedAt: true }
     });
 
     if (hotel?.status === 'SUSPENDED') {
@@ -331,6 +463,13 @@ async function authenticate(request, reply) {
     }
     if (hotel?.status === 'DELETED') {
       return reply.code(401).send({ error: 'Unauthorized' });
+    }
+
+    // Invalidate token if PIN was changed after this token was issued
+    if (decoded.pinChangedAt && hotel?.pinChangedAt) {
+      if (decoded.pinChangedAt !== hotel.pinChangedAt.toISOString()) {
+        return reply.code(401).send({ error: 'Unauthorized' });
+      }
     }
   } catch (err) {
     return reply.code(401).send({ error: 'Unauthorized' });
@@ -498,7 +637,7 @@ function registerRoutes() {
 
     const hotel = await prisma.hotel.findUnique({
       where: { slug: normalizedCode },
-      select: { id: true, tenantId: true, slug: true, name: true, status: true, pinHash: true }
+      select: { id: true, tenantId: true, slug: true, name: true, status: true, pinHash: true, pinChangedAt: true }
     });
 
     if (!hotel) return reply.code(401).send({ error: 'Invalid credentials' });
@@ -506,14 +645,20 @@ function registerRoutes() {
     if (hotel.status === 'SUSPENDED') return reply.code(403).send({ error: 'Account suspended' });
     if (hotel.status === 'DELETED') return reply.code(401).send({ error: 'Invalid credentials' });
 
-    const valid = await bcrypt.compare(pin, hotel.pinHash);
+    const valid = await bcrypt.compare(pepperPin(pin), hotel.pinHash);
     if (!valid) {
       fastify.log.warn(`Failed login attempt for hotel: ${normalizedCode} from IP: ${request.ip}`);
       return reply.code(401).send({ error: 'Invalid credentials' });
     }
 
     const token = jwt.sign(
-      { hotelId: hotel.id, tenantId: hotel.tenantId, slug: hotel.slug, type: 'hotel_owner' },
+      {
+        hotelId: hotel.id,
+        tenantId: hotel.tenantId,
+        slug: hotel.slug,
+        type: 'hotel_owner',
+        pinChangedAt: hotel.pinChangedAt.toISOString()
+      },
       process.env.JWT_SECRET,
       { expiresIn: '24h' }
     );
@@ -522,6 +667,368 @@ function registerRoutes() {
       token,
       hotel: { id: hotel.id, name: hotel.name, slug: hotel.slug, status: hotel.status }
     };
+  });
+
+  //==================== FORGOT PIN (SELF-SERVICE EMAIL OTP) ====================
+  fastify.register(async function (app) {
+
+    // Step 1: Request OTP — sends 6-digit code to registered email
+    app.post('/auth/forgot-pin/request', {
+      config: { rateLimit: forgotPinRequestRateLimit }
+    }, async (request, reply) => {
+      const schema = z.object({
+        code: z.string().length(6).regex(/^[A-Z2-7]{6}$/, 'Invalid menu code'),
+        email: z.string().email().max(200),
+        fingerprint: z.string().max(500).optional()
+      });
+
+      const { code, email, fingerprint } = schema.parse(request.body);
+      const normalizedCode = code.toUpperCase().trim();
+      const normalizedEmail = email.toLowerCase().trim();
+
+      // Generic response to prevent email/account enumeration
+      const genericResponse = {
+        success: true,
+        message: 'If a matching account exists, a reset code has been sent to the registered email.'
+      };
+
+      const transporter = getSesTransporter();
+      if (!transporter) {
+        fastify.log.error('SES not configured — forgot-pin request cannot send email');
+        return genericResponse;
+      }
+
+      // Lookup hotel by slug
+      const hotel = await prisma.hotel.findUnique({
+        where: { slug: normalizedCode },
+        select: { id: true, name: true, email: true, status: true }
+      });
+
+      // Bail silently if no match — constant-time delay prevents timing oracle
+      if (!hotel || !hotel.email || hotel.status === 'SUSPENDED' || hotel.status === 'DELETED') {
+        await new Promise(r => setTimeout(r, 500 + Math.random() * 500));
+        return genericResponse;
+      }
+
+      if (hotel.email.toLowerCase().trim() !== normalizedEmail) {
+        await new Promise(r => setTimeout(r, 500 + Math.random() * 500));
+        return genericResponse;
+      }
+
+      // Daily OTP cap per hotel
+      const dayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+      const dailyCount = await prisma.pinResetOtp.count({
+        where: { hotelId: hotel.id, createdAt: { gte: dayAgo } }
+      });
+
+      if (dailyCount >= OTP_DAILY_LIMIT) {
+        fastify.log.warn(`Daily OTP limit reached for hotel ${hotel.id}`);
+        return reply.code(429).send({ error: 'Too many reset requests today. Please try again tomorrow or contact support.' });
+      }
+
+      // Cooldown: 60s between OTP requests for same hotel
+      const lastOtp = await prisma.pinResetOtp.findFirst({
+        where: { hotelId: hotel.id },
+        orderBy: { createdAt: 'desc' },
+        select: { createdAt: true }
+      });
+
+      if (lastOtp && (Date.now() - lastOtp.createdAt.getTime()) < OTP_COOLDOWN_MS) {
+        return reply.code(429).send({ error: 'Please wait before requesting another code.' });
+      }
+
+      // Invalidate all previous unused OTPs for this hotel (replay protection)
+      await prisma.pinResetOtp.updateMany({
+        where: { hotelId: hotel.id, used: false },
+        data: { used: true, usedAt: new Date() }
+      });
+
+      // Generate 6-digit OTP
+      const plainOtp = crypto.randomInt(100000, 999999).toString();
+      const otpHash = await bcrypt.hash(plainOtp, BCRYPT_COST);
+      const expiresAt = new Date(Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000);
+
+      // Store hashed OTP with metadata
+      await prisma.pinResetOtp.create({
+        data: {
+          hotelId: hotel.id,
+          otpHash,
+          expiresAt,
+          attempts: 0,
+          maxAttempts: OTP_MAX_ATTEMPTS,
+          ipAddress: request.ip || 'unknown',
+          userAgent: (request.headers['user-agent'] || '').substring(0, 500),
+          fingerprint: (fingerprint || '').substring(0, 500)
+        }
+      });
+
+      // Send email via SES
+      try {
+        await transporter.sendMail({
+          from: `MenuSaaS <${SES_FROM}>`,
+          to: hotel.email,
+          subject: 'Your PIN Reset Code - MenuSaaS',
+          html: buildOtpEmailHtml(hotel.name, plainOtp, OTP_EXPIRY_MINUTES),
+          text: buildOtpEmailText(hotel.name, plainOtp, OTP_EXPIRY_MINUTES)
+        });
+        fastify.log.info(`OTP email sent for hotel ${hotel.id} to ${hotel.email.replace(/(.{2}).*(@.*)/, '$1***$2')}`);
+      } catch (err) {
+        fastify.log.error(`Failed to send OTP email for hotel ${hotel.id}: ${err.message}`);
+        // Don't reveal email delivery failure to client
+      }
+
+      // Audit log
+      await prisma.auditLog.create({
+        data: {
+          hotelId: hotel.id,
+          actorType: 'system',
+          action: 'pin_reset_otp_requested',
+          entityType: 'Hotel',
+          entityId: hotel.id,
+          newValue: { ip: request.ip, dailyCount: dailyCount + 1 }
+        }
+      });
+
+      return genericResponse;
+    });
+
+    // Step 2: Verify OTP — returns a short-lived reset token
+    app.post('/auth/forgot-pin/verify', {
+      config: { rateLimit: forgotPinVerifyRateLimit }
+    }, async (request, reply) => {
+      const schema = z.object({
+        code: z.string().length(6).regex(/^[A-Z2-7]{6}$/),
+        otp: z.string().length(6).regex(/^\d{6}$/),
+        fingerprint: z.string().max(500).optional()
+      });
+
+      const { code, otp, fingerprint } = schema.parse(request.body);
+      const normalizedCode = code.toUpperCase().trim();
+
+      const hotel = await prisma.hotel.findUnique({
+        where: { slug: normalizedCode },
+        select: { id: true, status: true }
+      });
+
+      if (!hotel || hotel.status === 'SUSPENDED' || hotel.status === 'DELETED') {
+        await new Promise(r => setTimeout(r, 500 + Math.random() * 500));
+        return reply.code(400).send({ error: 'Invalid or expired code' });
+      }
+
+      // Find latest active OTP for this hotel
+      const otpRecord = await prisma.pinResetOtp.findFirst({
+        where: {
+          hotelId: hotel.id,
+          used: false,
+          expiresAt: { gt: new Date() }
+        },
+        orderBy: { createdAt: 'desc' }
+      });
+
+      if (!otpRecord) {
+        return reply.code(400).send({ error: 'Invalid or expired code. Please request a new one.' });
+      }
+
+      // Check attempt limit (brute force protection)
+      if (otpRecord.attempts >= otpRecord.maxAttempts) {
+        await prisma.pinResetOtp.update({
+          where: { id: otpRecord.id },
+          data: { used: true, usedAt: new Date() }
+        });
+
+        await prisma.auditLog.create({
+          data: {
+            hotelId: hotel.id,
+            actorType: 'system',
+            action: 'pin_reset_otp_max_attempts',
+            entityType: 'Hotel',
+            entityId: hotel.id,
+            newValue: { ip: request.ip, attempts: otpRecord.attempts }
+          }
+        });
+
+        return reply.code(400).send({ error: 'Too many incorrect attempts. Please request a new code.' });
+      }
+
+      // Increment attempt count BEFORE comparison (race condition protection)
+      await prisma.pinResetOtp.update({
+        where: { id: otpRecord.id },
+        data: { attempts: { increment: 1 } }
+      });
+
+      // Verify OTP via bcrypt compare
+      const valid = await bcrypt.compare(otp, otpRecord.otpHash);
+
+      if (!valid) {
+        const remainingAttempts = otpRecord.maxAttempts - (otpRecord.attempts + 1);
+
+        await prisma.auditLog.create({
+          data: {
+            hotelId: hotel.id,
+            actorType: 'system',
+            action: 'pin_reset_otp_failed',
+            entityType: 'Hotel',
+            entityId: hotel.id,
+            newValue: { ip: request.ip, attemptsUsed: otpRecord.attempts + 1, remaining: remainingAttempts }
+          }
+        });
+
+        return reply.code(400).send({ error: 'Invalid code', remainingAttempts });
+      }
+
+      // OTP valid — generate short-lived reset token
+      const resetToken = crypto.randomBytes(32).toString('hex');
+      const resetTokenHash = crypto.createHash('sha256').update(resetToken).digest('hex');
+      const resetExpiresAt = new Date(Date.now() + RESET_TOKEN_EXPIRY_MINUTES * 60 * 1000);
+
+      // Mark OTP used + store reset token hash
+      await prisma.pinResetOtp.update({
+        where: { id: otpRecord.id },
+        data: {
+          used: true,
+          usedAt: new Date(),
+          resetTokenHash,
+          resetExpiresAt,
+          resetUsed: false
+        }
+      });
+
+      await prisma.auditLog.create({
+        data: {
+          hotelId: hotel.id,
+          actorType: 'system',
+          action: 'pin_reset_otp_verified',
+          entityType: 'Hotel',
+          entityId: hotel.id,
+          newValue: { ip: request.ip }
+        }
+      });
+
+      fastify.log.info(`OTP verified for hotel ${hotel.id}, reset token issued`);
+
+      return {
+        success: true,
+        resetToken,
+        expiresIn: RESET_TOKEN_EXPIRY_MINUTES * 60
+      };
+    });
+
+    // Step 3: Reset PIN — validates reset token + sets new PIN
+    app.post('/auth/forgot-pin/reset', {
+      config: { rateLimit: forgotPinResetRateLimit }
+    }, async (request, reply) => {
+      const schema = z.object({
+        code: z.string().length(6).regex(/^[A-Z2-7]{6}$/),
+        resetToken: z.string().length(64).regex(/^[a-f0-9]{64}$/),
+        newPin: z.string().length(8).regex(/^\d{8}$/),
+        fingerprint: z.string().max(500).optional()
+      });
+
+      const { code, resetToken, newPin, fingerprint } = schema.parse(request.body);
+      const normalizedCode = code.toUpperCase().trim();
+
+      // Reject weak PINs
+      if (isWeakPin(newPin)) {
+        return reply.code(400).send({ error: 'PIN is too simple. Choose a stronger PIN.' });
+      }
+
+      const hotel = await prisma.hotel.findUnique({
+        where: { slug: normalizedCode },
+        select: { id: true, name: true, status: true }
+      });
+
+      if (!hotel || hotel.status === 'SUSPENDED' || hotel.status === 'DELETED') {
+        return reply.code(400).send({ error: 'Invalid request' });
+      }
+
+      // Find the verified OTP record with an unused reset token
+      const otpRecord = await prisma.pinResetOtp.findFirst({
+        where: {
+          hotelId: hotel.id,
+          used: true,
+          resetUsed: false,
+          resetExpiresAt: { gt: new Date() },
+          resetTokenHash: { not: null }
+        },
+        orderBy: { createdAt: 'desc' }
+      });
+
+      if (!otpRecord || !otpRecord.resetTokenHash) {
+        return reply.code(400).send({ error: 'Invalid or expired reset session. Please start over.' });
+      }
+
+      // Timing-safe reset token comparison
+      const submittedHash = crypto.createHash('sha256').update(resetToken).digest('hex');
+      try {
+        const a = Buffer.from(submittedHash, 'hex');
+        const b = Buffer.from(otpRecord.resetTokenHash, 'hex');
+        if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) {
+          await prisma.auditLog.create({
+            data: {
+              hotelId: hotel.id,
+              actorType: 'system',
+              action: 'pin_reset_token_invalid',
+              entityType: 'Hotel',
+              entityId: hotel.id,
+              newValue: { ip: request.ip }
+            }
+          });
+          return reply.code(400).send({ error: 'Invalid or expired reset session. Please start over.' });
+        }
+      } catch {
+        return reply.code(400).send({ error: 'Invalid request' });
+      }
+
+      // Token valid — hash peppered PIN and update atomically
+      const pinHash = await bcrypt.hash(pepperPin(newPin), BCRYPT_COST);
+      const now = new Date();
+
+      await prisma.$transaction([
+        prisma.hotel.update({
+          where: { id: hotel.id },
+          data: {
+            pinHash,
+            pinChangedAt: now,
+            pinResetCount: { increment: 1 },
+            lastPinResetAt: now,
+            lastPinResetBy: 'self_service'
+          }
+        }),
+        prisma.pinResetOtp.update({
+          where: { id: otpRecord.id },
+          data: { resetUsed: true }
+        }),
+        // Invalidate any other pending reset tokens for this hotel
+        prisma.pinResetOtp.updateMany({
+          where: {
+            hotelId: hotel.id,
+            id: { not: otpRecord.id },
+            resetUsed: false
+          },
+          data: { resetUsed: true }
+        })
+      ]);
+
+      // Audit log
+      await prisma.auditLog.create({
+        data: {
+          hotelId: hotel.id,
+          actorType: 'system',
+          action: 'pin_reset_self_service',
+          entityType: 'Hotel',
+          entityId: hotel.id,
+          newValue: { ip: request.ip, method: 'email_otp', pinResetBy: 'self_service' }
+        }
+      });
+
+      fastify.log.info(`PIN reset via self-service for hotel ${hotel.id} (${hotel.name})`);
+
+      return {
+        success: true,
+        message: 'PIN has been reset successfully. You can now log in with your new PIN.'
+      };
+    });
+
   });
 
   //==================== PROTECTED HOTEL OWNER ROUTES ====================
@@ -1009,9 +1516,14 @@ function registerRoutes() {
 
       const { name, city, phone, email, pin, plan } = schema.parse(request.body);
 
+      // Reject weak PINs
+      if (isWeakPin(pin)) {
+        return reply.code(400).send({ error: 'PIN is too simple. Choose a stronger PIN.' });
+      }
+
       // Auto-generate collision-free base32 slug
       const slug = await generateSlug();
-      const pinHash = await bcrypt.hash(pin, 10);
+      const pinHash = await bcrypt.hash(pepperPin(pin), BCRYPT_COST);
 
       const hotel = await prisma.hotel.create({
         data: {
@@ -1200,9 +1712,12 @@ function registerRoutes() {
 
       if (!hotel) return reply.code(404).send({ error: 'Hotel not found' });
 
-      // Generate secure 8-digit PIN using crypto
-      const plainPin = crypto.randomInt(10000000, 100000000).toString();
-      const pinHash = await bcrypt.hash(plainPin, 10);
+      // Generate secure 8-digit PIN using crypto (reject weak, regenerate if needed)
+      let plainPin;
+      do {
+        plainPin = crypto.randomInt(10000000, 100000000).toString();
+      } while (isWeakPin(plainPin));
+      const pinHash = await bcrypt.hash(pepperPin(plainPin), BCRYPT_COST);
       const now = new Date();
 
       // Update hotel with new PIN and tracking fields

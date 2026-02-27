@@ -32,7 +32,12 @@ jobs:
             DATABASE_URL=${{ secrets.DATABASE_URL }}
             JWT_SECRET=${{ secrets.JWT_SECRET }}
             COOKIE_SECRET=${{ secrets.COOKIE_SECRET }}
+            SES_SMTP_HOST=${{ secrets.SES_SMTP_HOST }}
+            SES_SMTP_USER=${{ secrets.SES_SMTP_USER }}
+            SES_SMTP_PASS=${{ secrets.SES_SMTP_PASS }}
+            SES_FROM_EMAIL=${{ secrets.SES_FROM_EMAIL }}
             ADMIN_KEY=${{ secrets.ADMIN_KEY }}
+            PIN_PEPPER=${{ secrets.PIN_PEPPER }}
             R2_ACCOUNT_ID=${{ secrets.R2_ACCOUNT_ID }}
             R2_ACCESS_KEY_ID=${{ secrets.R2_ACCESS_KEY_ID }}
             R2_SECRET_ACCESS_KEY=${{ secrets.R2_SECRET_ACCESS_KEY }}

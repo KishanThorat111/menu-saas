@@ -2008,6 +2008,7 @@
 
       <!-- Login form -->
       <div class="login-box">
+        <div id="loginFields">
         <div class="auth-logo">🔐</div>
         <h2>Hotel Admin Login</h2>
         <p>Enter your 6-character menu code and PIN to access your dashboard</p>
@@ -2049,8 +2050,116 @@
         </button>
 
         <p class="login-help">
-          Forgot your PIN? Contact support to reset.
+          Forgot your PIN? <a href="#" id="forgotPinLink" style="color:var(--saffron-600);font-weight:700;text-decoration:underline;text-underline-offset:2px;">Reset via Email</a>
         </p>
+        </div><!-- /loginFields -->
+
+        <!-- Forgot PIN Step 1: Request OTP -->
+        <div id="forgotStep1" class="hidden">
+          <div class="auth-logo" style="background:linear-gradient(135deg,#2563eb,#1d4ed8);">📧</div>
+          <h2>Reset PIN</h2>
+          <p>Enter your menu code and registered email to receive a reset code</p>
+
+          <div class="form-group">
+            <label for="forgotCode">Menu Code</label>
+            <div class="input-with-icon">
+              <span class="input-icon">🎨</span>
+              <input type="text" id="forgotCode" placeholder="ABC234" maxlength="6" autocomplete="off" style="text-transform:uppercase;font-family:var(--font-mono);letter-spacing:0.2em;font-weight:600;">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="forgotEmail">Registered Email</label>
+            <div class="input-with-icon">
+              <span class="input-icon">📧</span>
+              <input type="email" id="forgotEmail" placeholder="your@email.com" autocomplete="email">
+            </div>
+          </div>
+
+          <div id="forgotStep1Error" class="error-message"></div>
+
+          <button id="forgotStep1Btn" class="btn btn-primary">
+            Send Reset Code
+          </button>
+
+          <p class="login-help">
+            <a href="#" id="backToLogin1" style="color:var(--saffron-600);font-weight:600;">← Back to Login</a>
+          </p>
+        </div>
+
+        <!-- Forgot PIN Step 2: Verify OTP -->
+        <div id="forgotStep2" class="hidden">
+          <div class="auth-logo" style="background:linear-gradient(135deg,#f59e0b,#d97706);">🔑</div>
+          <h2>Enter Reset Code</h2>
+          <p>We've sent a 6-digit code to your registered email</p>
+
+          <div class="form-group">
+            <label for="forgotOtp">Reset Code</label>
+            <div class="input-with-icon">
+              <span class="input-icon">🔑</span>
+              <input type="text" id="forgotOtp" placeholder="000000" maxlength="6" autocomplete="one-time-code" inputmode="numeric" style="font-family:var(--font-mono);letter-spacing:0.3em;font-weight:700;font-size:1.25rem;text-align:center;">
+            </div>
+          </div>
+
+          <div id="otpTimer" style="text-align:center;color:var(--text-secondary);font-size:0.8125rem;margin-bottom:1rem;">
+            Code expires in <span id="otpCountdown" style="font-weight:700;font-family:var(--font-mono);">10:00</span>
+          </div>
+
+          <div id="forgotStep2Error" class="error-message"></div>
+
+          <button id="forgotStep2Btn" class="btn btn-primary">
+            Verify Code
+          </button>
+
+          <p class="login-help">
+            <a href="#" id="backToLogin2" style="color:var(--saffron-600);font-weight:600;">← Back to Login</a>
+          </p>
+        </div>
+
+        <!-- Forgot PIN Step 3: Set New PIN -->
+        <div id="forgotStep3" class="hidden">
+          <div class="auth-logo">🔐</div>
+          <h2>Set New PIN</h2>
+          <p>Choose a new 8-digit PIN for your account</p>
+
+          <div class="form-group">
+            <label for="newPin">New PIN</label>
+            <div class="input-with-icon">
+              <span class="input-icon">🔑</span>
+              <input type="password" id="newPin" placeholder="8 digit PIN" maxlength="8" autocomplete="new-password" inputmode="numeric" style="font-family:var(--font-mono);letter-spacing:0.15em;">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="confirmPin">Confirm PIN</label>
+            <div class="input-with-icon">
+              <span class="input-icon">🔑</span>
+              <input type="password" id="confirmPin" placeholder="Repeat PIN" maxlength="8" autocomplete="new-password" inputmode="numeric" style="font-family:var(--font-mono);letter-spacing:0.15em;">
+            </div>
+          </div>
+
+          <div id="forgotStep3Error" class="error-message"></div>
+
+          <button id="forgotStep3Btn" class="btn btn-primary">
+            Reset PIN
+          </button>
+
+          <p class="login-help">
+            <a href="#" id="backToLogin3" style="color:var(--saffron-600);font-weight:600;">← Back to Login</a>
+          </p>
+        </div>
+
+        <!-- Forgot PIN: Success -->
+        <div id="forgotSuccess" class="hidden" style="text-align:center;">
+          <div class="auth-logo" style="background:linear-gradient(135deg,#10b981,#059669);box-shadow:0 8px 24px rgba(16,185,129,0.35),0 0 0 4px rgba(16,185,129,0.1);">✓</div>
+          <h2 style="color:var(--emerald-700);">PIN Reset Successful!</h2>
+          <p>Your PIN has been updated. You can now log in with your new PIN.</p>
+
+          <button id="forgotSuccessBtn" class="btn btn-primary" style="margin-top:1rem;">
+            Back to Login
+          </button>
+        </div>
+
       </div>
     </div>
   </div>
