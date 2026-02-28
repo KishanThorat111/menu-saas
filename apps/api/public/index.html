@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KodSpot — Digital QR Menu for Restaurants, Cafes &amp; Hotels in India</title>
+  <meta name="description" content="KodSpot helps restaurants, cafes, and hotels in India create professional digital menus with QR codes. Customers scan and browse from any phone — no app needed. Start free.">
+  <meta name="keywords" content="digital menu, QR menu, restaurant menu, hotel menu, QR code menu India, contactless menu, online menu maker, restaurant QR code">
+  <meta name="author" content="KodSpot">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://kodspot.com/">
+  <meta property="og:title" content="KodSpot — Digital QR Menu for Indian Restaurants">
+  <meta property="og:description" content="Create a professional digital menu with QR codes. Customers scan and browse from any phone — no app needed. Start your free trial.">
+  <meta property="og:url" content="https://kodspot.com/">
+  <meta property="og:type" content="website">
+  <meta property="og:locale" content="en_IN">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="KodSpot — Digital QR Menu for Indian Restaurants">
+  <meta name="twitter:description" content="Create a professional digital menu with QR codes. No app needed. Built for Indian restaurants, cafes, and hotels.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    /* ── Reset & Base ─────────────────────────────────────── */
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+    body{font-family:'Inter',system-ui,-apple-system,sans-serif;color:#1e293b;background:#ffffff;line-height:1.6;-webkit-font-smoothing:antialiased}
+    img{max-width:100%;display:block}
+    a{color:inherit;text-decoration:none}
+
+    /* ── Layout ───────────────────────────────────────────── */
+    .container{max-width:1120px;margin:0 auto;padding:0 24px}
+    section{padding:80px 0}
+
+    /* ── Navbar ────────────────────────────────────────────── */
+    .navbar{position:sticky;top:0;z-index:100;background:rgba(255,255,255,0.92);backdrop-filter:blur(12px);border-bottom:1px solid #f1f5f9;padding:0 24px}
+    .navbar .container{display:flex;align-items:center;justify-content:space-between;height:64px}
+    .nav-logo{font-size:22px;font-weight:800;letter-spacing:-0.02em;color:#1e293b}
+    .nav-logo span{color:#c68b52}
+    .nav-links{display:flex;gap:32px;align-items:center}
+    .nav-links a{font-size:14px;font-weight:500;color:#64748b;transition:color .2s}
+    .nav-links a:hover{color:#1e293b}
+    .nav-cta{background:#c68b52;color:#fff !important;padding:8px 20px;border-radius:8px;font-weight:600;font-size:14px;transition:background .2s}
+    .nav-cta:hover{background:#b07440}
+
+    .nav-toggle{display:none;background:none;border:none;cursor:pointer;padding:4px}
+    .nav-toggle svg{width:28px;height:28px;color:#1e293b}
+
+    /* ── Hero ──────────────────────────────────────────────── */
+    .hero{padding:100px 0 80px;text-align:center;background:linear-gradient(180deg,#fffbf5 0%,#ffffff 100%)}
+    .hero-badge{display:inline-flex;align-items:center;gap:6px;background:#fef3c7;color:#92400e;font-size:13px;font-weight:600;padding:6px 16px;border-radius:999px;margin-bottom:24px}
+    .hero h1{font-size:clamp(32px,5vw,56px);font-weight:800;line-height:1.12;letter-spacing:-0.03em;color:#0f172a;max-width:720px;margin:0 auto 20px}
+    .hero h1 span{color:#c68b52}
+    .hero p.hero-sub{font-size:clamp(16px,2vw,20px);color:#64748b;max-width:580px;margin:0 auto 36px;line-height:1.65}
+    .hero-actions{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+    .btn-primary{background:#c68b52;color:#fff;padding:14px 32px;border-radius:10px;font-weight:700;font-size:16px;border:none;cursor:pointer;transition:background .2s,transform .1s}
+    .btn-primary:hover{background:#b07440;transform:translateY(-1px)}
+    .btn-secondary{background:#f8fafc;color:#1e293b;padding:14px 32px;border-radius:10px;font-weight:600;font-size:16px;border:1.5px solid #e2e8f0;cursor:pointer;transition:all .2s}
+    .btn-secondary:hover{border-color:#c68b52;color:#c68b52}
+    .hero-note{margin-top:20px;font-size:13px;color:#94a3b8}
+
+    /* ── Trust Strip ──────────────────────────────────────── */
+    .trust-strip{padding:32px 0;border-top:1px solid #f1f5f9;border-bottom:1px solid #f1f5f9;background:#fafafa}
+    .trust-strip .container{display:flex;justify-content:center;gap:36px;flex-wrap:wrap}
+    .trust-pill{display:inline-flex;align-items:center;gap:8px;font-size:14px;font-weight:500;color:#475569}
+    .trust-pill .tp-icon{font-size:18px;flex-shrink:0}
+
+    /* ── How It Works ─────────────────────────────────────── */
+    .how-it-works{background:#fafafa}
+    .section-label{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#c68b52;text-align:center;margin-bottom:12px}
+    .section-title{font-size:clamp(24px,3.5vw,36px);font-weight:800;text-align:center;color:#0f172a;margin-bottom:16px;letter-spacing:-0.02em}
+    .section-sub{text-align:center;color:#64748b;max-width:520px;margin:0 auto 56px;font-size:16px}
+    .steps{display:grid;grid-template-columns:repeat(3,1fr);gap:32px}
+    .step{text-align:center;padding:32px 24px;background:#fff;border-radius:16px;border:1px solid #f1f5f9;transition:box-shadow .3s}
+    .step:hover{box-shadow:0 8px 32px rgba(0,0,0,0.06)}
+    .step-icon{width:56px;height:56px;border-radius:14px;background:linear-gradient(135deg,#fef3c7,#fde68a);display:flex;align-items:center;justify-content:center;margin:0 auto 20px;font-size:26px}
+    .step-num{font-size:12px;font-weight:700;color:#c68b52;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px}
+    .step h3{font-size:18px;font-weight:700;color:#0f172a;margin-bottom:8px}
+    .step p{font-size:14px;color:#64748b;line-height:1.6}
+
+    /* ── Features ──────────────────────────────────────────── */
+    .features-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
+    .feature-card{padding:28px;background:#fff;border:1px solid #f1f5f9;border-radius:14px;transition:box-shadow .3s}
+    .feature-card:hover{box-shadow:0 4px 24px rgba(0,0,0,0.05)}
+    .feature-icon{font-size:28px;margin-bottom:14px}
+    .feature-card h3{font-size:16px;font-weight:700;color:#0f172a;margin-bottom:6px}
+    .feature-card p{font-size:14px;color:#64748b;line-height:1.55}
+
+    /* ── Pricing ───────────────────────────────────────────── */
+    .pricing{background:#fafafa}
+    .pricing-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;max-width:960px;margin:0 auto}
+    .price-card{background:#fff;border:1.5px solid #e2e8f0;border-radius:16px;padding:36px 28px;text-align:center;position:relative;transition:transform .2s,box-shadow .2s}
+    .price-card:hover{transform:translateY(-4px);box-shadow:0 12px 40px rgba(0,0,0,0.08)}
+    .price-card.highlighted{border-color:#c68b52;box-shadow:0 0 0 1px #c68b52}
+    .recommend-tag{position:absolute;top:-13px;left:50%;transform:translateX(-50%);background:#c68b52;color:#fff;font-size:11px;font-weight:700;padding:4px 16px;border-radius:999px;text-transform:uppercase;letter-spacing:0.06em}
+    .price-card h3{font-size:20px;font-weight:700;color:#0f172a;margin-bottom:4px}
+    .price-card .desc{font-size:13px;color:#94a3b8;margin-bottom:20px}
+    .price-amount{font-size:40px;font-weight:800;color:#0f172a;line-height:1}
+    .price-amount span{font-size:16px;font-weight:500;color:#94a3b8}
+    .price-per{font-size:13px;color:#94a3b8;margin-bottom:24px}
+    .price-features{list-style:none;text-align:left;margin-bottom:28px}
+    .price-features li{font-size:14px;color:#475569;padding:6px 0;display:flex;align-items:flex-start;gap:8px}
+    .price-features li::before{content:'✓';color:#c68b52;font-weight:700;flex-shrink:0}
+    .price-btn{display:block;width:100%;padding:12px;border-radius:10px;font-weight:600;font-size:14px;border:none;cursor:pointer;transition:all .2s}
+    .price-btn-primary{background:#c68b52;color:#fff}
+    .price-btn-primary:hover{background:#b07440}
+    .price-btn-outline{background:transparent;color:#1e293b;border:1.5px solid #e2e8f0}
+    .price-btn-outline:hover{border-color:#c68b52;color:#c68b52}
+    .pricing-note{text-align:center;margin-top:32px;font-size:13px;color:#94a3b8}
+
+    /* ── FAQ ───────────────────────────────────────────────── */
+    .faq-list{max-width:680px;margin:0 auto}
+    .faq-item{border-bottom:1px solid #f1f5f9;padding:20px 0}
+    .faq-q{font-size:16px;font-weight:600;color:#0f172a;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:16px;user-select:none}
+    .faq-q::after{content:'+';font-size:22px;color:#94a3b8;flex-shrink:0;transition:transform .2s}
+    .faq-item.open .faq-q::after{transform:rotate(45deg);color:#c68b52}
+    .faq-a{max-height:0;overflow:hidden;transition:max-height .3s ease;font-size:14px;color:#64748b;line-height:1.7}
+    .faq-a a{color:#c68b52;text-decoration:underline}
+    .faq-item.open .faq-a{max-height:260px;padding-top:12px}
+
+    /* ── CTA Banner ───────────────────────────────────────── */
+    .cta-banner{background:linear-gradient(135deg,#1e293b,#0f172a);color:#fff;text-align:center;padding:72px 24px;border-radius:0}
+    .cta-banner h2{font-size:clamp(24px,3.5vw,36px);font-weight:800;margin-bottom:12px;letter-spacing:-0.02em}
+    .cta-banner p{font-size:16px;color:#94a3b8;margin-bottom:32px;max-width:520px;margin-left:auto;margin-right:auto}
+    .cta-banner .btn-primary{padding:16px 40px;font-size:17px}
+    .cta-note{margin-top:16px;font-size:12.5px;color:#64748b}
+
+    /* ── Footer ────────────────────────────────────────────── */
+    .site-footer{background:#0f172a;color:#94a3b8;padding:56px 0 32px}
+    .footer-grid{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:40px;margin-bottom:40px}
+    .footer-brand .logo{font-size:20px;font-weight:800;color:#fff;margin-bottom:10px}
+    .footer-brand .logo span{color:#c68b52}
+    .footer-brand p{font-size:13px;line-height:1.65;max-width:260px}
+    .footer-col h4{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#e2e8f0;margin-bottom:14px}
+    .footer-col a{display:block;font-size:13.5px;color:#94a3b8;padding:4px 0;transition:color .2s}
+    .footer-col a:hover{color:#fff}
+    .footer-bottom{border-top:1px solid #1e293b;padding-top:24px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;font-size:12.5px}
+    .footer-bottom a{color:#94a3b8;transition:color .2s}
+    .footer-bottom a:hover{color:#fff}
+
+    /* ── Responsive ────────────────────────────────────────── */
+    @media(max-width:900px){
+      .steps,.features-grid,.pricing-grid{grid-template-columns:1fr}
+      .footer-grid{grid-template-columns:1fr 1fr}
+    }
+    @media(max-width:640px){
+      section{padding:56px 0}
+      .hero{padding:72px 0 56px}
+      .navbar .nav-links{display:none;position:absolute;top:64px;left:0;right:0;flex-direction:column;background:#fff;border-bottom:1px solid #e2e8f0;padding:16px 24px;gap:16px;box-shadow:0 8px 24px rgba(0,0,0,0.08)}
+      .navbar .nav-links.open{display:flex}
+      .nav-toggle{display:block}
+      .trust-strip .container{gap:16px}
+      .trust-pill{font-size:13px}
+      .footer-grid{grid-template-columns:1fr}
+      .footer-bottom{flex-direction:column;text-align:center}
+      .pricing-note{font-size:12px}
+    }
+  </style>
+</head>
+<body>
+
+<!-- ============================================================
+     NAVBAR
+     ============================================================ -->
+<nav class="navbar" role="navigation" aria-label="Main navigation">
+  <div class="container">
+    <a href="/" class="nav-logo" aria-label="KodSpot home">Kod<span>Spot</span></a>
+    <button class="nav-toggle" aria-label="Toggle menu" onclick="document.querySelector('.nav-links').classList.toggle('open')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
+    <div class="nav-links">
+      <a href="#features">Features</a>
+      <a href="#pricing">Pricing</a>
+      <a href="#faq">FAQ</a>
+      <a href="mailto:support@kodspot.com">Contact</a>
+      <a href="/admin" class="nav-cta">Hotel Login</a>
+    </div>
+  </div>
+</nav>
+
+<!-- ============================================================
+     HERO
+     ============================================================ -->
+<section class="hero">
+  <div class="container">
+    <div class="hero-badge">&#x1F1EE;&#x1F1F3; Built for Indian Restaurants, Cafes &amp; Hotels</div>
+    <h1>Stop reprinting menus.<br>Go digital with <span>one QR code.</span></h1>
+    <p class="hero-sub">Create a professional digital menu in minutes. Place one QR code on every table — customers scan and browse your full menu from their phone. No app download, no waiting.</p>
+    <div class="hero-actions">
+      <a href="mailto:support@kodspot.com?subject=Start%20my%20free%20trial" class="btn-primary">Start Your Free Trial</a>
+      <a href="#how-it-works" class="btn-secondary">See How It Works</a>
+    </div>
+    <p class="hero-note">30-day free trial &bull; No credit card required &bull; Cancel anytime</p>
+  </div>
+</section>
+
+<!-- ============================================================
+     TRUST STRIP (capability-based, no fake metrics)
+     ============================================================ -->
+<section class="trust-strip" aria-label="Platform highlights">
+  <div class="container">
+    <div class="trust-pill"><span class="tp-icon">&#x1F512;</span> HTTPS Encrypted</div>
+    <div class="trust-pill"><span class="tp-icon">&#x1F4F1;</span> Works on All Phones</div>
+    <div class="trust-pill"><span class="tp-icon">&#x26A1;</span> Setup in Minutes</div>
+    <div class="trust-pill"><span class="tp-icon">&#x1F1EE;&#x1F1F3;</span> Made in India</div>
+    <div class="trust-pill"><span class="tp-icon">&#x1F6E1;&#xFE0F;</span> DPDPA Aligned</div>
+  </div>
+</section>
+
+<!-- ============================================================
+     HOW IT WORKS
+     ============================================================ -->
+<section class="how-it-works" id="how-it-works">
+  <div class="container">
+    <div class="section-label">How It Works</div>
+    <h2 class="section-title">Go live in 3 simple steps</h2>
+    <p class="section-sub">No technical skills needed. We help you get set up — you manage your menu from any phone or computer.</p>
+    <div class="steps">
+      <div class="step">
+        <div class="step-icon">&#x1F4CB;</div>
+        <div class="step-num">Step 1</div>
+        <h3>We Set Up Your Account</h3>
+        <p>Share your restaurant name, city, and phone number. We create your account with a unique menu code and secure PIN — ready in minutes.</p>
+      </div>
+      <div class="step">
+        <div class="step-icon">&#x1F374;</div>
+        <div class="step-num">Step 2</div>
+        <h3>Add Your Menu</h3>
+        <p>Log in to your dashboard and add categories, items, prices, and photos. Mark dishes as veg or non-veg. Update anytime — changes go live instantly.</p>
+      </div>
+      <div class="step">
+        <div class="step-icon">&#x1F4F2;</div>
+        <div class="step-num">Step 3</div>
+        <h3>Print Your QR Code</h3>
+        <p>Download and print your QR code. Place it on tables, counters, or takeaway bags. Customers scan and see your complete menu on their phone.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     FEATURES
+     ============================================================ -->
+<section id="features">
+  <div class="container">
+    <div class="section-label">Features</div>
+    <h2 class="section-title">Everything your restaurant needs to go digital</h2>
+    <p class="section-sub">Purpose-built for Indian restaurants, cafes, and hotels. Simple to use, reliable, and professional.</p>
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon">&#x1F4F1;</div>
+        <h3>Instant QR Menu</h3>
+        <p>Your restaurant gets a unique short URL and QR code. Customers scan with any phone camera and see your menu immediately — no app install needed.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">&#x1F3A8;</div>
+        <h3>Professional Themes</h3>
+        <p>Choose from 4 clean, mobile-first themes — Classic, Warm, Nature, and Elegant. Your menu looks polished and readable on every screen size.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">&#x1F4F7;</div>
+        <h3>Dish Photos</h3>
+        <p>Upload photos for each dish so customers can see what they're ordering. Visual menus help your diners decide faster and order with confidence.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">&#x2705;</div>
+        <h3>Veg &amp; Non-Veg Badges</h3>
+        <p>Clearly mark every item as vegetarian or non-vegetarian with familiar green and red indicators. Essential for Indian diners browsing your menu.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">&#x1F4CA;</div>
+        <h3>Menu View Analytics</h3>
+        <p>Track how often your menu is viewed. Understand when customers are scanning so you can make better decisions — no complex setup required.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">&#x1F512;</div>
+        <h3>Secure by Design</h3>
+        <p>PIN-protected dashboard, HTTPS encryption, and privacy practices aligned with India's DPDPA framework. Your restaurant data stays safe.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     PRICING
+     ============================================================ -->
+<section class="pricing" id="pricing">
+  <div class="container">
+    <div class="section-label">Pricing</div>
+    <h2 class="section-title">Simple, honest pricing</h2>
+    <p class="section-sub">Start with a 30-day free trial on any plan. No hidden fees. No long-term contracts. Cancel anytime.</p>
+    <div class="pricing-grid">
+
+      <!-- Starter -->
+      <div class="price-card">
+        <h3>Starter</h3>
+        <p class="desc">For small restaurants &amp; cafes</p>
+        <div class="price-amount">&#8377;299<span>/mo</span></div>
+        <p class="price-per">Per month, billed monthly</p>
+        <ul class="price-features">
+          <li>Unlimited menu items</li>
+          <li>QR code &amp; unique short URL</li>
+          <li>1 menu theme</li>
+          <li>Basic view analytics</li>
+          <li>Email support</li>
+        </ul>
+        <a href="mailto:support@kodspot.com?subject=Starter%20Plan%20%E2%80%94%20Free%20Trial%20Request" class="price-btn price-btn-outline">Start Free Trial</a>
+      </div>
+
+      <!-- Standard -->
+      <div class="price-card highlighted">
+        <div class="recommend-tag">Recommended</div>
+        <h3>Standard</h3>
+        <p class="desc">For growing restaurants</p>
+        <div class="price-amount">&#8377;499<span>/mo</span></div>
+        <p class="price-per">Per month, billed monthly</p>
+        <ul class="price-features">
+          <li>Everything in Starter</li>
+          <li>All 4 premium themes</li>
+          <li>Dish photo uploads</li>
+          <li>Popular item badges</li>
+          <li>Priority email support</li>
+        </ul>
+        <a href="mailto:support@kodspot.com?subject=Standard%20Plan%20%E2%80%94%20Free%20Trial%20Request" class="price-btn price-btn-primary">Start Free Trial</a>
+      </div>
+
+      <!-- Pro -->
+      <div class="price-card">
+        <h3>Pro</h3>
+        <p class="desc">For hotels &amp; restaurant chains</p>
+        <div class="price-amount">&#8377;999<span>/mo</span></div>
+        <p class="price-per">Per month, billed monthly</p>
+        <ul class="price-features">
+          <li>Everything in Standard</li>
+          <li>Dedicated onboarding assistance</li>
+          <li>Bulk menu setup help</li>
+          <li>Priority support via WhatsApp</li>
+          <li>Custom branding (coming soon)</li>
+        </ul>
+        <a href="mailto:support@kodspot.com?subject=Pro%20Plan%20%E2%80%94%20Enquiry" class="price-btn price-btn-outline">Talk to Us</a>
+      </div>
+
+    </div>
+    <p class="pricing-note">All prices in INR. GST is not currently applicable. Pricing may be revised with advance notice. &bull; <a href="/refund.html" style="color:#94a3b8;text-decoration:underline">Refund Policy</a></p>
+  </div>
+</section>
+
+<!-- ============================================================
+     FAQ
+     ============================================================ -->
+<section id="faq">
+  <div class="container">
+    <div class="section-label">FAQ</div>
+    <h2 class="section-title">Common questions, straight answers</h2>
+    <p class="section-sub">Everything you need to know before getting started.</p>
+    <div class="faq-list">
+      <div class="faq-item">
+        <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">Do my customers need to install an app?</div>
+        <div class="faq-a">No. Customers scan the QR code with their phone camera. The menu opens directly in their browser — it works on every smartphone without any download.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">Can I update my menu after setting it up?</div>
+        <div class="faq-a">Yes. Log in to your dashboard anytime to add, edit, or remove items, change prices, upload photos, or switch themes. All changes are reflected on your live menu instantly.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">What happens after the 30-day free trial?</div>
+        <div class="faq-a">You choose a plan that fits your restaurant. If you decide not to subscribe, your menu enters a grace period before it expires. There are no automatic charges — you pay only when you choose to.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">Will my printed QR codes keep working if I update my menu?</div>
+        <div class="faq-a">Yes. Your QR code and menu URL are permanent. No matter how many times you update items, prices, or themes — the same printed QR code always shows your latest menu.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">How do I make payments?</div>
+        <div class="faq-a">We accept payments via UPI, bank transfer, and secure online payment links. You will receive a reminder before your subscription is due — no surprise charges.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">Is there a long-term contract?</div>
+        <div class="faq-a">No. All plans are month-to-month. You can upgrade, downgrade, or cancel at any time without penalties or lock-in periods.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">What is your refund policy?</div>
+        <div class="faq-a">We offer a full refund within 7 days of your first paid subscription if you're not satisfied. After 7 days, you can cancel anytime and your menu stays active until the end of your billing cycle. <a href="/refund.html">Read the full Refund Policy</a>.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">Is my restaurant data safe?</div>
+        <div class="faq-a">Yes. We use HTTPS encryption, hashed PINs (your PIN is never stored in plain text), and our data practices are aligned with India's Digital Personal Data Protection Act (DPDPA). Your data is stored on secure servers and is never shared with third parties.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     CTA BANNER
+     ============================================================ -->
+<section class="cta-banner">
+  <h2>Ready to go digital?</h2>
+  <p>Set up your restaurant's QR menu in minutes. Start with a free 30-day trial — no credit card, no commitment.</p>
+  <a href="mailto:support@kodspot.com?subject=Start%20my%20free%20trial" class="btn-primary">Start Your Free Trial</a>
+  <p class="cta-note">You can cancel anytime during or after the trial.</p>
+</section>
+
+<!-- ============================================================
+     FOOTER
+     ============================================================ -->
+<footer class="site-footer">
+  <div class="container">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <div class="logo">Kod<span>Spot</span></div>
+        <p>Digital QR menu platform for restaurants, cafes, and hotels in India. Designed to be simple, reliable, and professional.</p>
+      </div>
+      <div class="footer-col">
+        <h4>Product</h4>
+        <a href="#features">Features</a>
+        <a href="#pricing">Pricing</a>
+        <a href="#faq">FAQ</a>
+        <a href="/admin">Hotel Login</a>
+      </div>
+      <div class="footer-col">
+        <h4>Legal</h4>
+        <a href="/privacy.html">Privacy Policy</a>
+        <a href="/terms.html">Terms of Service</a>
+        <a href="/refund.html">Refund &amp; Cancellation</a>
+      </div>
+      <div class="footer-col">
+        <h4>Contact</h4>
+        <a href="mailto:support@kodspot.com">support@kodspot.com</a>
+        <a>Belagavi, Karnataka, India</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>&copy; 2025&ndash;2026 KodSpot &bull; Operated by Kishan Thorat, Sole Proprietor &bull; Belagavi, Karnataka, India</span>
+      <span>
+        <a href="/privacy.html">Privacy</a> &nbsp;&bull;&nbsp; <a href="/terms.html">Terms</a> &nbsp;&bull;&nbsp; <a href="/refund.html">Refund</a>
+      </span>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>
