@@ -23,7 +23,7 @@
   }
 
 /* ==========================================================================
-   MENUSAAS — PUBLIC MENU ENGINE v2.0
+   KODSPOT — PUBLIC MENU ENGINE v2.0
    Performance-first · CSP-compliant · Progressive enhancement
    Revenue-optimized visual hierarchy · 4 emotional theme territories
    ========================================================================== */
@@ -299,7 +299,7 @@
 
     // ── Footer ──
     html += '<footer class="menu-footer anim" style="animation-delay:0.2s">';
-    html += '<div class="menu-footer-brand">Powered by MenuSaaS</div>';
+    html += '<div class="menu-footer-brand">Powered by KodSpot</div>';
     html += '<a href="/privacy.html">Privacy</a> · <a href="/terms.html">Terms</a>';
     html += '</footer>';
 

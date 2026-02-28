@@ -219,7 +219,7 @@ function getSesTransporter() {
   return sesTransporter;
 }
 
-const SES_FROM = process.env.SES_FROM_EMAIL || 'noreply@mail.ecommerceweb.shop';
+const SES_FROM = process.env.SES_FROM_EMAIL || 'noreply@kodspot.com';
 const OTP_EXPIRY_MINUTES = 10;
 const RESET_TOKEN_EXPIRY_MINUTES = 5;
 const OTP_MAX_ATTEMPTS = 5;
@@ -255,7 +255,7 @@ function buildOtpEmailHtml(hotelName, otp, expiryMinutes) {
           </div>
         </td></tr>
         <tr><td style="background:#f9fafb;padding:16px 32px;text-align:center;border-top:1px solid #e5e7eb;">
-          <p style="margin:0;color:#9ca3af;font-size:11px;">MenuSaaS &mdash; Secure Hotel Menu Management</p>
+          <p style="margin:0;color:#9ca3af;font-size:11px;">KodSpot &mdash; Secure Hotel Menu Management</p>
         </td></tr>
       </table>
     </td></tr>
@@ -264,7 +264,7 @@ function buildOtpEmailHtml(hotelName, otp, expiryMinutes) {
 }
 
 function buildOtpEmailText(hotelName, otp, expiryMinutes) {
-  return `PIN Reset Code for ${hotelName}\n\nYour reset code: ${otp}\n\nThis code expires in ${expiryMinutes} minutes.\n\nDo not share this code with anyone.\n\nIf you did not request this, ignore this email.\n\n-- MenuSaaS`;
+  return `PIN Reset Code for ${hotelName}\n\nYour reset code: ${otp}\n\nThis code expires in ${expiryMinutes} minutes.\n\nDo not share this code with anyone.\n\nIf you did not request this, ignore this email.\n\n-- KodSpot`;
 }
 
 //==================== HELPERS ====================
@@ -765,9 +765,9 @@ function registerRoutes() {
       // Send email via SES
       try {
         await transporter.sendMail({
-          from: `MenuSaaS <${SES_FROM}>`,
+          from: `KodSpot <${SES_FROM}>`,
           to: hotel.email,
-          subject: 'Your PIN Reset Code - MenuSaaS',
+          subject: 'Your PIN Reset Code - KodSpot',
           html: buildOtpEmailHtml(hotel.name, plainOtp, OTP_EXPIRY_MINUTES),
           text: buildOtpEmailText(hotel.name, plainOtp, OTP_EXPIRY_MINUTES)
         });
