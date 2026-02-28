@@ -1,4 +1,4 @@
-ecommerceweb.shop {
+kodspot.com {
     reverse_proxy api:3000 {
         header_up Host {host}
         header_up X-Real-IP {remote}
