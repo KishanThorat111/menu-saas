@@ -239,13 +239,13 @@ function buildOtpEmailHtml(hotelName, otp, expiryMinutes) {
     <tr><td align="center">
       <table width="100%" cellpadding="0" cellspacing="0" style="max-width:480px;background:#ffffff;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,0.06);overflow:hidden;">
         <tr><td style="background:linear-gradient(135deg,#c68b52,#b07440);padding:32px 32px 24px;text-align:center;">
-          <div style="font-size:28px;margin-bottom:8px;">&#x1F510;</div>
-          <h1 style="margin:0;color:#ffffff;font-size:22px;font-weight:700;">PIN Reset Code</h1>
+          <div style="font-size:24px;font-weight:800;color:#ffffff;letter-spacing:0.5px;margin-bottom:12px;">KodSpot</div>
+          <h1 style="margin:0;color:#ffffff;font-size:20px;font-weight:600;opacity:0.95;">PIN Reset Code</h1>
         </td></tr>
         <tr><td style="padding:32px;">
           <p style="margin:0 0 8px;color:#374151;font-size:15px;">Hello,</p>
           <p style="margin:0 0 24px;color:#374151;font-size:15px;">A PIN reset was requested for <strong>${escapeEmailHtml(hotelName)}</strong>. Use the code below:</p>
-          <div style="background:#f9fafb;border:2px dashed #d1d5db;border-radius:10px;padding:20px;text-align:center;margin:0 0 24px;">
+          <div style="background:#fdf8f0;border:2px dashed #c68b52;border-radius:10px;padding:20px;text-align:center;margin:0 0 24px;">
             <div style="font-family:'Courier New',monospace;font-size:36px;font-weight:800;letter-spacing:0.3em;color:#1f2937;">${otp}</div>
           </div>
           <p style="margin:0 0 4px;color:#6b7280;font-size:13px;">&#x23F1; This code expires in <strong>${expiryMinutes} minutes</strong>.</p>
@@ -255,7 +255,8 @@ function buildOtpEmailHtml(hotelName, otp, expiryMinutes) {
           </div>
         </td></tr>
         <tr><td style="background:#f9fafb;padding:16px 32px;text-align:center;border-top:1px solid #e5e7eb;">
-          <p style="margin:0;color:#9ca3af;font-size:11px;">KodSpot &mdash; Secure Hotel Menu Management</p>
+          <p style="margin:0 0 4px;color:#9ca3af;font-size:11px;"><a href="https://kodspot.com" style="color:#b07440;text-decoration:none;font-weight:600;">KodSpot</a> &mdash; Digital Menu Management</p>
+          <p style="margin:0;color:#c0c5cc;font-size:10px;">This is an automated message. Please do not reply.</p>
         </td></tr>
       </table>
     </td></tr>
@@ -264,7 +265,7 @@ function buildOtpEmailHtml(hotelName, otp, expiryMinutes) {
 }
 
 function buildOtpEmailText(hotelName, otp, expiryMinutes) {
-  return `PIN Reset Code for ${hotelName}\n\nYour reset code: ${otp}\n\nThis code expires in ${expiryMinutes} minutes.\n\nDo not share this code with anyone.\n\nIf you did not request this, ignore this email.\n\n-- KodSpot`;
+  return `KodSpot — PIN Reset Code\n\nHello,\n\nA PIN reset was requested for ${hotelName}.\n\nYour reset code: ${otp}\n\nThis code expires in ${expiryMinutes} minutes.\nDo not share this code with anyone.\n\nIf you did not request this, you can safely ignore this email. Your PIN will not change.\n\n--\nKodSpot — Digital Menu Management\nhttps://kodspot.com\nThis is an automated message. Please do not reply.`;
 }
 
 //==================== HELPERS ====================
