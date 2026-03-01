@@ -1147,14 +1147,14 @@ let billingData = null;
 async function loadBilling() {
   const container = document.getElementById('billingContent');
   if (!container) return;
-  container.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--slate-400);"><div style="font-size:2rem;margin-bottom:0.5rem;">\u23F3</div>Loading billing...</div>';
+  container.innerHTML = '<div style="text-align:center;padding:3rem 1.5rem;color:var(--slate-400);"><div style="font-size:1.5rem;margin-bottom:0.75rem;animation:pulse 1.5s ease-in-out infinite;">\ud83d\udcb3</div><div style="font-size:0.875rem;font-weight:500;">Loading billing...</div></div>';
 
   try {
     const res = await apiFetch('/me/billing');
     billingData = await res.json();
     renderBilling();
   } catch (e) {
-    container.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--red-500);">Failed to load billing info</div>';
+    container.innerHTML = '<div style="text-align:center;padding:3rem 1.5rem;"><div style="font-size:1.5rem;margin-bottom:0.75rem;">\u274c</div><div style="color:var(--red-500);font-weight:600;font-size:0.875rem;">Failed to load billing info</div><div style="color:var(--slate-400);font-size:0.8125rem;margin-top:0.5rem;">Please try refreshing the page</div></div>';
   }
 }
 
@@ -1177,13 +1177,19 @@ function renderBilling() {
   if (isExpired) statusCard = 'warn';
   else if (b.status === 'ACTIVE') statusCard = 'success';
 
-  let html = '<div class="billing-header"><h3>\ud83d\udcb3 Billing & Plan</h3></div>';
+  var statusIcon = '\u26a0\ufe0f';
+  if (b.status === 'ACTIVE') statusIcon = '\u2705';
+  else if (isTrial) statusIcon = '\ud83e\uddea';
+  else if (isExpired) statusIcon = '\ud83d\udea8';
+
+  let html = '<div class="billing-header"><h3>\ud83d\udcb3 Billing &amp; Plan</h3></div>';
 
   // Status cards
   html += '<div class="billing-cards">';
 
   // Plan card
   html += '<div class="billing-card highlight">';
+  html += '<div class="billing-card-icon">\ud83d\udc8e</div>';
   html += '<div class="billing-card-label">Current Plan</div>';
   html += '<div class="billing-card-value">' + escapeHtml(b.plan) + '</div>';
   html += '<div class="billing-card-sub">' + escapeHtml(b.planLabel) + '</div>';
@@ -1191,6 +1197,7 @@ function renderBilling() {
 
   // Status card
   html += '<div class="billing-card ' + statusCard + '">';
+  html += '<div class="billing-card-icon">' + statusIcon + '</div>';
   html += '<div class="billing-card-label">Status</div>';
   html += '<div class="billing-card-value">' + escapeHtml(b.status) + '</div>';
   if (isTrial) html += '<div class="billing-card-sub">Trial ends: ' + trialEndsStr + '</div>';
@@ -1199,6 +1206,7 @@ function renderBilling() {
 
   // Scans card
   html += '<div class="billing-card">';
+  html += '<div class="billing-card-icon">\ud83d\udcca</div>';
   html += '<div class="billing-card-label">Today\u2019s Scans</div>';
   html += '<div class="billing-card-value">' + b.todayScans + (isUnlimited ? '' : ' / ' + b.dailyScanLimit) + '</div>';
   html += '<div class="billing-card-sub">' + (isUnlimited ? 'Unlimited scans' : scanPercent + '% used') + '</div>';
@@ -1209,39 +1217,48 @@ function renderBilling() {
 
   html += '</div>'; // end billing-cards
 
-  // Renewal / Upgrade section
+  // Renewal / Upgrade alert
   if (isTrial || isExpired || isExpiring) {
-    html += '<div style="background:linear-gradient(135deg,#fffbeb,#fef3c7);border:1.5px solid #fcd34d;border-radius:12px;padding:1.25rem;margin-bottom:1.5rem;">';
+    html += '<div class="billing-alert">';
     if (isTrial) {
-      html += '<p style="font-weight:700;color:#92400e;margin-bottom:0.5rem;">\u23f0 Your trial ends on ' + trialEndsStr + '</p>';
-      html += '<p style="font-size:0.875rem;color:#92400e;">Choose a plan below to continue after your trial.</p>';
+      html += '<div class="billing-alert-icon">\u23f0</div>';
+      html += '<div class="billing-alert-text"><p>Your trial ends on ' + trialEndsStr + '</p>';
+      html += '<p>Choose a plan below to continue after your trial.</p></div>';
     } else if (isExpired) {
-      html += '<p style="font-weight:700;color:#92400e;margin-bottom:0.5rem;">\u26a0\ufe0f Your subscription has expired</p>';
-      html += '<p style="font-size:0.875rem;color:#92400e;">Renew now to keep your menu live.</p>';
+      html += '<div class="billing-alert-icon">\u26a0\ufe0f</div>';
+      html += '<div class="billing-alert-text"><p>Your subscription has expired</p>';
+      html += '<p>Renew now to keep your menu live.</p></div>';
     } else {
-      html += '<p style="font-weight:700;color:#92400e;margin-bottom:0.5rem;">\ud83d\udd14 Your plan expires on ' + paidUntilStr + '</p>';
-      html += '<p style="font-size:0.875rem;color:#92400e;">Renew early to avoid interruption.</p>';
+      html += '<div class="billing-alert-icon">\ud83d\udd14</div>';
+      html += '<div class="billing-alert-text"><p>Your plan expires on ' + paidUntilStr + '</p>';
+      html += '<p>Renew early to avoid interruption.</p></div>';
     }
     html += '</div>';
   }
 
   // Plan selection cards
-  html += '<h4 style="font-size:0.9375rem;font-weight:700;color:var(--slate-700);margin-bottom:0.75rem;">' + (isTrial || isExpired ? 'Choose a Plan' : 'Renew or Change Plan') + '</h4>';
+  html += '<div class="billing-section-title">' + (isTrial || isExpired ? 'Choose a Plan' : 'Renew or Change Plan') + '</div>';
   html += '<div class="plan-cards">';
 
   var plans = [
-    { key: 'STARTER', name: 'Starter', price: '\u20b9299', desc: '300 scans/day' },
-    { key: 'STANDARD', name: 'Standard', price: '\u20b9499', desc: '500 scans/day' },
-    { key: 'PRO', name: 'Pro', price: '\u20b9999', desc: 'Unlimited + Custom' }
+    { key: 'STARTER', name: 'Starter', price: '\u20b9299', desc: '300 scans/day', badge: '' },
+    { key: 'STANDARD', name: 'Standard', price: '\u20b9499', desc: '500 scans/day', badge: '' },
+    { key: 'PRO', name: 'Pro', price: '\u20b9999', desc: 'Unlimited scans + Custom design', badge: 'popular' }
   ];
 
   plans.forEach(function(p) {
     var isCurrent = p.key === b.plan;
-    html += '<div class="plan-card ' + (isCurrent ? 'current' : '') + '" data-plan="' + p.key + '">';
-    html += '<div class="plan-card-name">' + p.name + (isCurrent ? ' \u2705' : '') + '</div>';
-    html += '<div class="plan-card-price">' + p.price + '<span style="font-size:0.875rem;font-weight:500;color:var(--slate-500);">/mo</span></div>';
-    html += '<div class="plan-card-desc">' + p.desc + '</div>';
-    html += '<button class="btn ' + (isCurrent ? 'btn-primary' : 'btn-secondary') + ' plan-pay-btn" data-plan="' + p.key + '" style="margin-top:0.75rem;font-size:0.8125rem;">';
+    var proClass = p.key === 'PRO' ? ' plan-pro' : '';
+    html += '<div class="plan-card' + (isCurrent ? ' current' : '') + proClass + '" data-plan="' + p.key + '">';
+    if (isCurrent) {
+      html += '<div class="plan-card-badge current-badge">Current Plan</div>';
+    } else if (p.badge === 'popular') {
+      html += '<div class="plan-card-badge popular-badge">\u2b50 Most Popular</div>';
+    }
+    html += '<div class="plan-card-name">' + escapeHtml(p.name) + '</div>';
+    html += '<div class="plan-card-price">' + p.price + '<span class="price-period">/mo</span></div>';
+    html += '<div class="plan-card-desc">' + escapeHtml(p.desc) + '</div>';
+    html += '<button class="btn ' + (isCurrent ? 'btn-primary' : 'btn-secondary') + ' plan-pay-btn" data-plan="' + p.key + '">';
     html += isCurrent ? '\ud83d\udd04 Renew' : '\ud83d\ude80 Choose';
     html += '</button></div>';
   });
@@ -1251,7 +1268,16 @@ function renderBilling() {
   // Payment history
   if (b.payments && b.payments.length > 0) {
     html += '<div class="payment-history">';
-    html += '<h4>\ud83d\udcdc Payment History</h4>';
+    html += '<div class="billing-section-title">\ud83d\udcdc Payment History</div>';
+    html += '<div class="payment-history-list">';
+    // Column headers (visible on desktop)
+    html += '<div class="payment-history-header">';
+    html += '<span class="ph-amount">Amount</span>';
+    html += '<span class="ph-plan">Plan</span>';
+    html += '<span class="ph-status">Status</span>';
+    html += '<span class="ph-method">Mode</span>';
+    html += '<span class="ph-date">Date</span>';
+    html += '</div>';
     b.payments.forEach(function(p) {
       var amount = '\u20b9' + (p.amount / 100);
       var date = p.paidAt ? new Date(p.paidAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : new Date(p.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
@@ -1260,11 +1286,12 @@ function renderBilling() {
       html += '<span class="amount">' + amount + '</span>';
       html += '<span class="plan-tag">' + p.plan + '</span>';
       html += '<span class="status-tag ' + statusClass + '">' + p.status + '</span>';
-      if (p.method) html += '<span style="font-size:0.75rem;color:var(--slate-500);">' + escapeHtml(p.method) + '</span>';
+      html += '<span class="method-text">' + (p.method ? escapeHtml(p.method) : '\u2014') + '</span>';
       html += '<span class="date-text">' + date + '</span>';
       html += '</div>';
     });
-    html += '</div>';
+    html += '</div>'; // end payment-history-list
+    html += '</div>'; // end payment-history
   }
 
   container.innerHTML = html;
