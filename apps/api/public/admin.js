@@ -1237,11 +1237,11 @@ function renderBilling() {
 
   plans.forEach(function(p) {
     var isCurrent = p.key === b.plan;
-    html += '<div class="plan-card ' + (isCurrent ? 'current' : '') + '" onclick="initiatePayment(\'' + p.key + '\')">';
+    html += '<div class="plan-card ' + (isCurrent ? 'current' : '') + '" data-plan="' + p.key + '">';
     html += '<div class="plan-card-name">' + p.name + (isCurrent ? ' \u2705' : '') + '</div>';
     html += '<div class="plan-card-price">' + p.price + '<span style="font-size:0.875rem;font-weight:500;color:var(--slate-500);">/mo</span></div>';
     html += '<div class="plan-card-desc">' + p.desc + '</div>';
-    html += '<button class="btn ' + (isCurrent ? 'btn-primary' : 'btn-secondary') + '" style="margin-top:0.75rem;font-size:0.8125rem;" onclick="event.stopPropagation();initiatePayment(\'' + p.key + '\')">';
+    html += '<button class="btn ' + (isCurrent ? 'btn-primary' : 'btn-secondary') + ' plan-pay-btn" data-plan="' + p.key + '" style="margin-top:0.75rem;font-size:0.8125rem;">';
     html += isCurrent ? '\ud83d\udd04 Renew' : '\ud83d\ude80 Choose';
     html += '</button></div>';
   });
@@ -1268,6 +1268,19 @@ function renderBilling() {
   }
 
   container.innerHTML = html;
+
+  // Attach plan card click handlers (avoid inline onclick for CSP compliance)
+  container.querySelectorAll('.plan-card[data-plan]').forEach(function(card) {
+    card.addEventListener('click', function() {
+      initiatePayment(this.dataset.plan);
+    });
+  });
+  container.querySelectorAll('.plan-pay-btn[data-plan]').forEach(function(btn) {
+    btn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      initiatePayment(this.dataset.plan);
+    });
+  });
 }
 
 async function initiatePayment(plan) {

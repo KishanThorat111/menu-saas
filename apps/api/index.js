@@ -427,7 +427,7 @@ async function registerSecurityPlugins() {
       directives: {
         defaultSrc: ["'self'"],
         styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
-        scriptSrc: ["'self'", "https://checkout.razorpay.com"],
+        scriptSrc: ["'self'", "'unsafe-inline'", "https://checkout.razorpay.com"],
         imgSrc: ["'self'", 'data:', 'https:', 'blob:'],
         connectSrc: ["'self'", "https://lumberjack-cx.razorpay.com", "https://api.razorpay.com"],
         fontSrc: ["'self'", "https://fonts.gstatic.com"],

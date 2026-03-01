@@ -682,9 +682,7 @@ function openRecordPaymentModal(hotelId, hotelName) {
   currentRecordPaymentId = hotelId;
   document.getElementById('recordPaymentHotelName').textContent = hotelName;
   document.getElementById('recordPaymentPlan').value = 'STARTER';
-  if (typeof initCustomSelect === 'function') initCustomSelect(document.getElementById('recordPaymentPlan'));
   document.getElementById('recordPaymentMode').value = 'CASH';
-  if (typeof initCustomSelect === 'function') initCustomSelect(document.getElementById('recordPaymentMode'));
   document.getElementById('recordPaymentNote').value = '';
   document.getElementById('recordPaymentModal').classList.add('active');
 }
@@ -697,8 +695,11 @@ function closeRecordPaymentModal() {
 async function confirmRecordPayment() {
   if (!currentRecordPaymentId) return;
 
-  const plan = document.getElementById('recordPaymentPlan').value;
-  const mode = document.getElementById('recordPaymentMode').value;
+  // Read values directly from native select using selectedIndex (bypasses custom select override)
+  const planSel = document.getElementById('recordPaymentPlan');
+  const modeSel = document.getElementById('recordPaymentMode');
+  const plan = planSel.options[planSel.selectedIndex]?.value || planSel.value;
+  const mode = modeSel.options[modeSel.selectedIndex]?.value || modeSel.value;
   const note = document.getElementById('recordPaymentNote').value.trim();
 
   if (!plan || !mode) {
@@ -1079,6 +1080,8 @@ function initAllCustomSelects() {
   initCustomSelect(document.getElementById('hPlan'));
   initCustomSelect(document.getElementById('filterStatus'));
   initCustomSelect(document.getElementById('editStatus'));
+  initCustomSelect(document.getElementById('recordPaymentPlan'));
+  initCustomSelect(document.getElementById('recordPaymentMode'));
 }
 
 // Run init when DOM is ready
