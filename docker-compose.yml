@@ -60,6 +60,9 @@ services:
       - SES_SMTP_USER=${SES_SMTP_USER:-}
       - SES_SMTP_PASS=${SES_SMTP_PASS:-}
       - SES_FROM_EMAIL=${SES_FROM_EMAIL:-}
+      - RAZORPAY_KEY_ID=${RAZORPAY_KEY_ID:-}
+      - RAZORPAY_KEY_SECRET=${RAZORPAY_KEY_SECRET:-}
+      - RAZORPAY_WEBHOOK_SECRET=${RAZORPAY_WEBHOOK_SECRET:-}
     # ❌ REMOVED: ports: - "3000:3000"  (Security leak - Caddy handles this)
     depends_on:
       db:

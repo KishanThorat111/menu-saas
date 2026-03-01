@@ -362,6 +362,12 @@ function renderTable(hotels) {
           title="Reset PIN - Current PIN will be invalidated">
           🔑 Reset PIN
         </button>
+        <button class="btn btn-sm btn-success record-payment-btn"
+          data-id="${hotel.id}"
+          data-name="${escapeHtml(hotel.name)}"
+          title="Record an offline/manual payment">
+          💰 Record Payment
+        </button>
         <button class="btn btn-sm btn-danger delete-hotel-btn"
           data-id="${hotel.id}"
           data-name="${escapeHtml(hotel.name)}"
@@ -491,6 +497,13 @@ function renderTable(hotels) {
       const id = this.dataset.id;
       const name = this.dataset.name;
       openResetPinModal(id, name);
+    });
+  });
+
+  // Attach record payment button listeners
+  tbody.querySelectorAll('.record-payment-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+      openRecordPaymentModal(this.dataset.id, this.dataset.name);
     });
   });
 
@@ -659,6 +672,54 @@ async function confirmResetPin() {
     closeResetPinModal();
   } finally {
     setLoading('confirmResetPinBtn', false, 'Confirm Reset');
+  }
+}
+
+// ==================== RECORD PAYMENT MODAL ====================
+let currentRecordPaymentId = null;
+
+function openRecordPaymentModal(hotelId, hotelName) {
+  currentRecordPaymentId = hotelId;
+  document.getElementById('recordPaymentHotelName').textContent = hotelName;
+  document.getElementById('recordPaymentPlan').value = 'STARTER';
+  if (typeof initCustomSelect === 'function') initCustomSelect(document.getElementById('recordPaymentPlan'));
+  document.getElementById('recordPaymentMode').value = 'CASH';
+  if (typeof initCustomSelect === 'function') initCustomSelect(document.getElementById('recordPaymentMode'));
+  document.getElementById('recordPaymentNote').value = '';
+  document.getElementById('recordPaymentModal').classList.add('active');
+}
+
+function closeRecordPaymentModal() {
+  document.getElementById('recordPaymentModal').classList.remove('active');
+  currentRecordPaymentId = null;
+}
+
+async function confirmRecordPayment() {
+  if (!currentRecordPaymentId) return;
+
+  const plan = document.getElementById('recordPaymentPlan').value;
+  const mode = document.getElementById('recordPaymentMode').value;
+  const note = document.getElementById('recordPaymentNote').value.trim();
+
+  if (!plan || !mode) {
+    showToast('Plan and mode are required', 'error');
+    return;
+  }
+
+  setLoading('confirmRecordPaymentBtn', true);
+  try {
+    await fetchAPI(`/admin/hotels/${currentRecordPaymentId}/record-payment`, {
+      method: 'POST',
+      body: JSON.stringify({ plan, mode, note: note || undefined })
+    });
+    showToast('Payment recorded successfully!', 'success');
+    closeRecordPaymentModal();
+    await fetchHotels();
+    await fetchGlobalStats();
+  } catch (e) {
+    showToast(e.message || 'Failed to record payment', 'error');
+  } finally {
+    setLoading('confirmRecordPaymentBtn', false, '💰 Record Payment');
   }
 }
 
@@ -860,6 +921,11 @@ function setupEventListeners() {
   document.getElementById('cancelResetPinBtn').addEventListener('click', closeResetPinModal);
   document.getElementById('confirmResetPinBtn').addEventListener('click', confirmResetPin);
   
+  // Record Payment Modal
+  document.getElementById('closeRecordPaymentModalBtn').addEventListener('click', closeRecordPaymentModal);
+  document.getElementById('cancelRecordPaymentBtn').addEventListener('click', closeRecordPaymentModal);
+  document.getElementById('confirmRecordPaymentBtn').addEventListener('click', confirmRecordPayment);
+  
   // Close modals on backdrop click
   document.getElementById('editModal').addEventListener('click', function(e) {
     if (e.target.id === 'editModal') closeEditModal();
@@ -872,6 +938,9 @@ function setupEventListeners() {
   });
   document.getElementById('purgeModal').addEventListener('click', function(e) {
     if (e.target.id === 'purgeModal') closePurgeModal();
+  });
+  document.getElementById('recordPaymentModal').addEventListener('click', function(e) {
+    if (e.target.id === 'recordPaymentModal') closeRecordPaymentModal();
   });
   
   // Delete Modal
@@ -891,6 +960,7 @@ function setupEventListeners() {
       closeResetPinModal();
       closeDeleteModal();
       closePurgeModal();
+      closeRecordPaymentModal();
     }
   });
 

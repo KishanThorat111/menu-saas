@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https://pub-ee32ad45508049beb4f451f5b6f33d47.r2.dev; connect-src 'self'; font-src 'self' https://fonts.gstatic.com;">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://checkout.razorpay.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https://pub-ee32ad45508049beb4f451f5b6f33d47.r2.dev; connect-src 'self' https://lumberjack-cx.razorpay.com https://api.razorpay.com; font-src 'self' https://fonts.gstatic.com; frame-src https://api.razorpay.com https://checkout.razorpay.com;">
   <meta http-equiv="X-XSS-Protection" content="1; mode=block">
   <meta name="referrer" content="no-referrer">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -860,7 +860,7 @@
     }
 
     @media (min-width: 640px) {
-      .tabs { max-width: 360px; }
+      .tabs { max-width: 480px; }
     }
 
     /* ========================================
@@ -1976,6 +1976,160 @@
       body { background: white; }
       .tab-content { box-shadow: none; border: 1px solid #ddd; }
     }
+
+    /* ========================================
+       22. BILLING TAB STYLES
+       ======================================== */
+    .billing-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    .billing-header h3 {
+      font-family: var(--font-display);
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--slate-900);
+    }
+    .billing-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    .billing-card {
+      padding: 1.25rem;
+      border-radius: var(--radius-lg);
+      border: 1.5px solid var(--border-light);
+      background: white;
+    }
+    .billing-card-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--slate-500);
+      margin-bottom: 0.5rem;
+    }
+    .billing-card-value {
+      font-size: 1.375rem;
+      font-weight: 800;
+      color: var(--slate-900);
+    }
+    .billing-card-sub {
+      font-size: 0.8125rem;
+      color: var(--slate-500);
+      margin-top: 0.25rem;
+    }
+    .billing-card.highlight {
+      background: linear-gradient(135deg, var(--saffron-50), #fdf0dd);
+      border-color: var(--saffron-200);
+    }
+    .billing-card.warn {
+      background: linear-gradient(135deg, var(--amber-50), var(--amber-100));
+      border-color: var(--amber-500);
+    }
+    .billing-card.success {
+      background: linear-gradient(135deg, var(--emerald-50), #d1fae5);
+      border-color: var(--emerald-500);
+    }
+    .scan-bar {
+      margin-top: 0.75rem;
+      height: 8px;
+      background: var(--slate-200);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .scan-bar-fill {
+      height: 100%;
+      border-radius: 4px;
+      transition: width 0.3s ease;
+    }
+    .plan-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    .plan-card {
+      padding: 1.5rem;
+      border-radius: var(--radius-lg);
+      border: 2px solid var(--border-light);
+      background: white;
+      text-align: center;
+      transition: all var(--duration-fast) var(--ease-in-out);
+      cursor: pointer;
+    }
+    .plan-card:hover {
+      border-color: var(--saffron-300);
+      box-shadow: var(--shadow-md);
+    }
+    .plan-card.current {
+      border-color: var(--saffron-500);
+      background: linear-gradient(135deg, var(--saffron-50), #fdf0dd);
+    }
+    .plan-card-name {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--slate-900);
+      margin-bottom: 0.375rem;
+    }
+    .plan-card-price {
+      font-size: 1.75rem;
+      font-weight: 800;
+      color: var(--saffron-700);
+      margin-bottom: 0.375rem;
+    }
+    .plan-card-desc {
+      font-size: 0.8125rem;
+      color: var(--slate-500);
+    }
+    .payment-history {
+      margin-top: 1.5rem;
+    }
+    .payment-history h4 {
+      font-size: 0.9375rem;
+      font-weight: 700;
+      color: var(--slate-700);
+      margin-bottom: 0.75rem;
+    }
+    .payment-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.75rem 1rem;
+      border-radius: var(--radius-md);
+      background: var(--slate-50);
+      margin-bottom: 0.5rem;
+      font-size: 0.875rem;
+    }
+    .payment-row .amount {
+      font-weight: 700;
+      color: var(--slate-900);
+    }
+    .payment-row .plan-tag {
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.1875rem 0.5rem;
+      border-radius: var(--radius-full);
+      background: var(--saffron-100);
+      color: var(--saffron-800);
+    }
+    .payment-row .status-tag {
+      font-size: 0.6875rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      padding: 0.1875rem 0.5rem;
+      border-radius: var(--radius-full);
+    }
+    .payment-row .status-tag.captured { background: #d1fae5; color: #047857; }
+    .payment-row .status-tag.created { background: var(--blue-50); color: var(--blue-600); }
+    .payment-row .status-tag.failed { background: var(--red-50); color: var(--red-600); }
+    .payment-row .date-text { color: var(--slate-500); font-size: 0.8125rem; }
   </style>
 </head>
 <body>
@@ -2213,6 +2367,7 @@
     <div class="tabs">
       <button id="tabMenu" class="tab active">📖 Menu</button>
       <button id="tabAdd" class="tab">➕ Add Items</button>
+      <button id="tabBilling" class="tab">💳 Billing</button>
     </div>
 
     <!-- Menu Tab -->
@@ -2270,6 +2425,15 @@
         </div>
       </div>
     </div>
+
+    <!-- Billing Tab -->
+    <div id="tab-billing" class="tab-content hidden">
+      <div id="billingContent" style="padding:1.5rem;">
+        <div style="text-align:center;padding:2rem;color:var(--slate-400);">
+          <div style="font-size:2rem;margin-bottom:0.5rem;">Loading billing...</div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- Modal for editing price/description -->
@@ -2306,6 +2470,7 @@
       </div>
     </div>
   </div>
+  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
   <script src="admin.js"></script>
 </body>
 </html>
