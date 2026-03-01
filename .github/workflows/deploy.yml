@@ -52,6 +52,9 @@ jobs:
             RATE_LIMIT_WINDOW=${{ secrets.RATE_LIMIT_WINDOW }}
             ADMIN_RATE_LIMIT_MAX=${{ secrets.ADMIN_RATE_LIMIT_MAX }}
             ADMIN_RATE_LIMIT_WINDOW=${{ secrets.ADMIN_RATE_LIMIT_WINDOW }}
+            RAZORPAY_KEY_ID=${{ secrets.RAZORPAY_KEY_ID }}
+            RAZORPAY_KEY_SECRET=${{ secrets.RAZORPAY_KEY_SECRET }}
+            RAZORPAY_WEBHOOK_SECRET=${{ secrets.RAZORPAY_WEBHOOK_SECRET }}
             ENVFILE
             
             # Deploy with Docker Compose

@@ -57,7 +57,9 @@ function switchTab(tab, el) {
   if (el) el.classList.add('active');
   document.getElementById('tab-menu').classList.toggle('hidden', tab !== 'menu');
   document.getElementById('tab-add').classList.toggle('hidden', tab !== 'add');
+  document.getElementById('tab-billing').classList.toggle('hidden', tab !== 'billing');
   if (tab === 'menu') renderMenu();
+  if (tab === 'billing') loadBilling();
 }
 
 async function apiFetch(endpoint, options = {}) {
@@ -1016,6 +1018,13 @@ if (tabAdd) {
   });
 }
 
+const tabBilling = document.getElementById('tabBilling');
+if (tabBilling) {
+  tabBilling.addEventListener('click', function() {
+    switchTab('billing', this);
+  });
+}
+
 const addCatBtn = document.getElementById('addCatBtn');
 if (addCatBtn) addCatBtn.addEventListener('click', addCategory);
 
@@ -1130,6 +1139,203 @@ if (logoutBtn) logoutBtn.addEventListener('click', logout);
   initCustomSelect(document.getElementById('catSelect'));
   initCustomSelect(document.getElementById('themeSelect'));
 })();
+
+// ==================== BILLING / PAYMENT FUNCTIONS ====================
+
+let billingData = null;
+
+async function loadBilling() {
+  const container = document.getElementById('billingContent');
+  if (!container) return;
+  container.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--slate-400);"><div style="font-size:2rem;margin-bottom:0.5rem;">\u23F3</div>Loading billing...</div>';
+
+  try {
+    const res = await apiFetch('/me/billing');
+    billingData = await res.json();
+    renderBilling();
+  } catch (e) {
+    container.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--red-500);">Failed to load billing info</div>';
+  }
+}
+
+function renderBilling() {
+  const container = document.getElementById('billingContent');
+  if (!container || !billingData) return;
+
+  const b = billingData;
+  const isUnlimited = b.dailyScanLimit === -1;
+  const scanPercent = isUnlimited ? 0 : Math.min(100, Math.round((b.todayScans / b.dailyScanLimit) * 100));
+  const scanBarColor = scanPercent >= 90 ? '#ef4444' : scanPercent >= 70 ? '#f59e0b' : '#10b981';
+
+  const paidUntilStr = b.paidUntil ? new Date(b.paidUntil).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A';
+  const trialEndsStr = b.trialEnds ? new Date(b.trialEnds).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A';
+  const isExpiring = b.paidUntil && (new Date(b.paidUntil) - new Date()) < 7 * 24 * 60 * 60 * 1000;
+  const isTrial = b.status === 'TRIAL';
+  const isExpired = b.status === 'EXPIRED' || b.status === 'GRACE';
+
+  let statusCard = 'highlight';
+  if (isExpired) statusCard = 'warn';
+  else if (b.status === 'ACTIVE') statusCard = 'success';
+
+  let html = '<div class="billing-header"><h3>\ud83d\udcb3 Billing & Plan</h3></div>';
+
+  // Status cards
+  html += '<div class="billing-cards">';
+
+  // Plan card
+  html += '<div class="billing-card highlight">';
+  html += '<div class="billing-card-label">Current Plan</div>';
+  html += '<div class="billing-card-value">' + escapeHtml(b.plan) + '</div>';
+  html += '<div class="billing-card-sub">' + escapeHtml(b.planLabel) + '</div>';
+  html += '</div>';
+
+  // Status card
+  html += '<div class="billing-card ' + statusCard + '">';
+  html += '<div class="billing-card-label">Status</div>';
+  html += '<div class="billing-card-value">' + escapeHtml(b.status) + '</div>';
+  if (isTrial) html += '<div class="billing-card-sub">Trial ends: ' + trialEndsStr + '</div>';
+  else if (b.paidUntil) html += '<div class="billing-card-sub">Active until: ' + paidUntilStr + '</div>';
+  html += '</div>';
+
+  // Scans card
+  html += '<div class="billing-card">';
+  html += '<div class="billing-card-label">Today\u2019s Scans</div>';
+  html += '<div class="billing-card-value">' + b.todayScans + (isUnlimited ? '' : ' / ' + b.dailyScanLimit) + '</div>';
+  html += '<div class="billing-card-sub">' + (isUnlimited ? 'Unlimited scans' : scanPercent + '% used') + '</div>';
+  if (!isUnlimited) {
+    html += '<div class="scan-bar"><div class="scan-bar-fill" style="width:' + scanPercent + '%;background:' + scanBarColor + ';"></div></div>';
+  }
+  html += '</div>';
+
+  html += '</div>'; // end billing-cards
+
+  // Renewal / Upgrade section
+  if (isTrial || isExpired || isExpiring) {
+    html += '<div style="background:linear-gradient(135deg,#fffbeb,#fef3c7);border:1.5px solid #fcd34d;border-radius:12px;padding:1.25rem;margin-bottom:1.5rem;">';
+    if (isTrial) {
+      html += '<p style="font-weight:700;color:#92400e;margin-bottom:0.5rem;">\u23f0 Your trial ends on ' + trialEndsStr + '</p>';
+      html += '<p style="font-size:0.875rem;color:#92400e;">Choose a plan below to continue after your trial.</p>';
+    } else if (isExpired) {
+      html += '<p style="font-weight:700;color:#92400e;margin-bottom:0.5rem;">\u26a0\ufe0f Your subscription has expired</p>';
+      html += '<p style="font-size:0.875rem;color:#92400e;">Renew now to keep your menu live.</p>';
+    } else {
+      html += '<p style="font-weight:700;color:#92400e;margin-bottom:0.5rem;">\ud83d\udd14 Your plan expires on ' + paidUntilStr + '</p>';
+      html += '<p style="font-size:0.875rem;color:#92400e;">Renew early to avoid interruption.</p>';
+    }
+    html += '</div>';
+  }
+
+  // Plan selection cards
+  html += '<h4 style="font-size:0.9375rem;font-weight:700;color:var(--slate-700);margin-bottom:0.75rem;">' + (isTrial || isExpired ? 'Choose a Plan' : 'Renew or Change Plan') + '</h4>';
+  html += '<div class="plan-cards">';
+
+  var plans = [
+    { key: 'STARTER', name: 'Starter', price: '\u20b9299', desc: '300 scans/day' },
+    { key: 'STANDARD', name: 'Standard', price: '\u20b9499', desc: '500 scans/day' },
+    { key: 'PRO', name: 'Pro', price: '\u20b9999', desc: 'Unlimited + Custom' }
+  ];
+
+  plans.forEach(function(p) {
+    var isCurrent = p.key === b.plan;
+    html += '<div class="plan-card ' + (isCurrent ? 'current' : '') + '" onclick="initiatePayment(\'' + p.key + '\')">';
+    html += '<div class="plan-card-name">' + p.name + (isCurrent ? ' \u2705' : '') + '</div>';
+    html += '<div class="plan-card-price">' + p.price + '<span style="font-size:0.875rem;font-weight:500;color:var(--slate-500);">/mo</span></div>';
+    html += '<div class="plan-card-desc">' + p.desc + '</div>';
+    html += '<button class="btn ' + (isCurrent ? 'btn-primary' : 'btn-secondary') + '" style="margin-top:0.75rem;font-size:0.8125rem;" onclick="event.stopPropagation();initiatePayment(\'' + p.key + '\')">';
+    html += isCurrent ? '\ud83d\udd04 Renew' : '\ud83d\ude80 Choose';
+    html += '</button></div>';
+  });
+
+  html += '</div>';
+
+  // Payment history
+  if (b.payments && b.payments.length > 0) {
+    html += '<div class="payment-history">';
+    html += '<h4>\ud83d\udcdc Payment History</h4>';
+    b.payments.forEach(function(p) {
+      var amount = '\u20b9' + (p.amount / 100);
+      var date = p.paidAt ? new Date(p.paidAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : new Date(p.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+      var statusClass = p.status.toLowerCase();
+      html += '<div class="payment-row">';
+      html += '<span class="amount">' + amount + '</span>';
+      html += '<span class="plan-tag">' + p.plan + '</span>';
+      html += '<span class="status-tag ' + statusClass + '">' + p.status + '</span>';
+      if (p.method) html += '<span style="font-size:0.75rem;color:var(--slate-500);">' + escapeHtml(p.method) + '</span>';
+      html += '<span class="date-text">' + date + '</span>';
+      html += '</div>';
+    });
+    html += '</div>';
+  }
+
+  container.innerHTML = html;
+}
+
+async function initiatePayment(plan) {
+  try {
+    showToast('Creating payment order...', 'info');
+    const res = await apiFetch('/payments/create-order', {
+      method: 'POST',
+      body: JSON.stringify({ plan: plan })
+    });
+    const order = await res.json();
+
+    if (!order.orderId || !order.keyId) {
+      showToast('Payment system not available. Contact support.', 'error');
+      return;
+    }
+
+    var options = {
+      key: order.keyId,
+      amount: order.amount,
+      currency: order.currency,
+      name: 'KodSpot',
+      description: order.planLabel,
+      order_id: order.orderId,
+      prefill: {
+        name: order.hotelName || '',
+        email: order.email || '',
+        contact: order.phone || ''
+      },
+      theme: { color: '#c68b52' },
+      handler: async function(response) {
+        try {
+          showToast('Verifying payment...', 'info');
+          const verifyRes = await apiFetch('/payments/verify', {
+            method: 'POST',
+            body: JSON.stringify({
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature
+            })
+          });
+          const result = await verifyRes.json();
+          if (result.success) {
+            showToast('Payment successful! Your plan is now active.', 'success');
+            loadDashboard();
+            setTimeout(function() { switchTab('billing', document.getElementById('tabBilling')); }, 500);
+          } else {
+            showToast('Payment verification failed. Contact support.', 'error');
+          }
+        } catch (e) {
+          showToast('Verification error. If charged, it will activate automatically.', 'error');
+        }
+      },
+      modal: {
+        ondismiss: function() {
+          showToast('Payment cancelled', 'info');
+        }
+      }
+    };
+
+    var rzp = new Razorpay(options);
+    rzp.on('payment.failed', function(resp) {
+      showToast('Payment failed: ' + (resp.error?.description || 'Unknown error'), 'error');
+    });
+    rzp.open();
+  } catch (e) {
+    showToast('Failed to create order: ' + e.message, 'error');
+  }
+}
 
 // ==================== FORGOT PIN FUNCTIONS ====================
 

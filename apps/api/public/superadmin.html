@@ -245,6 +245,17 @@
       background: linear-gradient(135deg, var(--red-100), #fecaca);
       box-shadow: 0 4px 12px rgba(239,68,68,0.2);
     }
+
+    .btn-success {
+      background: linear-gradient(135deg, #ecfdf5, #d1fae5);
+      color: #065f46;
+      border-color: #10b981;
+    }
+    .btn-success:hover {
+      background: linear-gradient(135deg, #d1fae5, #a7f3d0);
+      box-shadow: 0 4px 12px rgba(16,185,129,0.2);
+      transform: translateY(-1px);
+    }
     
     .btn-sm {
       padding: 0.5rem 0.875rem;
@@ -2896,6 +2907,55 @@
       <div class="modal-footer">
         <button id="cancelDeleteBtn" class="btn btn-secondary">Cancel</button>
         <button id="confirmDeleteBtn" class="btn btn-danger">⛔ Confirm Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ RECORD PAYMENT MODAL ============ -->
+  <div id="recordPaymentModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>💰 Record Payment</h3>
+        <button id="closeRecordPaymentModalBtn" class="btn btn-icon btn-ghost" aria-label="Close">✕</button>
+      </div>
+      <div class="modal-body">
+        <p style="margin-bottom:1rem;color:var(--text-secondary);line-height:1.6;">
+          Record an offline/manual payment for
+          <strong id="recordPaymentHotelName" style="color:var(--slate-900);">Hotel</strong>
+        </p>
+
+        <div class="form-group">
+          <label for="recordPaymentPlan">Plan</label>
+          <select id="recordPaymentPlan">
+            <option value="STARTER">STARTER — ₹299/mo (300 scans)</option>
+            <option value="STANDARD">STANDARD — ₹499/mo (500 scans)</option>
+            <option value="PRO">PRO — ₹999/mo (Unlimited)</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="recordPaymentMode">Payment Mode</label>
+          <select id="recordPaymentMode">
+            <option value="CASH">Cash</option>
+            <option value="MANUAL">Manual (UPI/Bank Transfer/Other)</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="recordPaymentNote">Note (optional)</label>
+          <input type="text" id="recordPaymentNote" placeholder="e.g. Cash collected by Kishan" maxlength="200" style="width:100%;padding:0.625rem 0.875rem;border:1.5px solid var(--border-color);border-radius:0.5rem;background:var(--card-bg);color:var(--text-primary);font-size:0.875rem;">
+        </div>
+
+        <div class="pin-warning" style="border-color:#16a34a;background:rgba(22,163,74,0.06);">
+          <span style="font-size:1.25rem;flex-shrink:0;">ℹ️</span>
+          <div style="font-size:0.8125rem;line-height:1.6;color:var(--text-secondary);">
+            This will activate the hotel for <strong>30 days</strong> on the selected plan and create a payment record in the system.
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="cancelRecordPaymentBtn" class="btn btn-secondary">Cancel</button>
+        <button id="confirmRecordPaymentBtn" class="btn btn-success">💰 Record Payment</button>
       </div>
     </div>
   </div>

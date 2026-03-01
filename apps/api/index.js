@@ -1,4 +1,3 @@
-    // ...existing code...
 const path = require("path");
 const { appendFile, mkdir } = require('fs/promises');
 const crypto = require('crypto');
@@ -48,18 +47,56 @@ const fastify = require('fastify')({
   }
 });
 
+// Capture raw body for webhook signature verification
+fastify.addHook('preParsing', async (request, reply, payload) => {
+  if (request.url === '/webhooks/razorpay' && request.method === 'POST') {
+    const chunks = [];
+    for await (const chunk of payload) {
+      chunks.push(chunk);
+    }
+    const rawBody = Buffer.concat(chunks);
+    request.rawBody = rawBody.toString('utf8');
+    // Return a new readable stream from the raw body for Fastify's parser
+    const { Readable } = require('stream');
+    const newPayload = new Readable();
+    newPayload.push(rawBody);
+    newPayload.push(null);
+    return newPayload;
+  }
+  return payload;
+});
+
 const { PrismaClient } = require('@prisma/client');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const { z } = require('zod');
 const { S3Client, PutObjectCommand, DeleteObjectCommand } = require('@aws-sdk/client-s3');
 const nodemailer = require('nodemailer');
+const Razorpay = require('razorpay');
 
 //==================== CONFIGURATION ====================
 const BUCKET_NAME = process.env.R2_BUCKET_NAME;
 const PUBLIC_URL = process.env.R2_PUBLIC_URL;
 const APP_URL = process.env.APP_URL ?? `http://localhost:${process.env.PORT || 3000}`;
 const isProduction = process.env.NODE_ENV === 'production';
+
+//==================== PLAN CONFIGURATION ====================
+const PLANS = {
+  STARTER:  { price: 29900, dailyScans: 300,  label: '\u20b9299/mo \u2014 300 scans/day' },
+  STANDARD: { price: 49900, dailyScans: 500,  label: '\u20b9499/mo \u2014 500 scans/day' },
+  PRO:      { price: 99900, dailyScans: -1,   label: '\u20b9999/mo \u2014 Unlimited + Custom Design' },
+};
+
+//==================== RAZORPAY CLIENT ====================
+let razorpayClient = null;
+function getRazorpay() {
+  if (razorpayClient) return razorpayClient;
+  const keyId = process.env.RAZORPAY_KEY_ID;
+  const keySecret = process.env.RAZORPAY_KEY_SECRET;
+  if (!keyId || !keySecret) return null;
+  razorpayClient = new Razorpay({ key_id: keyId, key_secret: keySecret });
+  return razorpayClient;
+}
 
 //==================== SECURITY CONSTANTS ====================
 const BCRYPT_COST = 12;
@@ -390,13 +427,13 @@ async function registerSecurityPlugins() {
       directives: {
         defaultSrc: ["'self'"],
         styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
-        scriptSrc: ["'self'"],
+        scriptSrc: ["'self'", "https://checkout.razorpay.com"],
         imgSrc: ["'self'", 'data:', 'https:', 'blob:'],
-        connectSrc: ["'self'"],
+        connectSrc: ["'self'", "https://lumberjack-cx.razorpay.com", "https://api.razorpay.com"],
         fontSrc: ["'self'", "https://fonts.gstatic.com"],
+        frameSrc: ["https://api.razorpay.com", "https://checkout.razorpay.com"],
         objectSrc: ["'none'"],
         mediaSrc: ["'self'"],
-        frameSrc: ["'none'"],
         upgradeInsecureRequests: [],
       },
     },
@@ -506,6 +543,80 @@ async function authenticateSuperAdmin(request, reply) {
   request.isSuperAdmin = true;
 }
 
+//==================== IDEMPOTENT PAYMENT ACTIVATION ====================
+async function activatePayment(razorpayOrderId, razorpayPaymentId, razorpaySignature, method) {
+  try {
+    const payment = await prisma.payment.findUnique({
+      where: { razorpayOrderId },
+      include: { hotel: { select: { id: true, plan: true, paidUntil: true, status: true } } }
+    });
+
+    if (!payment) return { success: false, error: 'Payment not found' };
+
+    // Idempotent: if already captured, just return success
+    if (payment.status === 'CAPTURED') {
+      return { success: true, alreadyActivated: true, paidUntil: payment.periodEnd };
+    }
+
+    const hotel = payment.hotel;
+    const now = new Date();
+
+    // Calculate billing period: extend from paidUntil if still active, otherwise from now
+    const periodStart = (hotel.paidUntil && hotel.paidUntil > now) ? hotel.paidUntil : now;
+    const periodEnd = new Date(periodStart.getTime() + 30 * 24 * 60 * 60 * 1000); // +30 days
+
+    // Atomic transaction: update payment + activate hotel
+    await prisma.$transaction([
+      prisma.payment.update({
+        where: { razorpayOrderId },
+        data: {
+          status: 'CAPTURED',
+          razorpayPaymentId: razorpayPaymentId || payment.razorpayPaymentId,
+          razorpaySignature: razorpaySignature || payment.razorpaySignature,
+          paidAt: now,
+          periodStart,
+          periodEnd,
+          method: method || payment.method
+        }
+      }),
+      prisma.hotel.update({
+        where: { id: hotel.id },
+        data: {
+          status: 'ACTIVE',
+          plan: payment.plan,
+          paidUntil: periodEnd,
+          paymentMode: 'RAZORPAY',
+          lastPaymentDate: now,
+          lastPaymentAmount: payment.amount,
+          lastPaymentNote: `Razorpay: ${razorpayPaymentId || 'N/A'}`
+        }
+      }),
+      prisma.auditLog.create({
+        data: {
+          hotelId: hotel.id,
+          actorType: 'system',
+          action: 'payment_captured',
+          entityType: 'Payment',
+          entityId: razorpayOrderId,
+          newValue: {
+            razorpayPaymentId,
+            amount: payment.amount,
+            plan: payment.plan,
+            periodStart: periodStart.toISOString(),
+            periodEnd: periodEnd.toISOString()
+          }
+        }
+      })
+    ]);
+
+    fastify.log.info(`Payment activated: hotel=${hotel.id} order=${razorpayOrderId} plan=${payment.plan} until=${periodEnd.toISOString()}`);
+    return { success: true, paidUntil: periodEnd };
+  } catch (err) {
+    fastify.log.error(`activatePayment failed: ${err.message}`);
+    return { success: false, error: err.message };
+  }
+}
+
 //==================== ROUTES ====================
 function registerRoutes() {
   // Health - Exempt from rate limiting
@@ -523,6 +634,90 @@ function registerRoutes() {
       database: dbStatus,
       version: process.env.npm_package_version || '1.0.0'
     };
+  });
+
+  // ==================== RAZORPAY WEBHOOK (public, signature-verified) ====================
+  fastify.post('/webhooks/razorpay', {
+    config: {
+      rateLimit: { max: 100, timeWindow: '1 minute' },
+      rawBody: true
+    }
+  }, async (request, reply) => {
+    const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET;
+    if (!webhookSecret) {
+      fastify.log.error('RAZORPAY_WEBHOOK_SECRET not configured');
+      return reply.code(500).send({ error: 'Webhook not configured' });
+    }
+
+    // Verify webhook signature
+    const receivedSig = request.headers['x-razorpay-signature'];
+    if (!receivedSig) {
+      return reply.code(400).send({ error: 'Missing signature' });
+    }
+
+    // Use rawBody if available (set by preParsing hook), else serialize from parsed body
+    const rawBody = request.rawBody || JSON.stringify(request.body);
+    const expectedSig = crypto
+      .createHmac('sha256', webhookSecret)
+      .update(rawBody)
+      .digest('hex');
+
+    let sigValid = false;
+    try {
+      sigValid = expectedSig.length === receivedSig.length &&
+        crypto.timingSafeEqual(Buffer.from(expectedSig), Buffer.from(receivedSig));
+    } catch { sigValid = false; }
+
+    if (!sigValid) {
+      fastify.log.warn('Razorpay webhook signature mismatch');
+      return reply.code(400).send({ error: 'Invalid signature' });
+    }
+
+    const event = request.body;
+    const eventType = event.event;
+
+    if (eventType === 'payment.captured') {
+      const paymentEntity = event.payload?.payment?.entity;
+      if (!paymentEntity) {
+        fastify.log.warn('Webhook payment.captured missing payment entity');
+        return reply.code(200).send({ status: 'ignored' });
+      }
+
+      const orderId = paymentEntity.order_id;
+      const paymentId = paymentEntity.id;
+      const method = paymentEntity.method || null;
+
+      const result = await activatePayment(orderId, paymentId, null, method);
+      if (result.success) {
+        fastify.log.info(`Webhook: payment.captured processed for order ${orderId}`);
+      } else {
+        fastify.log.warn(`Webhook: payment.captured failed for order ${orderId}: ${result.error}`);
+      }
+
+      return reply.code(200).send({ status: 'ok' });
+    }
+
+    if (eventType === 'payment.failed') {
+      const paymentEntity = event.payload?.payment?.entity;
+      if (paymentEntity?.order_id) {
+        await prisma.payment.updateMany({
+          where: { razorpayOrderId: paymentEntity.order_id, status: 'CREATED' },
+          data: {
+            status: 'FAILED',
+            razorpayPaymentId: paymentEntity.id,
+            method: paymentEntity.method || null,
+            metadata: { error: paymentEntity.error_description || 'Payment failed' }
+          }
+        }).catch(err => fastify.log.error(`Webhook: payment.failed update error: ${err.message}`));
+
+        fastify.log.info(`Webhook: payment.failed for order ${paymentEntity.order_id}`);
+      }
+      return reply.code(200).send({ status: 'ok' });
+    }
+
+    // Unhandled event — acknowledge to prevent retries
+    fastify.log.info(`Webhook: unhandled event type ${eventType}`);
+    return reply.code(200).send({ status: 'ignored' });
   });
 
   // Public Menu API — base32 code lookup
@@ -562,10 +757,21 @@ function registerRoutes() {
       return reply.code(404).send({ error: 'Menu not found' });
     }
 
-    prisma.hotel.update({
-      where: { id: hotel.id },
-      data: { views: { increment: 1 }, lastViewAt: new Date() }
-    }).catch((err) => { fastify.log.error(`View increment failed for hotel ${hotel.id}: ${err.message}`); });
+    // Fire-and-forget: increment views + daily scan log
+    const todayIST = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
+    const todayDate = new Date(todayIST.getFullYear(), todayIST.getMonth(), todayIST.getDate());
+
+    Promise.all([
+      prisma.hotel.update({
+        where: { id: hotel.id },
+        data: { views: { increment: 1 }, lastViewAt: new Date() }
+      }),
+      prisma.dailyScanLog.upsert({
+        where: { hotelId_date: { hotelId: hotel.id, date: todayDate } },
+        update: { count: { increment: 1 } },
+        create: { hotelId: hotel.id, date: todayDate, count: 1 }
+      })
+    ]).catch((err) => { fastify.log.error(`View/scan increment failed for hotel ${hotel.id}: ${err.message}`); });
 
     // Force revalidation so clients see updates immediately after writes
     reply.header('Cache-Control', 'no-cache, must-revalidate');
@@ -1051,6 +1257,135 @@ function registerRoutes() {
           }
         }
       });
+    });
+
+    // ==================== BILLING: Get plan info + payment history ====================
+    app.get('/me/billing', async (request) => {
+      const hotel = await prisma.hotel.findUnique({
+        where: { id: request.hotelId },
+        select: { id: true, plan: true, status: true, paidUntil: true, trialEnds: true }
+      });
+      if (!hotel) return { error: 'Not found' };
+
+      const payments = await prisma.payment.findMany({
+        where: { hotelId: request.hotelId },
+        orderBy: { createdAt: 'desc' },
+        take: 20,
+        select: {
+          id: true, amount: true, plan: true, status: true, method: true,
+          paidAt: true, periodStart: true, periodEnd: true, createdAt: true
+        }
+      });
+
+      // Today's scan count
+      const todayIST = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
+      const todayDate = new Date(todayIST.getFullYear(), todayIST.getMonth(), todayIST.getDate());
+      const scanLog = await prisma.dailyScanLog.findUnique({
+        where: { hotelId_date: { hotelId: request.hotelId, date: todayDate } }
+      });
+
+      const planConfig = PLANS[hotel.plan] || PLANS.STARTER;
+
+      return {
+        plan: hotel.plan,
+        status: hotel.status,
+        paidUntil: hotel.paidUntil,
+        trialEnds: hotel.trialEnds,
+        planLabel: planConfig.label,
+        planPrice: planConfig.price,
+        dailyScanLimit: planConfig.dailyScans,
+        todayScans: scanLog?.count || 0,
+        payments
+      };
+    });
+
+    // ==================== BILLING: Create Razorpay Order ====================
+    app.post('/payments/create-order', async (request, reply) => {
+      const rz = getRazorpay();
+      if (!rz) return reply.code(503).send({ error: 'Payment system not configured' });
+
+      const schema = z.object({
+        plan: z.enum(['STARTER', 'STANDARD', 'PRO']).optional()
+      });
+      const { plan: requestedPlan } = schema.parse(request.body || {});
+
+      const hotel = await prisma.hotel.findUnique({
+        where: { id: request.hotelId },
+        select: { id: true, name: true, email: true, phone: true, plan: true, status: true, paidUntil: true }
+      });
+      if (!hotel) return reply.code(404).send({ error: 'Hotel not found' });
+
+      // Use requested plan or current plan
+      const plan = requestedPlan || hotel.plan;
+      const planConfig = PLANS[plan];
+      if (!planConfig) return reply.code(400).send({ error: 'Invalid plan' });
+
+      const order = await rz.orders.create({
+        amount: planConfig.price,
+        currency: 'INR',
+        receipt: `${hotel.id}_${Date.now()}`,
+        notes: {
+          hotelId: hotel.id,
+          plan: plan,
+          hotelName: hotel.name
+        }
+      });
+
+      // Store order in Payment table
+      await prisma.payment.create({
+        data: {
+          hotelId: hotel.id,
+          razorpayOrderId: order.id,
+          amount: planConfig.price,
+          plan: plan,
+          status: 'CREATED'
+        }
+      });
+
+      return {
+        orderId: order.id,
+        amount: planConfig.price,
+        currency: 'INR',
+        plan: plan,
+        planLabel: planConfig.label,
+        keyId: process.env.RAZORPAY_KEY_ID,
+        hotelName: hotel.name,
+        email: hotel.email || '',
+        phone: hotel.phone || ''
+      };
+    });
+
+    // ==================== BILLING: Verify Payment (client callback) ====================
+    app.post('/payments/verify', async (request, reply) => {
+      const schema = z.object({
+        razorpay_order_id: z.string().min(1),
+        razorpay_payment_id: z.string().min(1),
+        razorpay_signature: z.string().min(1)
+      });
+
+      const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = schema.parse(request.body);
+
+      // Verify signature (uses key_secret, not webhook_secret)
+      const keySecret = process.env.RAZORPAY_KEY_SECRET;
+      const expectedSig = crypto
+        .createHmac('sha256', keySecret)
+        .update(`${razorpay_order_id}|${razorpay_payment_id}`)
+        .digest('hex');
+
+      const sigValid = expectedSig.length === razorpay_signature.length &&
+        crypto.timingSafeEqual(Buffer.from(expectedSig), Buffer.from(razorpay_signature));
+
+      if (!sigValid) {
+        return reply.code(400).send({ error: 'Invalid payment signature' });
+      }
+
+      // Activate payment (idempotent)
+      const result = await activatePayment(razorpay_order_id, razorpay_payment_id, razorpay_signature, null);
+      if (!result.success) {
+        return reply.code(400).send({ error: result.error || 'Payment activation failed' });
+      }
+
+      return { success: true, message: 'Payment verified and activated', paidUntil: result.paidUntil };
     });
 
     app.patch('/settings/theme', async (request, reply) => {
@@ -1914,6 +2249,94 @@ function registerRoutes() {
         pinResetCount: hotel.pinResetCount,
         lastPinResetAt: hotel.lastPinResetAt,
         lastPinResetBy: hotel.lastPinResetBy
+      };
+    });
+
+    // ==================== SUPERADMIN: Record Manual Payment ====================
+    app.post('/admin/hotels/:id/record-payment', async (request, reply) => {
+      const { id } = request.params;
+      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
+        return reply.code(400).send({ error: 'Invalid hotel ID format' });
+      }
+
+      const schema = z.object({
+        plan: z.enum(['STARTER', 'STANDARD', 'PRO']),
+        mode: z.enum(['CASH', 'MANUAL']).default('MANUAL'),
+        note: z.string().max(500).optional()
+      });
+
+      const { plan, mode, note } = schema.parse(request.body);
+
+      const hotel = await prisma.hotel.findUnique({
+        where: { id },
+        select: { id: true, name: true, plan: true, status: true, paidUntil: true }
+      });
+      if (!hotel) return reply.code(404).send({ error: 'Hotel not found' });
+
+      const planConfig = PLANS[plan];
+      if (!planConfig) return reply.code(400).send({ error: 'Invalid plan' });
+
+      const now = new Date();
+      const periodStart = (hotel.paidUntil && hotel.paidUntil > now) ? hotel.paidUntil : now;
+      const periodEnd = new Date(periodStart.getTime() + 30 * 24 * 60 * 60 * 1000);
+
+      // Create payment record with a manual order ID
+      const manualOrderId = `manual_${id}_${Date.now()}`;
+
+      await prisma.$transaction([
+        prisma.payment.create({
+          data: {
+            hotelId: id,
+            razorpayOrderId: manualOrderId,
+            razorpayPaymentId: manualOrderId,
+            amount: planConfig.price,
+            plan: plan,
+            status: 'CAPTURED',
+            paidAt: now,
+            periodStart,
+            periodEnd,
+            method: mode.toLowerCase(),
+            metadata: note ? { note } : null
+          }
+        }),
+        prisma.hotel.update({
+          where: { id },
+          data: {
+            status: 'ACTIVE',
+            plan: plan,
+            paidUntil: periodEnd,
+            paymentMode: mode,
+            lastPaymentDate: now,
+            lastPaymentAmount: planConfig.price,
+            lastPaymentNote: note || `Manual ${mode} payment recorded`
+          }
+        }),
+        prisma.auditLog.create({
+          data: {
+            hotelId: id,
+            actorType: 'admin',
+            action: 'manual_payment_recorded',
+            entityType: 'Payment',
+            entityId: manualOrderId,
+            newValue: {
+              plan,
+              amount: planConfig.price,
+              mode,
+              note,
+              periodStart: periodStart.toISOString(),
+              periodEnd: periodEnd.toISOString()
+            }
+          }
+        })
+      ]);
+
+      fastify.log.info(`Manual payment recorded: hotel=${id} plan=${plan} mode=${mode} until=${periodEnd.toISOString()}`);
+
+      return {
+        success: true,
+        message: `Payment recorded. Hotel activated until ${periodEnd.toLocaleDateString('en-IN')}.`,
+        paidUntil: periodEnd,
+        plan
       };
     });
   });
