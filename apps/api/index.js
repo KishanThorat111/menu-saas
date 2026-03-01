@@ -1320,16 +1320,22 @@ function registerRoutes() {
       const planConfig = PLANS[plan];
       if (!planConfig) return reply.code(400).send({ error: 'Invalid plan' });
 
-      const order = await rz.orders.create({
-        amount: planConfig.price,
-        currency: 'INR',
-        receipt: `${hotel.id}_${Date.now()}`,
-        notes: {
-          hotelId: hotel.id,
-          plan: plan,
-          hotelName: hotel.name
-        }
-      });
+      let order;
+      try {
+        order = await rz.orders.create({
+          amount: planConfig.price,
+          currency: 'INR',
+          receipt: `rcpt_${hotel.id.slice(-8)}_${Date.now()}`,
+          notes: {
+            hotelId: hotel.id,
+            plan: plan,
+            hotelName: hotel.name
+          }
+        });
+      } catch (rzErr) {
+        request.log.error({ err: rzErr, hotelId: hotel.id, plan }, 'Razorpay order creation failed');
+        return reply.code(502).send({ error: 'Payment gateway error. Please try again.' });
+      }
 
       // Store order in Payment table
       await prisma.payment.create({
