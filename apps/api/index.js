@@ -748,6 +748,61 @@ function registerRoutes() {
       return reply.code(200).send({ status: 'ok' });
     }
 
+    // Handle refund events (issued from Razorpay dashboard)
+    if (eventType === 'refund.created' || eventType === 'refund.processed') {
+      const refundEntity = event.payload?.refund?.entity;
+      const paymentEntity = event.payload?.payment?.entity;
+      if (!refundEntity) {
+        fastify.log.warn(`Webhook ${eventType}: missing refund entity`);
+        return reply.code(200).send({ status: 'ignored' });
+      }
+
+      // Look up by razorpayPaymentId first, fall back to order_id
+      const paymentId = refundEntity.payment_id || paymentEntity?.id;
+      const orderId = paymentEntity?.order_id;
+
+      try {
+        let updated = 0;
+        if (paymentId) {
+          const result = await prisma.payment.updateMany({
+            where: { razorpayPaymentId: paymentId, status: 'CAPTURED' },
+            data: {
+              status: 'REFUNDED',
+              metadata: {
+                refundId: refundEntity.id,
+                refundAmount: refundEntity.amount,
+                refundedAt: new Date().toISOString()
+              }
+            }
+          });
+          updated = result.count;
+        } else if (orderId) {
+          const result = await prisma.payment.updateMany({
+            where: { razorpayOrderId: orderId, status: 'CAPTURED' },
+            data: {
+              status: 'REFUNDED',
+              metadata: {
+                refundId: refundEntity.id,
+                refundAmount: refundEntity.amount,
+                refundedAt: new Date().toISOString()
+              }
+            }
+          });
+          updated = result.count;
+        }
+
+        if (updated > 0) {
+          fastify.log.info(`Webhook ${eventType}: payment marked REFUNDED (paymentId=${paymentId}, orderId=${orderId})`);
+        } else {
+          fastify.log.warn(`Webhook ${eventType}: no matching CAPTURED payment found (paymentId=${paymentId}, orderId=${orderId})`);
+        }
+      } catch (err) {
+        fastify.log.error(`Webhook ${eventType} error: ${err.message}`);
+      }
+
+      return reply.code(200).send({ status: 'ok' });
+    }
+
     // Unhandled event — acknowledge to prevent retries
     fastify.log.info(`Webhook: unhandled event type ${eventType}`);
     return reply.code(200).send({ status: 'ignored' });
@@ -1412,8 +1467,10 @@ function registerRoutes() {
       });
       if (!hotel) return { error: 'Not found' };
 
+      // Only return completed transactions (CAPTURED/REFUNDED) to hotel owners.
+      // CREATED = abandoned checkout, FAILED = payment attempt failed — both are noise.
       const payments = await prisma.payment.findMany({
-        where: { hotelId: request.hotelId },
+        where: { hotelId: request.hotelId, status: { in: ['CAPTURED', 'REFUNDED'] } },
         orderBy: { createdAt: 'desc' },
         take: 20,
         select: {
@@ -2224,7 +2281,7 @@ function registerRoutes() {
           consentedAt: new Date(),
           consentVersion: '1.0',
           status: 'TRIAL',
-          trialEnds: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+          trialEnds: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
           pinResetCount: 0
         }
       });
@@ -2616,6 +2673,33 @@ function registerRoutes() {
         lastPinResetAt: hotel.lastPinResetAt,
         lastPinResetBy: hotel.lastPinResetBy
       };
+    });
+
+    // ==================== SUPERADMIN: Payment History for a Hotel ====================
+    app.get('/admin/hotels/:id/payments', async (request, reply) => {
+      const { id } = request.params;
+      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
+        return reply.code(400).send({ error: 'Invalid hotel ID format' });
+      }
+
+      const hotel = await prisma.hotel.findUnique({
+        where: { id },
+        select: { id: true, name: true }
+      });
+      if (!hotel) return reply.code(404).send({ error: 'Hotel not found' });
+
+      const payments = await prisma.payment.findMany({
+        where: { hotelId: id },
+        orderBy: { createdAt: 'desc' },
+        take: 50,
+        select: {
+          id: true, razorpayOrderId: true, amount: true, plan: true,
+          status: true, method: true, paidAt: true, periodStart: true,
+          periodEnd: true, createdAt: true, metadata: true
+        }
+      });
+
+      return { hotelName: hotel.name, payments };
     });
 
     // ==================== SUPERADMIN: Record Manual Payment ====================

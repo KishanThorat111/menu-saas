@@ -377,6 +377,12 @@ function renderTable(hotels) {
           title="Record an offline/manual payment">
           💰 Record Payment
         </button>
+        <button class="btn btn-sm btn-outline view-payments-btn"
+          data-id="${hotel.id}"
+          data-name="${escapeHtml(hotel.name)}"
+          title="View all payment transactions">
+          📊 Payments
+        </button>
         <button class="btn btn-sm btn-danger delete-hotel-btn"
           data-id="${hotel.id}"
           data-name="${escapeHtml(hotel.name)}"
@@ -513,6 +519,13 @@ function renderTable(hotels) {
   tbody.querySelectorAll('.record-payment-btn').forEach(btn => {
     btn.addEventListener('click', function() {
       openRecordPaymentModal(this.dataset.id, this.dataset.name);
+    });
+  });
+
+  // Attach view payments button listeners
+  tbody.querySelectorAll('.view-payments-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+      openPaymentHistoryModal(this.dataset.id, this.dataset.name);
     });
   });
 
@@ -970,6 +983,10 @@ function setupEventListeners() {
   document.getElementById('cancelPurgeBtn').addEventListener('click', closePurgeModal);
   document.getElementById('confirmPurgeBtn').addEventListener('click', confirmPurgeHotel);
 
+  // Payment History Modal
+  document.getElementById('closePaymentHistoryModalBtn').addEventListener('click', closePaymentHistoryModal);
+  document.getElementById('closePaymentHistoryBtn').addEventListener('click', closePaymentHistoryModal);
+
   // QR Code Modal
   document.getElementById('closeQrModalBtn').addEventListener('click', closeQrModal);
   document.getElementById('qrDownloadPngBtn').addEventListener('click', downloadSaQrPng);
@@ -984,6 +1001,7 @@ function setupEventListeners() {
       closeDeleteModal();
       closePurgeModal();
       closeRecordPaymentModal();
+      closePaymentHistoryModal();
       closeQrModal();
     }
   });
@@ -1602,6 +1620,110 @@ async function shareSaQr() {
       showToast('Sharing failed. Try downloading instead.', 'error');
     }
   }
+}
+
+// ==================== PAYMENT HISTORY MODAL ====================
+let currentPaymentHistoryId = null;
+
+async function openPaymentHistoryModal(hotelId, hotelName) {
+  currentPaymentHistoryId = hotelId;
+  document.getElementById('paymentHistoryHotelName').textContent = hotelName;
+  document.getElementById('paymentHistoryContent').innerHTML = '<div style="text-align:center;padding:2rem;color:var(--text-secondary);">Loading...</div>';
+  document.getElementById('paymentHistoryModal').classList.add('active');
+
+  try {
+    const data = await fetchAPI(`/admin/hotels/${hotelId}/payments`);
+    renderPaymentHistory(data.payments || []);
+  } catch (e) {
+    document.getElementById('paymentHistoryContent').innerHTML =
+      '<div style="text-align:center;padding:2rem;color:#ef4444;">Failed to load payments: ' + escapeHtml(e.message) + '</div>';
+  }
+}
+
+function closePaymentHistoryModal() {
+  document.getElementById('paymentHistoryModal').classList.remove('active');
+  currentPaymentHistoryId = null;
+}
+
+function renderPaymentHistory(payments) {
+  const container = document.getElementById('paymentHistoryContent');
+  if (!payments.length) {
+    container.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--text-secondary);">No payment records found.</div>';
+    return;
+  }
+
+  // CREATED older than 30 min = abandoned checkout, not truly pending
+  const STALE_MS = 30 * 60 * 1000;
+  const now = Date.now();
+  const statusLabels = { CAPTURED: 'Paid', REFUNDED: 'Refunded', FAILED: 'Failed', CREATED: 'Pending' };
+  const statusColors = { CAPTURED: '#047857', REFUNDED: '#64748b', FAILED: '#dc2626', CREATED: '#2563eb' };
+  const statusBg = { CAPTURED: '#ecfdf5', REFUNDED: '#f8fafc', FAILED: '#fef2f2', CREATED: '#eff6ff' };
+  const statusBorder = { CAPTURED: '#a7f3d0', REFUNDED: '#e2e8f0', FAILED: '#fecaca', CREATED: '#bfdbfe' };
+  const methodLabels = { cash: 'Cash', manual: 'Manual', upi: 'UPI', card: 'Card', netbanking: 'Net Banking', wallet: 'Wallet' };
+
+  let html = '<table class="ph-table"><thead><tr>';
+  html += '<th>Amount</th><th>Plan</th><th>Status</th><th>Method</th><th>Period</th><th>Created</th>';
+  html += '</tr></thead><tbody>';
+
+  payments.forEach(function(p) {
+    const amount = '₹' + (p.amount / 100);
+    // Mark stale CREATED as Abandoned
+    const isAbandoned = p.status === 'CREATED' && (now - new Date(p.createdAt).getTime()) > STALE_MS;
+    const displayStatus = isAbandoned ? 'ABANDONED' : p.status;
+    const label = isAbandoned ? 'Abandoned' : (statusLabels[p.status] || p.status);
+    const abandonedColor = '#92400e';
+    const abandonedBg = '#fffbeb';
+    const abandonedBorder = '#fde68a';
+    const color = isAbandoned ? abandonedColor : (statusColors[p.status] || '#64748b');
+    const bg = isAbandoned ? abandonedBg : (statusBg[p.status] || '#f8fafc');
+    const border = isAbandoned ? abandonedBorder : (statusBorder[p.status] || '#e2e8f0');
+    const method = p.method ? (methodLabels[p.method.toLowerCase()] || p.method) : '—';
+
+    let period = '—';
+    if (p.periodStart && p.periodEnd) {
+      const ps = new Date(p.periodStart).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
+      const pe = new Date(p.periodEnd).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+      period = ps + ' – ' + pe;
+    }
+
+    const created = new Date(p.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true });
+
+    const noteText = p.metadata && p.metadata.note ? ' title="' + escapeHtml(p.metadata.note) + '"' : '';
+
+    html += '<tr' + noteText + '>';
+    html += '<td class="ph-amount-cell">' + escapeHtml(amount) + '</td>';
+    html += '<td><span class="ph-plan-tag">' + escapeHtml(p.plan) + '</span></td>';
+    html += '<td><span class="ph-status-tag" style="background:' + bg + ';color:' + color + ';border:1px solid ' + border + ';">' + escapeHtml(label) + '</span></td>';
+    html += '<td class="ph-method-cell">' + escapeHtml(method) + '</td>';
+    html += '<td class="ph-period-cell">' + period + '</td>';
+    html += '<td class="ph-date-cell">' + created + '</td>';
+    html += '</tr>';
+  });
+
+  html += '</tbody></table>';
+
+  // Summary counts — net revenue = captured minus refunded
+  const captured = payments.filter(function(p) { return p.status === 'CAPTURED'; });
+  const refunded = payments.filter(function(p) { return p.status === 'REFUNDED'; });
+  const totalCaptured = captured.reduce(function(sum, p) { return sum + p.amount; }, 0);
+  const totalRefunded = refunded.reduce(function(sum, p) { return sum + p.amount; }, 0);
+  const netRevenue = totalCaptured - totalRefunded;
+  const abandoned = payments.filter(function(p) { return p.status === 'CREATED' && (now - new Date(p.createdAt).getTime()) > STALE_MS; }).length;
+  const pending = payments.filter(function(p) { return p.status === 'CREATED' && (now - new Date(p.createdAt).getTime()) <= STALE_MS; }).length;
+  const counts = { CAPTURED: captured.length, FAILED: 0, REFUNDED: refunded.length };
+  payments.forEach(function(p) { if (p.status === 'FAILED') counts.FAILED++; });
+
+  let summary = '<div class="ph-summary">';
+  summary += '<span class="ph-summary-item"><strong>Net Revenue:</strong> ₹' + (netRevenue / 100) + '</span>';
+  if (totalRefunded > 0) summary += '<span class="ph-summary-item" style="color:#64748b;"><strong>Gross:</strong> ₹' + (totalCaptured / 100) + ' (₹' + (totalRefunded / 100) + ' refunded)</span>';
+  summary += '<span class="ph-summary-item" style="color:#047857;">' + counts.CAPTURED + ' Paid</span>';
+  if (pending > 0) summary += '<span class="ph-summary-item" style="color:#2563eb;">' + pending + ' Pending</span>';
+  if (abandoned > 0) summary += '<span class="ph-summary-item" style="color:#92400e;">' + abandoned + ' Abandoned</span>';
+  if (counts.FAILED > 0) summary += '<span class="ph-summary-item" style="color:#dc2626;">' + counts.FAILED + ' Failed</span>';
+  if (counts.REFUNDED > 0) summary += '<span class="ph-summary-item" style="color:#64748b;">' + counts.REFUNDED + ' Refunded</span>';
+  summary += '</div>';
+
+  container.innerHTML = summary + html;
 }
 
 // Run init when DOM is ready
