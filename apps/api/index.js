@@ -322,14 +322,46 @@ async function uploadToR2(buffer, mimetype, hotelId) {
   return `${PUBLIC_URL}/${key}`;
 }
 
+//==================== MENU CACHE (in-memory with TTL) ====================
+const menuCache = new Map(); // slug → { data, hotelId, expiresAt }
+const MENU_CACHE_TTL = 60 * 1000; // 60 seconds
+
+function getCachedMenu(slug) {
+  const entry = menuCache.get(slug);
+  if (!entry) return null;
+  if (Date.now() > entry.expiresAt) {
+    menuCache.delete(slug);
+    return null;
+  }
+  return entry;
+}
+
+function setCachedMenu(slug, data, hotelId) {
+  menuCache.set(slug, { data, hotelId, expiresAt: Date.now() + MENU_CACHE_TTL });
+  // Prevent unbounded memory growth: evict oldest entry if over 10,000
+  if (menuCache.size > 10000) {
+    const oldest = menuCache.keys().next().value;
+    menuCache.delete(oldest);
+  }
+}
+
+function invalidateMenuCache(slug) {
+  if (slug) menuCache.delete(slug.toUpperCase());
+}
+
 // Optional: Purge CDN cache (Cloudflare) for a hotel's menu URLs
 async function purgeMenuCacheForHotel(hotelId, attempts = 3) {
+  // Always look up slug for in-memory cache invalidation (regardless of Cloudflare config)
+  const hotel = await prisma.hotel.findUnique({ where: { id: hotelId }, select: { slug: true } });
+  if (!hotel || !hotel.slug) return;
+
+  // Always invalidate in-memory menu cache
+  invalidateMenuCache(hotel.slug);
+
+  // Optional: Cloudflare CDN cache purge (only if configured)
   const cfToken = process.env.CF_API_TOKEN;
   const cfZone = process.env.CF_ZONE_ID;
   if (!cfToken || !cfZone) return;
-
-  const hotel = await prisma.hotel.findUnique({ where: { id: hotelId }, select: { slug: true } });
-  if (!hotel || !hotel.slug) return;
 
   const base = APP_URL.replace(/\/$/, '');
   const urls = [
@@ -722,6 +754,24 @@ function registerRoutes() {
   });
 
   // Public Menu API — base32 code lookup
+  // Fire-and-forget helper: increment views + daily scan log
+  function incrementMenuViews(hotelId) {
+    const todayIST = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
+    const todayDate = new Date(todayIST.getFullYear(), todayIST.getMonth(), todayIST.getDate());
+
+    Promise.all([
+      prisma.hotel.update({
+        where: { id: hotelId },
+        data: { views: { increment: 1 }, lastViewAt: new Date() }
+      }),
+      prisma.dailyScanLog.upsert({
+        where: { hotelId_date: { hotelId: hotelId, date: todayDate } },
+        update: { count: { increment: 1 } },
+        create: { hotelId: hotelId, date: todayDate, count: 1 }
+      })
+    ]).catch((err) => { fastify.log.error(`View/scan increment failed for hotel ${hotelId}: ${err.message}`); });
+  }
+
   fastify.get('/api/menu/:code', {
     config: {
       rateLimit: {
@@ -735,6 +785,16 @@ function registerRoutes() {
       return reply.code(400).send({ error: 'Invalid menu code format' });
     }
 
+    // Check in-memory cache first
+    const cached = getCachedMenu(code);
+    if (cached) {
+      incrementMenuViews(cached.hotelId);
+      reply.header('Cache-Control', 'no-cache, must-revalidate');
+      reply.header('X-Cache', 'HIT');
+      return cached.data;
+    }
+
+    // Cache miss: query database
     const hotel = await prisma.hotel.findUnique({
       where: { slug: code },
       include: {
@@ -758,32 +818,25 @@ function registerRoutes() {
       return reply.code(404).send({ error: 'Menu not found' });
     }
 
-    // Fire-and-forget: increment views + daily scan log
-    const todayIST = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
-    const todayDate = new Date(todayIST.getFullYear(), todayIST.getMonth(), todayIST.getDate());
-
-    Promise.all([
-      prisma.hotel.update({
-        where: { id: hotel.id },
-        data: { views: { increment: 1 }, lastViewAt: new Date() }
-      }),
-      prisma.dailyScanLog.upsert({
-        where: { hotelId_date: { hotelId: hotel.id, date: todayDate } },
-        update: { count: { increment: 1 } },
-        create: { hotelId: hotel.id, date: todayDate, count: 1 }
-      })
-    ]).catch((err) => { fastify.log.error(`View/scan increment failed for hotel ${hotel.id}: ${err.message}`); });
-
-    // Force revalidation so clients see updates immediately after writes
-    reply.header('Cache-Control', 'no-cache, must-revalidate');
-
-    return {
+    const menuData = {
       name: hotel.name,
       city: hotel.city,
       theme: hotel.theme,
       logoUrl: hotel.logoUrl || null,
       categories: hotel.categories
     };
+
+    // Cache the result
+    setCachedMenu(code, menuData, hotel.id);
+
+    // Fire-and-forget: increment views + daily scan log
+    incrementMenuViews(hotel.id);
+
+    // Force revalidation so clients see updates immediately after writes
+    reply.header('Cache-Control', 'no-cache, must-revalidate');
+    reply.header('X-Cache', 'MISS');
+
+    return menuData;
   });
 
   // Short URL: /m/:code — serves menu.html directly (QR code target)
@@ -1508,6 +1561,9 @@ function registerRoutes() {
         }
       });
 
+      // Invalidate menu cache so theme change reflects immediately
+      try { await purgeMenuCacheForHotel(request.hotelId); } catch (e) { fastify.log.warn('purge error', e.message || e); }
+
       return { success: true, theme: updated.theme };
     });
 
@@ -1632,6 +1688,9 @@ function registerRoutes() {
           newValue: { name }
         }
       });
+
+      // Invalidate menu cache so new category appears immediately
+      try { await purgeMenuCacheForHotel(request.hotelId); } catch (e) { fastify.log.warn('purge error', e.message || e); }
 
       return category;
     });
@@ -2028,6 +2087,9 @@ function registerRoutes() {
           newValue: updated
         }
       });
+      // Invalidate menu cache so name/city changes reflect immediately
+      try { await purgeMenuCacheForHotel(id); } catch (e) { fastify.log.warn('purge error', e.message || e); }
+
       fastify.log.info(`Hotel ${id} details edited by admin`);
       return updated;
     });
@@ -2285,6 +2347,9 @@ function registerRoutes() {
         }
       });
 
+      // Invalidate menu cache so status change (e.g. SUSPENDED) reflects immediately
+      try { await purgeMenuCacheForHotel(id); } catch (e) { fastify.log.warn('purge error', e.message || e); }
+
       fastify.log.info(`Hotel ${id} status changed to ${status} by admin`);
       return updated;
     });
@@ -2447,6 +2512,9 @@ function registerRoutes() {
         }
       });
 
+      // Invalidate menu cache so deleted hotel is no longer served
+      try { await purgeMenuCacheForHotel(id); } catch (e) { fastify.log.warn('purge error', e.message || e); }
+
       fastify.log.info(`Hotel ${id} soft-deleted by super admin. PII anonymized. Purge scheduled: ${purgeAfter.toISOString()}`);
 
       return {
@@ -2504,6 +2572,9 @@ function registerRoutes() {
           fastify.log.error(`Failed to delete R2 image ${url}: ${err.message}`);
         }
       }
+
+      // Invalidate menu cache before hard delete
+      invalidateMenuCache(hotel.slug);
 
       // Hard delete hotel (cascade removes categories, items, audit logs)
       await prisma.hotel.delete({ where: { id } });
