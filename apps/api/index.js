@@ -2296,6 +2296,121 @@ function registerRoutes() {
       };
     });
 
+    // ==================== SUPERADMIN: Platform Analytics ====================
+    app.get('/admin/stats', async (request, reply) => {
+      const [
+        hotelCounts,
+        totalViews,
+        paymentAgg,
+        revenueByPlan,
+        paymentMethods,
+        todayScans
+      ] = await Promise.all([
+        // 1. Hotel counts by status (excludes DELETED)
+        prisma.$queryRaw`
+          SELECT status, COUNT(*)::int AS count
+          FROM "Hotel"
+          WHERE "deletedAt" IS NULL
+          GROUP BY status`,
+
+        // 2. Total menu views
+        prisma.hotel.aggregate({
+          where: { deletedAt: null },
+          _sum: { views: true }
+        }),
+
+        // 3. Payment aggregates by status
+        prisma.$queryRaw`
+          SELECT status, COUNT(*)::int AS count, COALESCE(SUM(amount),0)::bigint AS total
+          FROM "Payment"
+          GROUP BY status`,
+
+        // 4. Revenue breakdown by plan (CAPTURED only)
+        prisma.$queryRaw`
+          SELECT plan, COUNT(*)::int AS count, COALESCE(SUM(amount),0)::bigint AS total
+          FROM "Payment"
+          WHERE status = 'CAPTURED'
+          GROUP BY plan`,
+
+        // 5. Payment methods breakdown (CAPTURED only)
+        prisma.$queryRaw`
+          SELECT COALESCE(method, 'unknown') AS method, COUNT(*)::int AS count
+          FROM "Payment"
+          WHERE status = 'CAPTURED'
+          GROUP BY method`,
+
+        // 6. Today's total scans (IST)
+        (() => {
+          const todayIST = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
+          const todayDate = new Date(todayIST.getFullYear(), todayIST.getMonth(), todayIST.getDate());
+          return prisma.dailyScanLog.aggregate({
+            where: { date: todayDate },
+            _sum: { count: true }
+          });
+        })()
+      ]);
+
+      // Build hotel status summary
+      const hotels = { total: 0, trial: 0, active: 0, grace: 0, expired: 0, suspended: 0 };
+      for (const row of hotelCounts) {
+        const key = row.status.toLowerCase();
+        if (hotels[key] !== undefined) hotels[key] = row.count;
+        hotels.total += row.count;
+      }
+
+      // Build payment status summary
+      const payments = { captured: { count: 0, total: 0 }, refunded: { count: 0, total: 0 }, failed: { count: 0, total: 0 }, created: { count: 0, total: 0 } };
+      for (const row of paymentAgg) {
+        const key = row.status.toLowerCase();
+        if (payments[key]) {
+          payments[key] = { count: row.count, total: Number(row.total) };
+        }
+      }
+
+      // Net revenue = captured - refunded
+      const netRevenue = payments.captured.total - payments.refunded.total;
+
+      // MRR estimate: count of currently active paid hotels × their plan price
+      // More accurate than dividing total revenue by months
+      const activePaidHotels = await prisma.hotel.groupBy({
+        by: ['plan'],
+        where: { status: 'ACTIVE', deletedAt: null },
+        _count: true
+      });
+      const PLAN_PRICES = { STARTER: 29900, STANDARD: 49900, PRO: 99900 };
+      let mrr = 0;
+      const planBreakdown = {};
+      for (const row of activePaidHotels) {
+        const price = PLAN_PRICES[row.plan] || 0;
+        mrr += row._count * price;
+        planBreakdown[row.plan] = row._count;
+      }
+
+      // Revenue by plan
+      const revByPlan = {};
+      for (const row of revenueByPlan) {
+        revByPlan[row.plan] = { count: row.count, total: Number(row.total) };
+      }
+
+      // Payment methods
+      const methods = {};
+      for (const row of paymentMethods) {
+        methods[row.method] = row.count;
+      }
+
+      return {
+        hotels,
+        views: totalViews._sum.views || 0,
+        todayScans: todayScans._sum.count || 0,
+        payments,
+        netRevenue,
+        mrr,
+        planBreakdown,
+        revenueByPlan: revByPlan,
+        paymentMethods: methods
+      };
+    });
+
     // [6-DIGIT PIN CHANGE] UPDATED: Include pinResetCount in select
     app.get('/admin/hotels', async (request, reply) => {
       const { status, search, page = 1, limit = 50 } = z.object({

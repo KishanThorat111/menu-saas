@@ -27,9 +27,12 @@ let globalStats = {
 
 function escapeHtml(text) {
   if (!text) return '';
-  const div = document.createElement('div');
-  div.textContent = text;
-  return div.innerHTML;
+  return String(text)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
 }
 
 function formatDate(dateString) {
@@ -224,21 +227,99 @@ async function logout() {
 
 async function fetchGlobalStats() {
   try {
-    const response = await fetchAPI('/admin/hotels?limit=1000');
-    const allHotels = response.hotels || [];
-    const nonDeleted = allHotels.filter(h => h.status !== 'DELETED');
-    
+    const stats = await fetchAPI('/admin/stats');
+
+    // Update hotel metric cards
     globalStats = {
-      total: nonDeleted.length,
-      trial: nonDeleted.filter(h => h.status === 'TRIAL').length,
-      active: nonDeleted.filter(h => h.status === 'ACTIVE').length,
-      views: nonDeleted.reduce((sum, h) => sum + (h.views || 0), 0)
+      total: stats.hotels.total,
+      trial: stats.hotels.trial,
+      active: stats.hotels.active,
+      views: stats.views
     };
-    
     updateStatsDisplay();
+
+    // Update revenue dashboard
+    updateRevenueDashboard(stats);
   } catch (e) {
     console.error('Failed to fetch global stats:', e);
   }
+}
+
+function formatINR(paise) {
+  return '₹' + (paise / 100).toLocaleString('en-IN');
+}
+
+function updateRevenueDashboard(stats) {
+  var p = stats.payments;
+
+  // Net revenue
+  document.getElementById('revNetRevenue').textContent = formatINR(stats.netRevenue);
+  var grossNote = '';
+  if (p.refunded.total > 0) {
+    grossNote = 'Gross ' + formatINR(p.captured.total) + ' − ' + formatINR(p.refunded.total) + ' refunded';
+  } else if (p.captured.total > 0) {
+    grossNote = 'All-time revenue';
+  }
+  document.getElementById('revGrossNote').textContent = grossNote;
+
+  // MRR badge
+  document.getElementById('revMrr').textContent = formatINR(stats.mrr);
+
+  // Payment counts
+  document.getElementById('revCapturedCount').textContent = p.captured.count;
+  document.getElementById('revRefundedCount').textContent = p.refunded.count;
+  document.getElementById('revRefundedAmt').textContent = p.refunded.total > 0 ? formatINR(p.refunded.total) : 'None';
+  document.getElementById('revFailedCount').textContent = p.failed.count;
+  document.getElementById('revAbandonedCount').textContent = p.created.count;
+  document.getElementById('revTodayScans').textContent = (stats.todayScans || 0).toLocaleString('en-IN');
+
+  // Revenue breakdown by plan + payment methods
+  var breakdown = document.getElementById('revenueBreakdown');
+  var parts = [];
+  var planColors = { STARTER: '#c68b52', STANDARD: '#2563eb', PRO: '#7c3aed' };
+  var planNames = { STARTER: 'Starter', STANDARD: 'Standard', PRO: 'Pro' };
+
+  // Plan breakdown
+  if (stats.revenueByPlan && Object.keys(stats.revenueByPlan).length > 0) {
+    Object.keys(stats.revenueByPlan).forEach(function(plan) {
+      var r = stats.revenueByPlan[plan];
+      parts.push(
+        '<span class="rb-item">' +
+        '<span class="rb-dot" style="background:' + (planColors[plan] || '#94a3b8') + ';"></span>' +
+        '<span class="rb-label">' + (planNames[plan] || plan) + '</span> ' +
+        formatINR(r.total) + ' (' + r.count + ')' +
+        '</span>'
+      );
+    });
+  }
+
+  // Active plan distribution
+  if (stats.planBreakdown && Object.keys(stats.planBreakdown).length > 0) {
+    parts.push('<span class="rb-item" style="margin-left:0.5rem;color:var(--text-tertiary);">|</span>');
+    Object.keys(stats.planBreakdown).forEach(function(plan) {
+      parts.push(
+        '<span class="rb-item">' +
+        '<span class="rb-label" style="color:' + (planColors[plan] || '#94a3b8') + ';">' + stats.planBreakdown[plan] + '</span> active ' +
+        (planNames[plan] || plan) +
+        '</span>'
+      );
+    });
+  }
+
+  // Payment methods
+  if (stats.paymentMethods && Object.keys(stats.paymentMethods).length > 0) {
+    parts.push('<span class="rb-item" style="margin-left:0.5rem;color:var(--text-tertiary);">|</span>');
+    var methodLabels = { upi: 'UPI', card: 'Card', netbanking: 'Net Banking', wallet: 'Wallet', cash: 'Cash', manual: 'Manual', unknown: 'Unknown' };
+    Object.keys(stats.paymentMethods).forEach(function(m) {
+      parts.push(
+        '<span class="rb-item">' +
+        (methodLabels[m] || m) + ': <strong>' + stats.paymentMethods[m] + '</strong>' +
+        '</span>'
+      );
+    });
+  }
+
+  breakdown.innerHTML = parts.join('');
 }
 
 function updateStatsDisplay() {
