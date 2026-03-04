@@ -420,56 +420,62 @@ function renderTable(hotels) {
         </button>`;
     } else {
       actionButtons = `
-        <button class="btn btn-sm btn-qr qr-hotel-btn"
-          data-id="${hotel.id}"
-          data-name="${escapeHtml(hotel.name)}"
-          data-slug="${escapeHtml(hotel.slug)}"
-          data-city="${escapeHtml(hotel.city || '')}"
-          data-logourl="${escapeHtml(hotel.logoUrl || '')}"
-          title="View & download QR code">
-          📱 QR Code
-        </button>
-        <button class="btn btn-sm btn-info edit-hotel-details-btn"
-          data-id="${hotel.id}"
-          data-name="${escapeHtml(hotel.name)}"
-          data-city="${escapeHtml(hotel.city)}"
-          data-phone="${escapeHtml(hotel.phone)}"
-          data-email="${escapeHtml(hotel.email)}"
-          data-plan="${escapeHtml(hotel.plan)}"
-          data-slug="${escapeHtml(hotel.slug)}"
-          title="Edit hotel details">
-          📝 Edit Details
-        </button>
-        <button class="btn btn-sm btn-secondary edit-hotel-btn"
-          data-id="${hotel.id}" 
-          data-name="${escapeHtml(hotel.name)}" 
-          data-status="${hotel.status}">
-          ✏️ Edit Status
-        </button>
-        <button class="btn btn-sm btn-warning reset-pin-btn"
-          data-id="${hotel.id}"
-          data-name="${escapeHtml(hotel.name)}"
-          title="Reset PIN - Current PIN will be invalidated">
-          🔑 Reset PIN
-        </button>
-        <button class="btn btn-sm btn-success record-payment-btn"
-          data-id="${hotel.id}"
-          data-name="${escapeHtml(hotel.name)}"
-          title="Record an offline/manual payment">
-          💰 Record Payment
-        </button>
-        <button class="btn btn-sm btn-outline view-payments-btn"
-          data-id="${hotel.id}"
-          data-name="${escapeHtml(hotel.name)}"
-          title="View all payment transactions">
-          📊 Payments
-        </button>
-        <button class="btn btn-sm btn-danger delete-hotel-btn"
-          data-id="${hotel.id}"
-          data-name="${escapeHtml(hotel.name)}"
-          title="Soft delete - Anonymize PII, disable access">
-          ⛔ Delete
-        </button>`;
+        <div class="action-row">
+          <button class="btn btn-sm btn-qr qr-hotel-btn"
+            data-id="${hotel.id}"
+            data-name="${escapeHtml(hotel.name)}"
+            data-slug="${escapeHtml(hotel.slug)}"
+            data-city="${escapeHtml(hotel.city || '')}"
+            data-logourl="${escapeHtml(hotel.logoUrl || '')}"
+            title="View & download QR code">
+            📱 QR Code
+          </button>
+          <button class="btn btn-sm btn-info edit-hotel-details-btn"
+            data-id="${hotel.id}"
+            data-name="${escapeHtml(hotel.name)}"
+            data-city="${escapeHtml(hotel.city)}"
+            data-phone="${escapeHtml(hotel.phone)}"
+            data-email="${escapeHtml(hotel.email)}"
+            data-plan="${escapeHtml(hotel.plan)}"
+            data-slug="${escapeHtml(hotel.slug)}"
+            title="Edit hotel details">
+            📝 Edit Details
+          </button>
+          <button class="btn btn-sm btn-secondary edit-hotel-btn"
+            data-id="${hotel.id}" 
+            data-name="${escapeHtml(hotel.name)}" 
+            data-status="${hotel.status}">
+            ✏️ Edit Status
+          </button>
+        </div>
+        <div class="action-row">
+          <button class="btn btn-sm btn-warning reset-pin-btn"
+            data-id="${hotel.id}"
+            data-name="${escapeHtml(hotel.name)}"
+            title="Reset PIN - Current PIN will be invalidated">
+            🔑 Reset PIN
+          </button>
+          <button class="btn btn-sm btn-success record-payment-btn"
+            data-id="${hotel.id}"
+            data-name="${escapeHtml(hotel.name)}"
+            title="Record an offline/manual payment">
+            💰 Record Payment
+          </button>
+        </div>
+        <div class="action-row">
+          <button class="btn btn-sm btn-outline view-payments-btn"
+            data-id="${hotel.id}"
+            data-name="${escapeHtml(hotel.name)}"
+            title="View all payment transactions">
+            📊 Payments
+          </button>
+          <button class="btn btn-sm btn-danger delete-hotel-btn"
+            data-id="${hotel.id}"
+            data-name="${escapeHtml(hotel.name)}"
+            title="Soft delete - Anonymize PII, disable access">
+            ⛔ Delete
+          </button>
+        </div>`;
     }
     
     return `
@@ -1767,7 +1773,8 @@ function renderPaymentHistory(payments) {
       period = ps + ' – ' + pe;
     }
 
-    const created = new Date(p.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true });
+    const createdDate = new Date(p.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+    const createdTime = new Date(p.createdAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
 
     const noteText = p.metadata && p.metadata.note ? ' title="' + escapeHtml(p.metadata.note) + '"' : '';
 
@@ -1777,7 +1784,7 @@ function renderPaymentHistory(payments) {
     html += '<td><span class="ph-status-tag" style="background:' + bg + ';color:' + color + ';border:1px solid ' + border + ';">' + escapeHtml(label) + '</span></td>';
     html += '<td class="ph-method-cell">' + escapeHtml(method) + '</td>';
     html += '<td class="ph-period-cell">' + period + '</td>';
-    html += '<td class="ph-date-cell">' + created + '</td>';
+    html += '<td class="ph-date-cell">' + createdDate + '<br><span style="color:var(--text-tertiary);">' + createdTime + '</span></td>';
     html += '</tr>';
   });
 
