@@ -24,6 +24,7 @@
     "jsonwebtoken": "^9.0.2",
     "nodemailer": "^6.9.8",
     "prisma": "^5.9.0",
+    "qrcode": "^1.5.4",
     "razorpay": "^2.9.4",
     "zod": "^3.22.4"
   },

@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https://pub-ee32ad45508049beb4f451f5b6f33d47.r2.dev; connect-src 'self'; font-src 'self' https://fonts.gstatic.com;">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' blob: data: https://pub-ee32ad45508049beb4f451f5b6f33d47.r2.dev; connect-src 'self'; font-src 'self' https://fonts.gstatic.com;">
   <meta http-equiv="X-XSS-Protection" content="1; mode=block">
   <meta name="referrer" content="no-referrer">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -2523,6 +2523,90 @@
       .table-container { box-shadow: none; border: 1px solid #ddd; }
       body { background: white; }
     }
+
+    /* ========================================
+       26. QR CODE MODAL STYLES
+       ======================================== */
+    .qr-modal-preview {
+      background: white;
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-md);
+      padding: 1.25rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 220px;
+      margin-bottom: 1.25rem;
+    }
+    .qr-modal-preview svg {
+      width: 100%;
+      max-width: 200px;
+      height: auto;
+    }
+    .qr-modal-info {
+      text-align: center;
+      margin-bottom: 1.25rem;
+    }
+    .qr-modal-code {
+      display: inline-block;
+      background: var(--saffron-50);
+      border: 1.5px dashed var(--saffron-300);
+      border-radius: var(--radius-sm);
+      padding: 0.5rem 1rem;
+      font-family: var(--font-mono);
+      font-size: 1.125rem;
+      font-weight: 600;
+      color: var(--saffron-700);
+      letter-spacing: 0.15em;
+      margin-bottom: 0.5rem;
+    }
+    .qr-modal-url {
+      display: block;
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      word-break: break-all;
+    }
+    .qr-modal-url a {
+      color: var(--saffron-600);
+      text-decoration: none;
+    }
+    .qr-modal-url a:hover { text-decoration: underline; }
+    .qr-modal-actions {
+      display: flex;
+      gap: 0.625rem;
+      flex-wrap: wrap;
+    }
+    .qr-modal-actions .btn { flex: 1; min-width: 120px; }
+    .qr-modal-loading {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.75rem;
+      color: var(--text-secondary);
+      font-size: 0.875rem;
+    }
+    .qr-spin {
+      width: 36px;
+      height: 36px;
+      border: 3px solid var(--border-light);
+      border-top-color: var(--saffron-500);
+      border-radius: 50%;
+      animation: qrSpin 0.8s linear infinite;
+    }
+    @keyframes qrSpin {
+      to { transform: rotate(360deg); }
+    }
+
+    .btn-qr {
+      background: linear-gradient(135deg, var(--indigo-50), var(--indigo-100));
+      color: #3730a3;
+      border: 1.5px solid var(--indigo-500);
+    }
+    .btn-qr:hover {
+      background: linear-gradient(135deg, var(--indigo-500), #4f46e5);
+      color: white;
+      border-color: #4f46e5;
+    }
   </style>
 </head>
 <body>
@@ -2991,6 +3075,38 @@
       <div class="modal-footer">
         <button id="cancelPurgeBtn" class="btn btn-secondary">Cancel</button>
         <button id="confirmPurgeBtn" class="btn btn-danger">🗑️ Confirm Purge</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ QR CODE MODAL ============ -->
+  <div id="qrModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>📱 QR Code</h3>
+        <button id="closeQrModalBtn" class="btn btn-icon btn-ghost" aria-label="Close">✕</button>
+      </div>
+      <div class="modal-body">
+        <p style="margin-bottom:1rem;color:var(--text-secondary);font-size:0.875rem;">
+          QR code for <strong id="qrHotelName" style="color:var(--slate-900);"></strong>
+        </p>
+        <div id="qrModalPreview" class="qr-modal-preview">
+          <div class="qr-modal-loading">
+            <div class="qr-spin"></div>
+            <span>Loading QR code...</span>
+          </div>
+        </div>
+        <div id="qrModalInfo" class="qr-modal-info">
+          <div id="qrModalCode" class="qr-modal-code">------</div>
+          <div class="qr-modal-url">
+            <a id="qrModalLink" href="#" target="_blank">Loading...</a>
+          </div>
+        </div>
+        <div class="qr-modal-actions">
+          <button id="qrDownloadPngBtn" class="btn btn-sm btn-primary">📥 Download PNG</button>
+          <button id="qrDownloadSvgBtn" class="btn btn-sm btn-secondary">🖨️ Download SVG</button>
+          <button id="qrShareBtn" class="btn btn-sm btn-success">📤 Share</button>
+        </div>
       </div>
     </div>
   </div>

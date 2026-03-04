@@ -73,6 +73,7 @@ const { z } = require('zod');
 const { S3Client, PutObjectCommand, DeleteObjectCommand } = require('@aws-sdk/client-s3');
 const nodemailer = require('nodemailer');
 const Razorpay = require('razorpay');
+const QRCode = require('qrcode');
 
 //==================== CONFIGURATION ====================
 const BUCKET_NAME = process.env.R2_BUCKET_NAME;
@@ -798,6 +799,52 @@ function registerRoutes() {
       return reply.code(400).send({ error: 'Invalid menu code' });
     }
     return reply.sendFile('menu.html');
+  });
+
+  // ==================== QR CODE GENERATION (SVG) ====================
+  // Returns optimized SVG QR code for a hotel's menu URL
+  // Uses uppercase URL for QR Alphanumeric mode (5.5 bits/char vs 8 bits/char = smaller QR)
+  fastify.get('/api/qr/:code', {
+    config: {
+      rateLimit: {
+        max: 60,
+        timeWindow: '1 minute'
+      }
+    }
+  }, async (request, reply) => {
+    const code = (request.params.code || '').toUpperCase().trim();
+    if (!SLUG_REGEX.test(code)) {
+      return reply.code(400).send({ error: 'Invalid menu code format' });
+    }
+
+    // Verify hotel exists and is accessible
+    const hotel = await prisma.hotel.findUnique({
+      where: { slug: code },
+      select: { id: true, name: true, status: true }
+    });
+
+    if (!hotel || hotel.status === 'DELETED') {
+      return reply.code(404).send({ error: 'Menu not found' });
+    }
+
+    // Generate QR with uppercase URL for optimal QR Alphanumeric encoding
+    // This produces the smallest/fastest-scanning QR code possible
+    const menuUrl = `HTTPS://KODSPOT.COM/M/${code}`;
+    const svg = await QRCode.toString(menuUrl, {
+      type: 'svg',
+      errorCorrectionLevel: 'M', // 15% error correction — good balance of size vs resilience
+      margin: 2,
+      width: 512,
+      color: {
+        dark: '#1e293b',  // Slate-800, matches brand
+        light: '#ffffff'
+      }
+    });
+
+    reply.header('Content-Type', 'image/svg+xml');
+    reply.header('Cache-Control', 'public, max-age=86400'); // Cache 24h — slug doesn't change
+    reply.header('Content-Disposition', `inline; filename="${code}-qr.svg"`);
+    return svg;
   });
 
   // Professional URL: /admin — serves admin.html (hotel owner panel)
