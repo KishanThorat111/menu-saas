@@ -1136,6 +1136,13 @@ function renderSaLogoPreview() {
   }
 }
 
+document.getElementById('saUploadLogoBtn').addEventListener('click', function() {
+  document.getElementById('saLogoFileInput').click();
+});
+document.getElementById('saRemoveLogoBtn').addEventListener('click', function() {
+  saRemoveLogo();
+});
+
 document.getElementById('saLogoFileInput').addEventListener('change', async function() {
   const file = this.files && this.files[0];
   if (!file) return;
