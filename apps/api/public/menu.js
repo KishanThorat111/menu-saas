@@ -186,7 +186,7 @@
     // ── Hero Header ──
     html += '<div class="hero anim">';
     if (data.logoUrl) {
-      html += '<img class="hero-logo" width="72" height="72" src="' + esc(data.logoUrl) + '" alt="' + esc(data.name) + ' logo" onerror="this.style.display=\'none\'">';
+      html += '<img class="hero-logo" src="' + esc(data.logoUrl) + '" alt="' + esc(data.name) + ' logo" onerror="this.style.display=\'none\'">';
     }
     html += '<h1>' + esc(data.name) + '</h1>';
     html += '<div class="hero-meta">';

@@ -847,6 +847,51 @@ function registerRoutes() {
     return svg;
   });
 
+  // ==================== LOGO PROXY (same-origin for Canvas) ====================
+  // Proxies logo image from R2 through the app origin so Canvas drawImage()
+  // works without crossOrigin / CORS headers (R2 pub-*.r2.dev doesn't send them).
+  // Public endpoint — logo images are already publicly accessible via R2 URLs.
+  fastify.get('/api/logo/:hotelId', {
+    config: {
+      rateLimit: {
+        max: 60,
+        timeWindow: '1 minute'
+      }
+    }
+  }, async (request, reply) => {
+    const { hotelId } = request.params;
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(hotelId)) {
+      return reply.code(400).send({ error: 'Invalid hotel ID' });
+    }
+
+    const hotel = await prisma.hotel.findUnique({
+      where: { id: hotelId },
+      select: { logoUrl: true, status: true }
+    });
+
+    if (!hotel || hotel.status === 'DELETED' || hotel.status === 'SUSPENDED') {
+      return reply.code(404).send({ error: 'Not found' });
+    }
+    if (!hotel.logoUrl) {
+      return reply.code(404).send({ error: 'No logo' });
+    }
+
+    try {
+      const r2Res = await fetch(hotel.logoUrl);
+      if (!r2Res.ok) return reply.code(502).send({ error: 'Upstream error' });
+
+      const buffer = Buffer.from(await r2Res.arrayBuffer());
+      const ct = r2Res.headers.get('content-type') || 'image/jpeg';
+
+      reply.header('Content-Type', ct);
+      reply.header('Cache-Control', 'public, max-age=3600, stale-while-revalidate=86400');
+      return reply.send(buffer);
+    } catch (err) {
+      request.log.error(`Logo proxy error for hotel ${hotelId}: ${err.message}`);
+      return reply.code(502).send({ error: 'Upstream error' });
+    }
+  });
+
   // Professional URL: /admin — serves admin.html (hotel owner panel)
   fastify.get('/admin', async (request, reply) => {
     return reply.sendFile('admin.html');
