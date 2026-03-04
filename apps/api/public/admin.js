@@ -1799,31 +1799,38 @@ async function generateQrCardBlob() {
   ctx.fillStyle = '#ffffff';
   ctx.fillRect(0, 0, W, H);
 
-  // === Header band ===
-  ctx.fillStyle = '#0f172a'; // slate-900
-  ctx.fillRect(0, 0, W, 220);
+  // === Thin card border (clean print edge) ===
+  ctx.strokeStyle = '#e2e8f0';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(1, 1, W - 2, H - 2);
 
-  // Saffron accent line
-  const grad = ctx.createLinearGradient(0, 218, W, 218);
-  grad.addColorStop(0, '#c68b52');
-  grad.addColorStop(1, '#b07440');
-  ctx.fillStyle = grad;
-  ctx.fillRect(0, 216, W, 6);
-
-  // KodSpot text
-  ctx.fillStyle = '#c68b52';
-  ctx.font = '700 52px Inter, -apple-system, sans-serif';
+  // === Restaurant name (hero at top) ===
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText('KodSpot', W / 2, 100);
+  ctx.fillStyle = '#1e293b';
+  ctx.font = '700 56px Inter, -apple-system, sans-serif';
 
-  // Subtitle
-  ctx.fillStyle = '#94a3b8';
-  ctx.font = '400 24px Inter, -apple-system, sans-serif';
-  ctx.fillText('Digital Menu', W / 2, 155);
+  const hotelName = hotel.name || 'Restaurant';
+  let displayName = hotelName;
+  while (ctx.measureText(displayName).width > W - 120 && displayName.length > 10) {
+    displayName = displayName.slice(0, -1);
+  }
+  if (displayName !== hotelName) displayName += '\u2026';
+  ctx.fillText(displayName, W / 2, 80);
+
+  let contentY = 125;
+
+  // City
+  if (hotel.city) {
+    ctx.fillStyle = '#64748b';
+    ctx.font = '400 30px Inter, -apple-system, sans-serif';
+    ctx.fillText('\ud83d\udccd ' + hotel.city, W / 2, contentY);
+    contentY += 50;
+  } else {
+    contentY += 15;
+  }
 
   // === Logo (if available) ===
-  let contentY = 280; // starting Y for content after header
   if (hasLogo) {
     const logoImg = new Image();
     // Load via same-origin proxy — avoids R2 CORS issue that taints canvas
@@ -1867,6 +1874,16 @@ async function generateQrCardBlob() {
     }
   }
 
+  // === Saffron accent divider ===
+  const grad = ctx.createLinearGradient(W * 0.25, 0, W * 0.75, 0);
+  grad.addColorStop(0, 'rgba(198, 139, 82, 0)');
+  grad.addColorStop(0.15, '#c68b52');
+  grad.addColorStop(0.85, '#b07440');
+  grad.addColorStop(1, 'rgba(176, 116, 64, 0)');
+  ctx.fillStyle = grad;
+  ctx.fillRect(W * 0.25, contentY, W * 0.5, 3);
+  contentY += 40;
+
   // === QR Code (draw SVG onto canvas) ===
   const svgDataUrl = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(qrSvgCache);
   const qrImg = new Image();
@@ -1894,39 +1911,14 @@ async function generateQrCardBlob() {
 
   ctx.drawImage(qrImg, qrX, qrY, qrSize, qrSize);
 
-  // === Hotel name ===
-  const nameY = qrY + qrSize + 100;
-  const hotelName = hotel.name || 'Restaurant';
-  ctx.fillStyle = '#1e293b';
-  ctx.font = '700 48px Inter, -apple-system, sans-serif';
-  ctx.textAlign = 'center';
-
-  // Truncate hotel name if too long
-  let displayName = hotelName;
-  while (ctx.measureText(displayName).width > W - 120 && displayName.length > 10) {
-    displayName = displayName.slice(0, -1);
-  }
-  if (displayName !== hotelName) displayName += '…';
-  ctx.fillText(displayName, W / 2, nameY);
-
-  // City
-  let cityY = nameY + 55;
-  if (hotel.city) {
-    ctx.fillStyle = '#64748b';
-    ctx.font = '400 30px Inter, -apple-system, sans-serif';
-    ctx.fillText('📍 ' + hotel.city, W / 2, cityY);
-  } else {
-    cityY = nameY; // tighten gap when no city
-  }
-
-  // === Menu code ===
-  // Code badge background
-  ctx.fillStyle = '#fdf8f0';
+  // === Menu code badge ===
   const codeText = hotel.slug;
   ctx.font = '600 36px "JetBrains Mono", "Courier New", monospace';
+  ctx.textAlign = 'center';
   const codeWidth = ctx.measureText(codeText).width + 80;
   const codeX = (W - codeWidth) / 2;
-  const codeY = cityY + 50;
+  const codeY = qrY + qrSize + 80;
+  ctx.fillStyle = '#fdf8f0';
   ctx.beginPath();
   roundRect(ctx, codeX, codeY, codeWidth, 60, 12);
   ctx.fill();
