@@ -39,7 +39,8 @@ model Hotel {
   lastPaymentAmount Int?
   lastPaymentNote   String?
 
-  theme String @default("classic")
+  theme   String  @default("classic")
+  logoUrl String?
 
   categories    Category[]
   auditLogs     AuditLog[]

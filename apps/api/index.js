@@ -781,6 +781,7 @@ function registerRoutes() {
       name: hotel.name,
       city: hotel.city,
       theme: hotel.theme,
+      logoUrl: hotel.logoUrl || null,
       categories: hotel.categories
     };
   });
@@ -1293,7 +1294,7 @@ function registerRoutes() {
         where: { id: request.hotelId },
         select: {
           id: true, name: true, slug: true, city: true, phone: true,
-          plan: true, status: true, theme: true, views: true,
+          plan: true, status: true, theme: true, logoUrl: true, views: true,
           trialEnds: true, paidUntil: true, createdAt: true, updatedAt: true,
           categories: {
             orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
@@ -1463,6 +1464,101 @@ function registerRoutes() {
       });
 
       return { success: true, theme: updated.theme };
+    });
+
+    // ==================== LOGO UPLOAD (HOTEL OWNER) ====================
+    app.post('/me/logo', async (request, reply) => {
+      try {
+        const fileData = request.body.image;
+        if (!fileData) return reply.code(400).send({ error: 'No file uploaded' });
+
+        const file = Array.isArray(fileData) ? fileData[0] : fileData;
+        const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+
+        if (!allowedTypes.includes(file.mimetype)) {
+          return reply.code(400).send({ error: 'Invalid file type. Only JPG, PNG, WebP allowed.' });
+        }
+
+        const buffer = await file.toBuffer();
+        if (buffer.length > 2 * 1024 * 1024) return reply.code(400).send({ error: 'File too large. Max 2MB.' });
+
+        const isValidImage = validateImageBuffer(buffer, file.mimetype);
+        if (!isValidImage) return reply.code(400).send({ error: 'Invalid image file' });
+
+        // Delete old logo if it exists
+        const existing = await prisma.hotel.findUnique({
+          where: { id: request.hotelId },
+          select: { logoUrl: true }
+        });
+        if (existing?.logoUrl) {
+          await deleteFromR2(existing.logoUrl).catch((err) => {
+            fastify.log.error(`Failed to delete old logo from R2 for hotel ${request.hotelId}: ${err.message}`);
+          });
+        }
+
+        const logoUrl = await uploadToR2(buffer, file.mimetype, request.hotelId);
+        await prisma.hotel.update({
+          where: { id: request.hotelId },
+          data: { logoUrl }
+        });
+
+        await prisma.auditLog.create({
+          data: {
+            hotelId: request.hotelId,
+            actorType: 'owner',
+            action: 'logo_uploaded',
+            entityType: 'Hotel',
+            entityId: request.hotelId,
+            oldValue: existing?.logoUrl ? { logoUrl: existing.logoUrl } : null,
+            newValue: { logoUrl }
+          }
+        });
+
+        // Purge CDN cache so updated logo appears immediately on public menu
+        try { await purgeMenuCacheForHotel(request.hotelId); } catch (e) { fastify.log.warn('purge error', e.message || e); }
+
+        return { success: true, logoUrl };
+      } catch (err) {
+        request.log.error(err);
+        return reply.code(400).send({ error: 'Logo upload failed' });
+      }
+    });
+
+    app.delete('/me/logo', async (request, reply) => {
+      const existing = await prisma.hotel.findUnique({
+        where: { id: request.hotelId },
+        select: { logoUrl: true }
+      });
+
+      if (!existing?.logoUrl) {
+        return reply.code(404).send({ error: 'No logo to delete' });
+      }
+
+      await deleteFromR2(existing.logoUrl).catch((err) => {
+        fastify.log.error(`Failed to delete logo from R2 for hotel ${request.hotelId}: ${err.message}`);
+      });
+
+      await prisma.hotel.update({
+        where: { id: request.hotelId },
+        data: { logoUrl: null }
+      });
+
+      await prisma.auditLog.create({
+        data: {
+          hotelId: request.hotelId,
+          actorType: 'owner',
+          action: 'logo_deleted',
+          entityType: 'Hotel',
+          entityId: request.hotelId,
+          oldValue: { logoUrl: existing.logoUrl },
+          newValue: { logoUrl: null }
+        }
+      });
+
+      // Purge CDN cache so logo removal reflects immediately on public menu
+      try { await purgeMenuCacheForHotel(request.hotelId); } catch (e) { fastify.log.warn('purge error', e.message || e); }
+
+      return { success: true, message: 'Logo removed' };
     });
 
     app.post('/categories', async (request, reply) => {
@@ -1891,6 +1987,107 @@ function registerRoutes() {
       return updated;
     });
 
+    // ==================== SUPERADMIN: LOGO UPLOAD FOR ANY HOTEL ====================
+    app.post('/admin/hotels/:id/logo', async (request, reply) => {
+      const { id } = request.params;
+      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
+        return reply.code(400).send({ error: 'Invalid hotel ID format' });
+      }
+
+      try {
+        const fileData = request.body.image;
+        if (!fileData) return reply.code(400).send({ error: 'No file uploaded' });
+
+        const file = Array.isArray(fileData) ? fileData[0] : fileData;
+        const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+
+        if (!allowedTypes.includes(file.mimetype)) {
+          return reply.code(400).send({ error: 'Invalid file type. Only JPG, PNG, WebP allowed.' });
+        }
+
+        const buffer = await file.toBuffer();
+        if (buffer.length > 2 * 1024 * 1024) return reply.code(400).send({ error: 'File too large. Max 2MB.' });
+
+        const isValidImage = validateImageBuffer(buffer, file.mimetype);
+        if (!isValidImage) return reply.code(400).send({ error: 'Invalid image file' });
+
+        const existing = await prisma.hotel.findUnique({
+          where: { id },
+          select: { logoUrl: true }
+        });
+        if (!existing) return reply.code(404).send({ error: 'Hotel not found' });
+
+        if (existing.logoUrl) {
+          await deleteFromR2(existing.logoUrl).catch((err) => {
+            fastify.log.error(`Failed to delete old logo from R2 for hotel ${id}: ${err.message}`);
+          });
+        }
+
+        const logoUrl = await uploadToR2(buffer, file.mimetype, id);
+        await prisma.hotel.update({ where: { id }, data: { logoUrl } });
+
+        await prisma.auditLog.create({
+          data: {
+            hotelId: id,
+            actorType: 'admin',
+            action: 'logo_uploaded',
+            entityType: 'Hotel',
+            entityId: id,
+            oldValue: existing.logoUrl ? { logoUrl: existing.logoUrl } : null,
+            newValue: { logoUrl }
+          }
+        });
+
+        // Purge CDN cache so updated logo appears immediately on public menu
+        try { await purgeMenuCacheForHotel(id); } catch (e) { fastify.log.warn('purge error', e.message || e); }
+
+        fastify.log.info(`Logo uploaded for hotel ${id} by admin`);
+        return { success: true, logoUrl };
+      } catch (err) {
+        request.log.error(err);
+        return reply.code(400).send({ error: 'Logo upload failed' });
+      }
+    });
+
+    app.delete('/admin/hotels/:id/logo', async (request, reply) => {
+      const { id } = request.params;
+      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
+        return reply.code(400).send({ error: 'Invalid hotel ID format' });
+      }
+
+      const existing = await prisma.hotel.findUnique({
+        where: { id },
+        select: { logoUrl: true }
+      });
+
+      if (!existing) return reply.code(404).send({ error: 'Hotel not found' });
+      if (!existing.logoUrl) return reply.code(404).send({ error: 'No logo to delete' });
+
+      await deleteFromR2(existing.logoUrl).catch((err) => {
+        fastify.log.error(`Failed to delete logo from R2 for hotel ${id}: ${err.message}`);
+      });
+
+      await prisma.hotel.update({ where: { id }, data: { logoUrl: null } });
+
+      await prisma.auditLog.create({
+        data: {
+          hotelId: id,
+          actorType: 'admin',
+          action: 'logo_deleted',
+          entityType: 'Hotel',
+          entityId: id,
+          oldValue: { logoUrl: existing.logoUrl },
+          newValue: { logoUrl: null }
+        }
+      });
+
+      // Purge CDN cache so logo removal reflects immediately on public menu
+      try { await purgeMenuCacheForHotel(id); } catch (e) { fastify.log.warn('purge error', e.message || e); }
+
+      fastify.log.info(`Logo deleted for hotel ${id} by admin`);
+      return { success: true, message: 'Logo removed' };
+    });
+
     // Hotel creation — auto-generates 6-char base32 slug, no manual slug input
     app.post('/admin/hotels', async (request, reply) => {
       const schema = z.object({
@@ -1960,7 +2157,7 @@ function registerRoutes() {
           select: {
             id: true, name: true, slug: true, city: true, phone: true,
             status: true, plan: true, trialEnds: true, paidUntil: true,
-            views: true, createdAt: true, theme: true,
+            views: true, createdAt: true, theme: true, logoUrl: true,
             pinResetCount: true, // [6-DIGIT PIN CHANGE] ADDED: Include reset count
             lastPinResetAt: true,  // [6-DIGIT PIN CHANGE] ADDED: Include last reset
             deletedAt: true, purgeAfter: true // Soft delete fields
@@ -2058,7 +2255,7 @@ function registerRoutes() {
         where: { id },
         select: {
           id: true, name: true, slug: true, city: true, phone: true,
-          plan: true, status: true, theme: true, views: true,
+          plan: true, status: true, theme: true, logoUrl: true, views: true,
           trialEnds: true, paidUntil: true, createdAt: true, updatedAt: true,
           paymentMode: true, lastPaymentDate: true, lastPaymentAmount: true,
           pinResetCount: true, lastPinResetAt: true, lastPinResetBy: true,
@@ -2230,7 +2427,7 @@ function registerRoutes() {
       const hotel = await prisma.hotel.findUnique({
         where: { id },
         select: {
-          id: true, status: true, deletedAt: true, purgeAfter: true, slug: true,
+          id: true, status: true, deletedAt: true, purgeAfter: true, slug: true, logoUrl: true,
           categories: {
             include: { items: { select: { id: true, imageUrl: true } } }
           }
@@ -2244,6 +2441,7 @@ function registerRoutes() {
 
       // Collect all R2 image URLs before deleting DB records
       const imageUrls = [];
+      if (hotel.logoUrl) imageUrls.push(hotel.logoUrl);
       for (const cat of hotel.categories) {
         for (const item of cat.items) {
           if (item.imageUrl) imageUrls.push(item.imageUrl);
