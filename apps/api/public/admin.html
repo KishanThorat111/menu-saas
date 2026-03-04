@@ -2309,7 +2309,7 @@
       margin-top: 0;
     }
     .payment-history-header {
-      display: flex;
+      display: none;
       align-items: center;
       padding: 0.75rem 1rem;
       font-size: 0.6875rem;
@@ -2418,7 +2418,16 @@
       .payment-row .plan-tag { order: 1; }
       .payment-row .status-tag { order: 2; }
       .payment-row .method-text { order: 3; }
-      .payment-row .date-text { order: 4; margin-left: auto; }
+      .payment-row .date-text {
+        order: 4;
+        flex: 1 1 100%;
+        text-align: left;
+        font-size: 0.75rem;
+        color: var(--slate-400);
+        border-top: 1px solid var(--slate-100);
+        padding-top: 0.5rem;
+        margin-top: 0.25rem;
+      }
     }
     @media (min-width: 560px) {
       .payment-row {
