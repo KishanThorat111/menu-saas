@@ -1826,35 +1826,42 @@ async function generateQrCardBlob() {
   let contentY = 280; // starting Y for content after header
   if (hasLogo) {
     const logoImg = new Image();
-    logoImg.crossOrigin = 'anonymous';
+    // Load via same-origin proxy — avoids R2 CORS issue that taints canvas
     const logoLoaded = await new Promise((resolve) => {
       logoImg.onload = () => resolve(true);
       logoImg.onerror = () => resolve(false);
-      logoImg.src = hotel.logoUrl;
+      logoImg.src = '/api/logo/' + hotel.id + '?v=' + Date.now();
     });
     if (logoLoaded) {
-      const logoSize = 140;
-      const logoX = (W - logoSize) / 2;
-      const logoY = contentY;
-      // Circular clip
+      // Contain-fit: scale to fit within bounding box, preserve aspect ratio
+      const maxLW = 240, maxLH = 140;
+      const scale = Math.min(maxLW / logoImg.naturalWidth, maxLH / logoImg.naturalHeight, 1);
+      const lw = Math.round(logoImg.naturalWidth * scale);
+      const lh = Math.round(logoImg.naturalHeight * scale);
+      const lx = (W - lw) / 2;
+      const ly = contentY;
+      const lr = Math.min(16, lw / 4, lh / 4);
+
+      // White background with border
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      roundRect(ctx, lx - 6, ly - 6, lw + 12, lh + 12, lr + 2);
+      ctx.fill();
+      ctx.strokeStyle = '#e2e8f0';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      roundRect(ctx, lx - 6, ly - 6, lw + 12, lh + 12, lr + 2);
+      ctx.stroke();
+
+      // Draw logo with rounded clip
       ctx.save();
       ctx.beginPath();
-      ctx.arc(logoX + logoSize / 2, logoY + logoSize / 2, logoSize / 2, 0, Math.PI * 2);
-      ctx.closePath();
+      roundRect(ctx, lx, ly, lw, lh, lr);
       ctx.clip();
-      // Cover-crop: scale to fill the square, then center
-      const scale = Math.max(logoSize / logoImg.naturalWidth, logoSize / logoImg.naturalHeight);
-      const sw = logoSize / scale, sh = logoSize / scale;
-      const sx = (logoImg.naturalWidth - sw) / 2, sy = (logoImg.naturalHeight - sh) / 2;
-      ctx.drawImage(logoImg, sx, sy, sw, sh, logoX, logoY, logoSize, logoSize);
+      ctx.drawImage(logoImg, lx, ly, lw, lh);
       ctx.restore();
-      // Circle border
-      ctx.beginPath();
-      ctx.arc(logoX + logoSize / 2, logoY + logoSize / 2, logoSize / 2, 0, Math.PI * 2);
-      ctx.strokeStyle = '#e2e8f0';
-      ctx.lineWidth = 3;
-      ctx.stroke();
-      contentY += logoSize + 20;
+
+      contentY += lh + 30;
     } else {
       console.warn('QR card: Logo failed to load (CORS or network issue). Generating card without logo.');
     }
@@ -1934,10 +1941,14 @@ async function generateQrCardBlob() {
   ctx.fillStyle = '#945c35';
   ctx.fillText(codeText, W / 2, codeY + 40);
 
-  // === Instruction text ===
-  ctx.fillStyle = '#94a3b8';
-  ctx.font = '400 28px Inter, -apple-system, sans-serif';
-  ctx.fillText('Scan QR code to view menu', W / 2, codeY + 140);
+  // === Scan instruction — clear CTA for restaurant customers ===
+  ctx.fillStyle = '#334155';
+  ctx.font = '600 34px Inter, -apple-system, sans-serif';
+  ctx.fillText('\ud83d\udcf1 Scan to view the menu', W / 2, codeY + 120);
+
+  ctx.fillStyle = '#64748b';
+  ctx.font = '400 26px Inter, -apple-system, sans-serif';
+  ctx.fillText('No app required \u2022 Opens in your browser', W / 2, codeY + 160);
 
   // === Footer ===
   const footerY = H - 160;

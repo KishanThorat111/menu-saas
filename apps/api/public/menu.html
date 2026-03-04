@@ -409,10 +409,10 @@
 
     /* ===================== 7b. HERO LOGO ===================== */
     .hero-logo {
-      width: 72px;
-      height: 72px;
-      border-radius: 50%;
-      object-fit: cover;
+      max-width: 160px;
+      max-height: 72px;
+      border-radius: 12px;
+      object-fit: contain;
       border: 3px solid rgba(255,255,255,0.35);
       box-shadow: 0 2px 12px rgba(0,0,0,0.15);
       margin-bottom: var(--s-2);
@@ -423,10 +423,10 @@
       background: rgba(255,255,255,0.1);
     }
     @media (min-width: 640px) {
-      .hero-logo { width: 88px; height: 88px; }
+      .hero-logo { max-width: 200px; max-height: 88px; }
     }
     @media (min-width: 768px) {
-      .hero-logo { width: 96px; height: 96px; }
+      .hero-logo { max-width: 220px; max-height: 96px; }
     }
 
     /* ===================== 8. CATEGORY NAV ===================== */
