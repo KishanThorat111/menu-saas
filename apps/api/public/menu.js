@@ -44,9 +44,12 @@
 
   function esc(text) {
     if (!text) return '';
-    var d = document.createElement('div');
-    d.textContent = text;
-    return d.innerHTML;
+    return String(text)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
   }
 
   // ── DOM Refs ───────────────────────────────────────────────────────────
