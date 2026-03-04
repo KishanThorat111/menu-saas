@@ -1702,7 +1702,8 @@ document.getElementById('logoFileInput').addEventListener('change', async functi
 
 async function removeLogo() {
   if (!hotel || !hotel.logoUrl) return;
-  if (!confirm('Remove restaurant logo?')) return;
+  const ok = await openConfirmModal({ title: 'Remove Logo', message: 'Remove restaurant logo? This cannot be undone.', confirmText: 'Remove' });
+  if (!ok) return;
 
   try {
     await apiFetch('/me/logo', { method: 'DELETE' });

@@ -1167,9 +1167,48 @@ document.getElementById('saLogoFileInput').addEventListener('change', async func
   }
 });
 
+// Reusable styled confirm modal (replaces native confirm())
+function openSaConfirmModal({ title = 'Confirm', message = '', confirmText = 'Confirm' } = {}) {
+  return new Promise(resolve => {
+    const modal = document.getElementById('saConfirmModal');
+    const titleEl = document.getElementById('saConfirmTitle');
+    const messageEl = document.getElementById('saConfirmMessage');
+    const confirmBtn = document.getElementById('confirmSaConfirmBtn');
+    const cancelBtn = document.getElementById('cancelSaConfirmBtn');
+    const closeBtn = document.getElementById('closeSaConfirmModalBtn');
+
+    if (titleEl) titleEl.textContent = title;
+    if (messageEl) messageEl.textContent = message;
+    if (confirmBtn) confirmBtn.textContent = confirmText;
+
+    let handled = false;
+    function cleanup() {
+      modal.classList.remove('active');
+      confirmBtn.removeEventListener('click', onConfirm);
+      cancelBtn.removeEventListener('click', onCancel);
+      closeBtn.removeEventListener('click', onCancel);
+      document.removeEventListener('keydown', onKey);
+    }
+    function onConfirm() { if (handled) return; handled = true; cleanup(); resolve(true); }
+    function onCancel() { if (handled) return; handled = true; cleanup(); resolve(false); }
+    function onKey(e) {
+      if (e.key === 'Escape') onCancel();
+      if (e.key === 'Enter') { e.preventDefault(); onConfirm(); }
+    }
+
+    confirmBtn.addEventListener('click', onConfirm);
+    cancelBtn.addEventListener('click', onCancel);
+    closeBtn.addEventListener('click', onCancel);
+    document.addEventListener('keydown', onKey);
+    modal.classList.add('active');
+    setTimeout(() => { if (cancelBtn) cancelBtn.focus(); }, 0);
+  });
+}
+
 async function saRemoveLogo() {
   if (!qrModalState.id || !qrModalState.logoUrl) return;
-  if (!confirm('Remove restaurant logo?')) return;
+  const ok = await openSaConfirmModal({ title: 'Remove Logo', message: 'Remove restaurant logo? This cannot be undone.', confirmText: 'Remove' });
+  if (!ok) return;
 
   try {
     await fetchAPI(`/admin/hotels/${qrModalState.id}/logo`, { method: 'DELETE' });
