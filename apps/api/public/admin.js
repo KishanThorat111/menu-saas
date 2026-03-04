@@ -1795,39 +1795,58 @@ async function generateQrCardBlob() {
   canvas.height = H;
   const ctx = canvas.getContext('2d');
 
-  // === Background ===
-  ctx.fillStyle = '#ffffff';
+  // Card layout constants
+  const cardM = 50, cardR = 28;
+  const cardX = cardM, cardY = cardM;
+  const cardW = W - cardM * 2, cardH = H - cardM * 2;
+  const cx = W / 2;
+
+  // === Warm cream outer background ===
+  ctx.fillStyle = '#faf6f1';
   ctx.fillRect(0, 0, W, H);
 
-  // === Thin card border (clean print edge) ===
-  ctx.strokeStyle = '#e2e8f0';
-  ctx.lineWidth = 2;
-  ctx.strokeRect(1, 1, W - 2, H - 2);
+  // === White card with shadow ===
+  ctx.save();
+  ctx.shadowColor = 'rgba(0, 0, 0, 0.08)';
+  ctx.shadowBlur = 30;
+  ctx.shadowOffsetX = 0;
+  ctx.shadowOffsetY = 8;
+  ctx.fillStyle = '#ffffff';
+  ctx.beginPath();
+  roundRect(ctx, cardX, cardY, cardW, cardH, cardR);
+  ctx.fill();
+  ctx.restore();
 
-  // === Restaurant name (hero at top) ===
+  ctx.strokeStyle = '#e8e2d9';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  roundRect(ctx, cardX, cardY, cardW, cardH, cardR);
+  ctx.stroke();
+
+  // === Restaurant name ===
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillStyle = '#1e293b';
-  ctx.font = '700 56px Inter, -apple-system, sans-serif';
+  ctx.font = '700 54px Inter, -apple-system, sans-serif';
 
   const hotelName = hotel.name || 'Restaurant';
   let displayName = hotelName;
-  while (ctx.measureText(displayName).width > W - 120 && displayName.length > 10) {
+  while (ctx.measureText(displayName).width > cardW - 120 && displayName.length > 10) {
     displayName = displayName.slice(0, -1);
   }
   if (displayName !== hotelName) displayName += '\u2026';
-  ctx.fillText(displayName, W / 2, 80);
+  ctx.fillText(displayName, cx, cardY + 90);
 
-  let contentY = 125;
+  let contentY = cardY + 140;
 
   // City
   if (hotel.city) {
     ctx.fillStyle = '#64748b';
-    ctx.font = '400 30px Inter, -apple-system, sans-serif';
-    ctx.fillText('\ud83d\udccd ' + hotel.city, W / 2, contentY);
-    contentY += 50;
+    ctx.font = '400 28px Inter, -apple-system, sans-serif';
+    ctx.fillText('\ud83d\udccd ' + hotel.city, cx, contentY);
+    contentY += 55;
   } else {
-    contentY += 15;
+    contentY += 20;
   }
 
   // === Logo (if available) ===
@@ -1874,17 +1893,18 @@ async function generateQrCardBlob() {
     }
   }
 
-  // === Saffron accent divider ===
-  const grad = ctx.createLinearGradient(W * 0.25, 0, W * 0.75, 0);
-  grad.addColorStop(0, 'rgba(198, 139, 82, 0)');
-  grad.addColorStop(0.15, '#c68b52');
-  grad.addColorStop(0.85, '#b07440');
-  grad.addColorStop(1, 'rgba(176, 116, 64, 0)');
-  ctx.fillStyle = grad;
-  ctx.fillRect(W * 0.25, contentY, W * 0.5, 3);
-  contentY += 40;
+  // === QR Code with corner brackets ===
+  const qrSize = 660;
+  const qrPad = 30;
+  const bracketGap = 28;
+  const bracketLen = 55;
+  const bracketThick = 3.5;
+  const qrBgSize = qrSize + qrPad * 2;
+  const totalZone = qrBgSize + bracketGap * 2;
+  const zoneX = (W - totalZone) / 2;
+  const zoneY = contentY + 10;
 
-  // === QR Code (draw SVG onto canvas) ===
+  // Load QR SVG
   const svgDataUrl = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(qrSvgCache);
   const qrImg = new Image();
   await new Promise((resolve, reject) => {
@@ -1893,69 +1913,112 @@ async function generateQrCardBlob() {
     qrImg.src = svgDataUrl;
   });
 
-  // QR code centered, 700x700
-  const qrSize = 700;
-  const qrX = (W - qrSize) / 2;
-  const qrY = contentY;
-
-  // QR background with subtle shadow
-  ctx.fillStyle = '#f8fafc';
+  // QR background box with subtle shadow
+  ctx.save();
+  ctx.shadowColor = 'rgba(0, 0, 0, 0.06)';
+  ctx.shadowBlur = 20;
+  ctx.shadowOffsetY = 4;
+  ctx.fillStyle = '#ffffff';
   ctx.beginPath();
-  roundRect(ctx, qrX - 30, qrY - 30, qrSize + 60, qrSize + 60, 24);
+  roundRect(ctx, zoneX + bracketGap, zoneY + bracketGap, qrBgSize, qrBgSize, 20);
   ctx.fill();
-  ctx.strokeStyle = '#e2e8f0';
-  ctx.lineWidth = 2;
+  ctx.restore();
+
+  ctx.strokeStyle = '#e8e2d9';
+  ctx.lineWidth = 1;
   ctx.beginPath();
-  roundRect(ctx, qrX - 30, qrY - 30, qrSize + 60, qrSize + 60, 24);
+  roundRect(ctx, zoneX + bracketGap, zoneY + bracketGap, qrBgSize, qrBgSize, 20);
   ctx.stroke();
 
-  ctx.drawImage(qrImg, qrX, qrY, qrSize, qrSize);
+  // Draw QR code
+  ctx.drawImage(qrImg, zoneX + bracketGap + qrPad, zoneY + bracketGap + qrPad, qrSize, qrSize);
 
-  // === Menu code badge ===
-  const codeText = hotel.slug;
-  ctx.font = '600 36px "JetBrains Mono", "Courier New", monospace';
-  ctx.textAlign = 'center';
-  const codeWidth = ctx.measureText(codeText).width + 80;
-  const codeX = (W - codeWidth) / 2;
-  const codeY = qrY + qrSize + 80;
-  ctx.fillStyle = '#fdf8f0';
+  // Saffron corner brackets
+  ctx.strokeStyle = '#c68b52';
+  ctx.lineWidth = bracketThick;
+  ctx.lineCap = 'round';
+
   ctx.beginPath();
-  roundRect(ctx, codeX, codeY, codeWidth, 60, 12);
-  ctx.fill();
-  ctx.setLineDash([8, 6]);
-  ctx.strokeStyle = '#e8c080';
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  roundRect(ctx, codeX, codeY, codeWidth, 60, 12);
+  ctx.moveTo(zoneX, zoneY + bracketLen);
+  ctx.lineTo(zoneX, zoneY);
+  ctx.lineTo(zoneX + bracketLen, zoneY);
   ctx.stroke();
-  ctx.setLineDash([]);
 
-  ctx.fillStyle = '#945c35';
-  ctx.fillText(codeText, W / 2, codeY + 40);
+  ctx.beginPath();
+  ctx.moveTo(zoneX + totalZone - bracketLen, zoneY);
+  ctx.lineTo(zoneX + totalZone, zoneY);
+  ctx.lineTo(zoneX + totalZone, zoneY + bracketLen);
+  ctx.stroke();
 
-  // === Scan instruction — clear CTA for restaurant customers ===
-  ctx.fillStyle = '#334155';
+  ctx.beginPath();
+  ctx.moveTo(zoneX, zoneY + totalZone - bracketLen);
+  ctx.lineTo(zoneX, zoneY + totalZone);
+  ctx.lineTo(zoneX + bracketLen, zoneY + totalZone);
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.moveTo(zoneX + totalZone - bracketLen, zoneY + totalZone);
+  ctx.lineTo(zoneX + totalZone, zoneY + totalZone);
+  ctx.lineTo(zoneX + totalZone, zoneY + totalZone - bracketLen);
+  ctx.stroke();
+
+  ctx.lineCap = 'butt';
+  contentY = zoneY + totalZone + 40;
+
+  // === Scan CTA ===
+  ctx.fillStyle = '#1e293b';
   ctx.font = '600 34px Inter, -apple-system, sans-serif';
-  ctx.fillText('\ud83d\udcf1 Scan to view the menu', W / 2, codeY + 120);
+  ctx.textAlign = 'center';
+  ctx.fillText('\ud83d\udcf1 Scan to view the menu', cx, contentY);
 
   ctx.fillStyle = '#64748b';
   ctx.font = '400 26px Inter, -apple-system, sans-serif';
-  ctx.fillText('No app required \u2022 Opens in your browser', W / 2, codeY + 160);
+  ctx.fillText('No app required \u2022 Opens in your browser', cx, contentY + 42);
+
+  // === Separator ===
+  contentY += 95;
+  ctx.strokeStyle = '#e8e2d9';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(cardX + 80, contentY);
+  ctx.lineTo(cardX + cardW - 80, contentY);
+  ctx.stroke();
+
+  // === Manual code ===
+  contentY += 50;
+  ctx.font = '400 28px Inter, -apple-system, sans-serif';
+  const labelW = ctx.measureText('Manual code:  ').width;
+  ctx.font = '700 30px "JetBrains Mono", "Courier New", monospace';
+  const slugW = ctx.measureText(hotel.slug).width;
+  const mcX = (W - labelW - slugW) / 2;
+
+  ctx.textAlign = 'left';
+  ctx.fillStyle = '#94a3b8';
+  ctx.font = '400 28px Inter, -apple-system, sans-serif';
+  ctx.fillText('Manual code:  ', mcX, contentY);
+  ctx.fillStyle = '#1e293b';
+  ctx.font = '700 30px "JetBrains Mono", "Courier New", monospace';
+  ctx.fillText(hotel.slug, mcX + labelW, contentY);
+  ctx.textAlign = 'center';
+
+  // === Footer separator ===
+  contentY += 52;
+  ctx.strokeStyle = '#e8e2d9';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(cardX + 80, contentY);
+  ctx.lineTo(cardX + cardW - 80, contentY);
+  ctx.stroke();
 
   // === Footer ===
-  const footerY = H - 160;
-  ctx.fillStyle = '#f1f5f9';
-  ctx.fillRect(0, footerY, W, 160);
-  ctx.fillStyle = '#e2e8f0';
-  ctx.fillRect(0, footerY, W, 1);
-
+  contentY += 55;
   ctx.fillStyle = '#c68b52';
-  ctx.font = '600 26px Inter, -apple-system, sans-serif';
-  ctx.fillText('kodspot.com', W / 2, footerY + 60);
+  ctx.font = '600 28px Inter, -apple-system, sans-serif';
+  ctx.fillText('kodspot.com', cx, contentY);
 
   ctx.fillStyle = '#cbd5e1';
-  ctx.font = '400 20px Inter, -apple-system, sans-serif';
-  ctx.fillText('Powered by KodSpot — Digital Menu Management', W / 2, footerY + 105);
+  ctx.font = '400 21px Inter, -apple-system, sans-serif';
+  ctx.fillText('\u2022 Powered by KodSpot \u2014 Digital Menu Management \u2022', cx, contentY + 42);
 
   // Convert canvas to blob
   return new Promise(resolve => {
