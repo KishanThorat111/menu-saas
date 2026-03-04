@@ -339,6 +339,14 @@ function renderTable(hotels) {
         </button>`;
     } else {
       actionButtons = `
+        <button class="btn btn-sm btn-qr qr-hotel-btn"
+          data-id="${hotel.id}"
+          data-name="${escapeHtml(hotel.name)}"
+          data-slug="${escapeHtml(hotel.slug)}"
+          data-city="${escapeHtml(hotel.city || '')}"
+          title="View & download QR code">
+          📱 QR Code
+        </button>
         <button class="btn btn-sm btn-info edit-hotel-details-btn"
           data-id="${hotel.id}"
           data-name="${escapeHtml(hotel.name)}"
@@ -518,6 +526,13 @@ function renderTable(hotels) {
   tbody.querySelectorAll('.purge-hotel-btn').forEach(btn => {
     btn.addEventListener('click', function() {
       openPurgeModal(this.dataset.id, this.dataset.name);
+    });
+  });
+
+  // Attach QR code button listeners
+  tbody.querySelectorAll('.qr-hotel-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+      openQrModal(this.dataset.id, this.dataset.name, this.dataset.slug, this.dataset.city);
     });
   });
 }
@@ -954,6 +969,12 @@ function setupEventListeners() {
   document.getElementById('cancelPurgeBtn').addEventListener('click', closePurgeModal);
   document.getElementById('confirmPurgeBtn').addEventListener('click', confirmPurgeHotel);
 
+  // QR Code Modal
+  document.getElementById('closeQrModalBtn').addEventListener('click', closeQrModal);
+  document.getElementById('qrDownloadPngBtn').addEventListener('click', downloadSaQrPng);
+  document.getElementById('qrDownloadSvgBtn').addEventListener('click', downloadSaQrSvg);
+  document.getElementById('qrShareBtn').addEventListener('click', shareSaQr);
+
   // Escape key to close modals
   document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {
@@ -962,6 +983,7 @@ function setupEventListeners() {
       closeDeleteModal();
       closePurgeModal();
       closeRecordPaymentModal();
+      closeQrModal();
     }
   });
 
@@ -1082,6 +1104,269 @@ function initAllCustomSelects() {
   initCustomSelect(document.getElementById('editStatus'));
   initCustomSelect(document.getElementById('recordPaymentPlan'));
   initCustomSelect(document.getElementById('recordPaymentMode'));
+}
+
+// ==================== QR CODE MODAL FUNCTIONS ====================
+let qrModalState = {
+  slug: '',
+  name: '',
+  city: '',
+  svgCache: null
+};
+
+function openQrModal(hotelId, hotelName, slug, city) {
+  qrModalState = { slug, name: hotelName, city: city || '', svgCache: null };
+
+  document.getElementById('qrHotelName').textContent = hotelName;
+  document.getElementById('qrModalCode').textContent = slug;
+
+  const menuUrl = `${window.location.origin}/m/${slug}`;
+  const link = document.getElementById('qrModalLink');
+  link.href = menuUrl;
+  link.textContent = menuUrl;
+
+  // Loading state
+  document.getElementById('qrModalPreview').innerHTML = '<div class="qr-modal-loading"><div class="qr-spin"></div><span>Loading QR code...</span></div>';
+
+  // Hide share button if not supported
+  const shareBtn = document.getElementById('qrShareBtn');
+  if (shareBtn && !(navigator.share && navigator.canShare)) {
+    shareBtn.style.display = 'none';
+  }
+
+  document.getElementById('qrModal').classList.add('active');
+
+  // Fetch QR SVG directly (not through fetchAPI since it returns SVG, not JSON)
+  fetch(`/api/qr/${slug}`, { credentials: 'include' })
+    .then(r => {
+      if (!r.ok) throw new Error('Failed to load QR code');
+      return r.text();
+    })
+    .then(svgText => {
+      qrModalState.svgCache = svgText;
+      const preview = document.getElementById('qrModalPreview');
+      preview.innerHTML = svgText;
+      const svgEl = preview.querySelector('svg');
+      if (svgEl) {
+        svgEl.removeAttribute('width');
+        svgEl.removeAttribute('height');
+        svgEl.style.width = '100%';
+        svgEl.style.maxWidth = '200px';
+        svgEl.style.height = 'auto';
+      }
+    })
+    .catch(() => {
+      document.getElementById('qrModalPreview').innerHTML = '<div class="qr-modal-loading"><span style="color:var(--red-500);">Failed to load QR code</span></div>';
+    });
+}
+
+function closeQrModal() {
+  document.getElementById('qrModal').classList.remove('active');
+  qrModalState = { slug: '', name: '', city: '', svgCache: null };
+}
+
+// Helper: rounded rectangle on canvas
+function saRoundRect(ctx, x, y, w, h, r) {
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+}
+
+// Generate branded QR card as Blob (reused for PNG download & sharing)
+async function generateSaQrCardBlob() {
+  if (!qrModalState.svgCache || !qrModalState.slug) return null;
+
+  const canvas = document.createElement('canvas');
+  const W = 1200, H = 1600;
+  canvas.width = W;
+  canvas.height = H;
+  const ctx = canvas.getContext('2d');
+
+  // Background
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, W, H);
+
+  // Header band
+  ctx.fillStyle = '#0f172a';
+  ctx.fillRect(0, 0, W, 220);
+
+  // Saffron accent line
+  const grad = ctx.createLinearGradient(0, 218, W, 218);
+  grad.addColorStop(0, '#c68b52');
+  grad.addColorStop(1, '#b07440');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 216, W, 6);
+
+  // KodSpot text
+  ctx.fillStyle = '#c68b52';
+  ctx.font = '700 52px Inter, -apple-system, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('KodSpot', W / 2, 100);
+
+  // Subtitle
+  ctx.fillStyle = '#94a3b8';
+  ctx.font = '400 24px Inter, -apple-system, sans-serif';
+  ctx.fillText('Digital Menu', W / 2, 155);
+
+  // QR Code (draw SVG)
+  const svgDataUrl = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(qrModalState.svgCache);
+  const qrImg = new Image();
+  await new Promise((resolve, reject) => {
+    qrImg.onload = resolve;
+    qrImg.onerror = reject;
+    qrImg.src = svgDataUrl;
+  });
+
+  const qrSize = 700;
+  const qrX = (W - qrSize) / 2;
+  const qrY = 280;
+
+  // QR background
+  ctx.fillStyle = '#f8fafc';
+  ctx.beginPath();
+  saRoundRect(ctx, qrX - 30, qrY - 30, qrSize + 60, qrSize + 60, 24);
+  ctx.fill();
+  ctx.strokeStyle = '#e2e8f0';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  saRoundRect(ctx, qrX - 30, qrY - 30, qrSize + 60, qrSize + 60, 24);
+  ctx.stroke();
+
+  ctx.drawImage(qrImg, qrX, qrY, qrSize, qrSize);
+
+  // Hotel name
+  const hotelName = qrModalState.name || 'Restaurant';
+  ctx.fillStyle = '#1e293b';
+  ctx.font = '700 48px Inter, -apple-system, sans-serif';
+  ctx.textAlign = 'center';
+  let displayName = hotelName;
+  while (ctx.measureText(displayName).width > W - 120 && displayName.length > 10) {
+    displayName = displayName.slice(0, -1);
+  }
+  if (displayName !== hotelName) displayName += '…';
+  ctx.fillText(displayName, W / 2, 1100);
+
+  // City
+  if (qrModalState.city) {
+    ctx.fillStyle = '#64748b';
+    ctx.font = '400 30px Inter, -apple-system, sans-serif';
+    ctx.fillText('📍 ' + qrModalState.city, W / 2, 1155);
+  }
+
+  // Menu code badge
+  ctx.fillStyle = '#fdf8f0';
+  const codeText = qrModalState.slug;
+  ctx.font = '600 36px "JetBrains Mono", "Courier New", monospace';
+  const codeWidth = ctx.measureText(codeText).width + 80;
+  const codeX = (W - codeWidth) / 2;
+  const codeY = 1200;
+  ctx.beginPath();
+  saRoundRect(ctx, codeX, codeY, codeWidth, 60, 12);
+  ctx.fill();
+  ctx.setLineDash([8, 6]);
+  ctx.strokeStyle = '#e8c080';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  saRoundRect(ctx, codeX, codeY, codeWidth, 60, 12);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  ctx.fillStyle = '#945c35';
+  ctx.fillText(codeText, W / 2, codeY + 40);
+
+  // Instruction
+  ctx.fillStyle = '#94a3b8';
+  ctx.font = '400 28px Inter, -apple-system, sans-serif';
+  ctx.fillText('Scan QR code to view menu', W / 2, 1340);
+
+  // Footer
+  ctx.fillStyle = '#f1f5f9';
+  ctx.fillRect(0, 1440, W, 160);
+  ctx.fillStyle = '#e2e8f0';
+  ctx.fillRect(0, 1440, W, 1);
+  ctx.fillStyle = '#c68b52';
+  ctx.font = '600 26px Inter, -apple-system, sans-serif';
+  ctx.fillText('kodspot.com', W / 2, 1500);
+  ctx.fillStyle = '#cbd5e1';
+  ctx.font = '400 20px Inter, -apple-system, sans-serif';
+  ctx.fillText('Powered by KodSpot — Digital Menu Management', W / 2, 1545);
+
+  return new Promise(resolve => canvas.toBlob(resolve, 'image/png', 1.0));
+}
+
+async function downloadSaQrPng() {
+  showToast('Generating branded QR card...', 'info');
+  try {
+    const blob = await generateSaQrCardBlob();
+    if (!blob) { showToast('QR code not ready yet', 'error'); return; }
+    const safeName = (qrModalState.name || 'menu').replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '_').substring(0, 40);
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `${safeName}_QR_Menu.png`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+    showToast('PNG downloaded!', 'success');
+  } catch (e) {
+    console.error('PNG download error:', e);
+    showToast('Failed to generate PNG', 'error');
+  }
+}
+
+function downloadSaQrSvg() {
+  if (!qrModalState.svgCache) { showToast('QR code not loaded yet', 'error'); return; }
+  const safeName = (qrModalState.name || 'menu').replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '_').substring(0, 40);
+  const blob = new Blob([qrModalState.svgCache], { type: 'image/svg+xml' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `${safeName}_QR_Menu.svg`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+  showToast('SVG downloaded!', 'success');
+}
+
+async function shareSaQr() {
+  try {
+    const blob = await generateSaQrCardBlob();
+    if (!blob) { showToast('QR code not ready', 'error'); return; }
+    const safeName = (qrModalState.name || 'menu').replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '_').substring(0, 40);
+    const file = new File([blob], `${safeName}_QR_Menu.png`, { type: 'image/png' });
+    const menuUrl = `${window.location.origin}/m/${qrModalState.slug}`;
+
+    if (navigator.share && navigator.canShare({ files: [file] })) {
+      await navigator.share({
+        title: `${qrModalState.name} - Digital Menu`,
+        text: `Scan QR code or visit: ${menuUrl}`,
+        files: [file]
+      });
+      showToast('Shared successfully!', 'success');
+    } else if (navigator.share) {
+      await navigator.share({
+        title: `${qrModalState.name} - Digital Menu`,
+        text: `View menu: ${menuUrl}`,
+        url: menuUrl
+      });
+      showToast('Link shared!', 'success');
+    } else {
+      downloadSaQrPng();
+    }
+  } catch (e) {
+    if (e.name !== 'AbortError') {
+      console.error('Share error:', e);
+      showToast('Sharing failed. Try downloading instead.', 'error');
+    }
+  }
 }
 
 // Run init when DOM is ready

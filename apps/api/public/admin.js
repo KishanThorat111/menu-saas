@@ -58,8 +58,10 @@ function switchTab(tab, el) {
   document.getElementById('tab-menu').classList.toggle('hidden', tab !== 'menu');
   document.getElementById('tab-add').classList.toggle('hidden', tab !== 'add');
   document.getElementById('tab-billing').classList.toggle('hidden', tab !== 'billing');
+  document.getElementById('tab-qr').classList.toggle('hidden', tab !== 'qr');
   if (tab === 'menu') renderMenu();
   if (tab === 'billing') loadBilling();
+  if (tab === 'qr') loadQrCode();
 }
 
 async function apiFetch(endpoint, options = {}) {
@@ -1025,6 +1027,13 @@ if (tabBilling) {
   });
 }
 
+const tabQR = document.getElementById('tabQR');
+if (tabQR) {
+  tabQR.addEventListener('click', function() {
+    switchTab('qr', this);
+  });
+}
+
 const addCatBtn = document.getElementById('addCatBtn');
 if (addCatBtn) addCatBtn.addEventListener('click', addCategory);
 
@@ -1640,3 +1649,290 @@ if (newPinInput) newPinInput.addEventListener('keypress', function(e) { if (e.ke
   var cp = document.getElementById('confirmPin');
   if (cp) cp.focus();
 }});
+
+// ==================== QR CODE GENERATION & DOWNLOAD ====================
+let qrSvgCache = null; // Cache SVG to avoid re-fetching
+
+async function loadQrCode() {
+  if (!hotel || !hotel.slug) return;
+
+  const preview = document.getElementById('qrPreview');
+  const codeText = document.getElementById('qrCodeText');
+  const menuLink = document.getElementById('qrMenuLink');
+  const menuUrl = `${window.location.origin}/m/${hotel.slug}`;
+
+  // Update menu code and URL
+  codeText.textContent = hotel.slug;
+  menuLink.href = menuUrl;
+  menuLink.textContent = menuUrl;
+
+  // Show loading state
+  preview.innerHTML = '<div class="qr-loading"><div class="qr-loading-spinner"></div><span>Generating QR code...</span></div>';
+
+  // Hide share button if Web Share API not supported
+  const shareBtn = document.getElementById('btnShare');
+  if (shareBtn && !(navigator.share && navigator.canShare)) {
+    shareBtn.style.display = 'none';
+  }
+
+  try {
+    const res = await apiFetch(`/api/qr/${hotel.slug}`);
+    const svgText = await res.text();
+    qrSvgCache = svgText;
+
+    // Render SVG preview
+    preview.innerHTML = svgText;
+
+    // Scale SVG to fit the preview container
+    const svgEl = preview.querySelector('svg');
+    if (svgEl) {
+      svgEl.removeAttribute('width');
+      svgEl.removeAttribute('height');
+      svgEl.style.width = '100%';
+      svgEl.style.maxWidth = '220px';
+      svgEl.style.height = 'auto';
+    }
+  } catch (e) {
+    preview.innerHTML = '<div class="qr-loading"><span style="color:var(--red-500);">Failed to load QR code. Please try again.</span></div>';
+    console.error('QR load error:', e);
+  }
+}
+
+function copyMenuCode() {
+  if (!hotel || !hotel.slug) return;
+  const menuUrl = `${window.location.origin}/m/${hotel.slug}`;
+  navigator.clipboard.writeText(menuUrl).then(() => {
+    showToast('Menu link copied to clipboard!');
+  }).catch(() => {
+    // Fallback: copy just the code
+    navigator.clipboard.writeText(hotel.slug).then(() => {
+      showToast('Menu code copied!');
+    }).catch(() => {
+      showToast('Could not copy to clipboard', 'error');
+    });
+  });
+}
+
+// Generate branded QR card on Canvas and return as Blob
+async function generateQrCardBlob() {
+  if (!hotel || !qrSvgCache) {
+    showToast('QR code not loaded yet. Please wait.', 'error');
+    return null;
+  }
+
+  const canvas = document.createElement('canvas');
+  const W = 1200;
+  const H = 1600;
+  canvas.width = W;
+  canvas.height = H;
+  const ctx = canvas.getContext('2d');
+
+  // === Background ===
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, W, H);
+
+  // === Header band ===
+  ctx.fillStyle = '#0f172a'; // slate-900
+  ctx.fillRect(0, 0, W, 220);
+
+  // Saffron accent line
+  const grad = ctx.createLinearGradient(0, 218, W, 218);
+  grad.addColorStop(0, '#c68b52');
+  grad.addColorStop(1, '#b07440');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 216, W, 6);
+
+  // KodSpot text
+  ctx.fillStyle = '#c68b52';
+  ctx.font = '700 52px Inter, -apple-system, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('KodSpot', W / 2, 100);
+
+  // Subtitle
+  ctx.fillStyle = '#94a3b8';
+  ctx.font = '400 24px Inter, -apple-system, sans-serif';
+  ctx.fillText('Digital Menu', W / 2, 155);
+
+  // === QR Code (draw SVG onto canvas) ===
+  const svgDataUrl = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(qrSvgCache);
+  const qrImg = new Image();
+  await new Promise((resolve, reject) => {
+    qrImg.onload = resolve;
+    qrImg.onerror = reject;
+    qrImg.src = svgDataUrl;
+  });
+
+  // QR code centered, 700x700
+  const qrSize = 700;
+  const qrX = (W - qrSize) / 2;
+  const qrY = 280;
+
+  // QR background with subtle shadow
+  ctx.fillStyle = '#f8fafc';
+  ctx.beginPath();
+  roundRect(ctx, qrX - 30, qrY - 30, qrSize + 60, qrSize + 60, 24);
+  ctx.fill();
+  ctx.strokeStyle = '#e2e8f0';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  roundRect(ctx, qrX - 30, qrY - 30, qrSize + 60, qrSize + 60, 24);
+  ctx.stroke();
+
+  ctx.drawImage(qrImg, qrX, qrY, qrSize, qrSize);
+
+  // === Hotel name ===
+  const hotelName = hotel.name || 'Restaurant';
+  ctx.fillStyle = '#1e293b';
+  ctx.font = '700 48px Inter, -apple-system, sans-serif';
+  ctx.textAlign = 'center';
+
+  // Truncate hotel name if too long
+  let displayName = hotelName;
+  while (ctx.measureText(displayName).width > W - 120 && displayName.length > 10) {
+    displayName = displayName.slice(0, -1);
+  }
+  if (displayName !== hotelName) displayName += '…';
+  ctx.fillText(displayName, W / 2, 1100);
+
+  // City
+  if (hotel.city) {
+    ctx.fillStyle = '#64748b';
+    ctx.font = '400 30px Inter, -apple-system, sans-serif';
+    ctx.fillText('📍 ' + hotel.city, W / 2, 1155);
+  }
+
+  // === Menu code ===
+  // Code badge background
+  ctx.fillStyle = '#fdf8f0';
+  const codeText = hotel.slug;
+  ctx.font = '600 36px "JetBrains Mono", "Courier New", monospace';
+  const codeWidth = ctx.measureText(codeText).width + 80;
+  const codeX = (W - codeWidth) / 2;
+  const codeY = 1200;
+  ctx.beginPath();
+  roundRect(ctx, codeX, codeY, codeWidth, 60, 12);
+  ctx.fill();
+  ctx.setLineDash([8, 6]);
+  ctx.strokeStyle = '#e8c080';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  roundRect(ctx, codeX, codeY, codeWidth, 60, 12);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  ctx.fillStyle = '#945c35';
+  ctx.fillText(codeText, W / 2, codeY + 40);
+
+  // === Instruction text ===
+  ctx.fillStyle = '#94a3b8';
+  ctx.font = '400 28px Inter, -apple-system, sans-serif';
+  ctx.fillText('Scan QR code to view menu', W / 2, 1340);
+
+  // === Footer ===
+  ctx.fillStyle = '#f1f5f9';
+  ctx.fillRect(0, 1440, W, 160);
+  ctx.fillStyle = '#e2e8f0';
+  ctx.fillRect(0, 1440, W, 1);
+
+  ctx.fillStyle = '#c68b52';
+  ctx.font = '600 26px Inter, -apple-system, sans-serif';
+  ctx.fillText('kodspot.com', W / 2, 1500);
+
+  ctx.fillStyle = '#cbd5e1';
+  ctx.font = '400 20px Inter, -apple-system, sans-serif';
+  ctx.fillText('Powered by KodSpot — Digital Menu Management', W / 2, 1545);
+
+  // Convert canvas to blob
+  return new Promise(resolve => {
+    canvas.toBlob(resolve, 'image/png', 1.0);
+  });
+}
+
+// Helper: draw rounded rectangle
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+}
+
+async function downloadQrPng() {
+  if (!hotel) return;
+  showToast('Generating branded QR card...');
+  try {
+    const blob = await generateQrCardBlob();
+    if (!blob) return;
+    const safeName = (hotel.name || 'menu').replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '_').substring(0, 40);
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `${safeName}_QR_Menu.png`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+    showToast('PNG downloaded! Ready for WhatsApp & social media sharing.');
+  } catch (e) {
+    console.error('PNG download error:', e);
+    showToast('Failed to generate PNG. Please try again.', 'error');
+  }
+}
+
+async function downloadQrSvg() {
+  if (!hotel || !qrSvgCache) {
+    showToast('QR code not loaded yet. Please switch to QR tab first.', 'error');
+    return;
+  }
+  const safeName = (hotel.name || 'menu').replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '_').substring(0, 40);
+  const blob = new Blob([qrSvgCache], { type: 'image/svg+xml' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `${safeName}_QR_Menu.svg`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+  showToast('SVG downloaded! Best for printing stickers & standees.');
+}
+
+async function shareQr() {
+  if (!hotel) return;
+  try {
+    const blob = await generateQrCardBlob();
+    if (!blob) return;
+    const safeName = (hotel.name || 'menu').replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '_').substring(0, 40);
+    const file = new File([blob], `${safeName}_QR_Menu.png`, { type: 'image/png' });
+    const menuUrl = `${window.location.origin}/m/${hotel.slug}`;
+
+    if (navigator.share && navigator.canShare({ files: [file] })) {
+      await navigator.share({
+        title: `${hotel.name} - Digital Menu`,
+        text: `Scan QR code or visit: ${menuUrl}`,
+        files: [file]
+      });
+      showToast('Shared successfully!');
+    } else if (navigator.share) {
+      // Share URL only (no file support)
+      await navigator.share({
+        title: `${hotel.name} - Digital Menu`,
+        text: `View our menu: ${menuUrl}`,
+        url: menuUrl
+      });
+      showToast('Link shared!');
+    } else {
+      // Fallback: download the PNG
+      downloadQrPng();
+    }
+  } catch (e) {
+    if (e.name !== 'AbortError') {
+      console.error('Share error:', e);
+      showToast('Sharing failed. Try downloading instead.', 'error');
+    }
+  }
+}
