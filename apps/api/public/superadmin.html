@@ -2607,6 +2607,64 @@
       color: white;
       border-color: #4f46e5;
     }
+
+    /* ========================================
+       27. LOGO UPLOAD IN QR MODAL
+       ======================================== */
+    .qr-logo-section {
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-md);
+      padding: 1rem;
+      margin-bottom: 1.25rem;
+      background: var(--slate-50);
+      text-align: center;
+    }
+    .qr-logo-section h5 {
+      font-size: 0.875rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 0.25rem;
+    }
+    .qr-logo-section p {
+      font-size: 0.6875rem;
+      color: var(--text-secondary);
+      margin-bottom: 0.75rem;
+    }
+    .sa-logo-preview {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 80px;
+      margin-bottom: 0.75rem;
+    }
+    .sa-logo-img {
+      max-width: 120px;
+      max-height: 120px;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--slate-200);
+      object-fit: contain;
+      background: white;
+    }
+    .sa-logo-placeholder {
+      width: 80px;
+      height: 80px;
+      border-radius: var(--radius-md);
+      border: 2px dashed var(--slate-300);
+      background: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-tertiary);
+      font-size: 2rem;
+    }
+    .sa-logo-actions {
+      display: flex;
+      gap: 0.5rem;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .sa-logo-actions .btn { font-size: 0.75rem; padding: 0.375rem 0.75rem; }
+    #saLogoFileInput { display: none; }
   </style>
 </head>
 <body>
@@ -3090,6 +3148,20 @@
         <p style="margin-bottom:1rem;color:var(--text-secondary);font-size:0.875rem;">
           QR code for <strong id="qrHotelName" style="color:var(--slate-900);"></strong>
         </p>
+        <!-- Logo Upload Section -->
+        <div class="qr-logo-section">
+          <h5>🏪 Restaurant Logo</h5>
+          <p>Optional — displayed on QR card and public menu</p>
+          <div id="saLogoPreview" class="sa-logo-preview">
+            <div id="saLogoPlaceholder" class="sa-logo-placeholder">🏪</div>
+            <img id="saLogoImg" class="sa-logo-img" style="display:none" alt="Logo">
+          </div>
+          <div class="sa-logo-actions">
+            <input type="file" id="saLogoFileInput" accept="image/jpeg,image/png,image/webp">
+            <button class="btn btn-sm btn-primary" onclick="document.getElementById('saLogoFileInput').click()">📤 Upload Logo</button>
+            <button id="saRemoveLogoBtn" class="btn btn-sm btn-danger" style="display:none" onclick="saRemoveLogo()">🗑️ Remove</button>
+          </div>
+        </div>
         <div id="qrModalPreview" class="qr-modal-preview">
           <div class="qr-modal-loading">
             <div class="qr-spin"></div>

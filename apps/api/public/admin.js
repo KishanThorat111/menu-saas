@@ -1650,11 +1650,78 @@ if (newPinInput) newPinInput.addEventListener('keypress', function(e) { if (e.ke
   if (cp) cp.focus();
 }});
 
+// ==================== LOGO UPLOAD ====================
+
+function renderLogoPreview() {
+  const placeholder = document.getElementById('logoPlaceholder');
+  const img = document.getElementById('logoPreviewImg');
+  const removeBtn = document.getElementById('btnRemoveLogo');
+  if (!placeholder || !img || !removeBtn) return;
+
+  if (hotel && hotel.logoUrl) {
+    placeholder.style.display = 'none';
+    img.style.display = 'block';
+    img.src = hotel.logoUrl;
+    removeBtn.style.display = 'inline-flex';
+  } else {
+    placeholder.style.display = 'flex';
+    img.style.display = 'none';
+    img.src = '';
+    removeBtn.style.display = 'none';
+  }
+}
+
+document.getElementById('logoFileInput').addEventListener('change', async function() {
+  const file = this.files && this.files[0];
+  if (!file) return;
+  this.value = '';
+
+  if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+    showToast('Only JPEG, PNG, or WebP images allowed', 'error');
+    return;
+  }
+  if (file.size > 2 * 1024 * 1024) {
+    showToast('Logo must be under 2 MB', 'error');
+    return;
+  }
+
+  try {
+    const fd = new FormData();
+    fd.append('image', file);
+    showToast('Uploading logo...');
+    await apiFetch('/me/logo', { method: 'POST', body: fd });
+    // Refresh hotel data
+    const res = await apiFetch('/me');
+    hotel = await res.json();
+    renderLogoPreview();
+    showToast('Logo uploaded!');
+  } catch (e) {
+    showToast(e.message || 'Logo upload failed', 'error');
+  }
+});
+
+async function removeLogo() {
+  if (!hotel || !hotel.logoUrl) return;
+  if (!confirm('Remove restaurant logo?')) return;
+
+  try {
+    await apiFetch('/me/logo', { method: 'DELETE' });
+    hotel.logoUrl = null;
+    renderLogoPreview();
+    showToast('Logo removed');
+  } catch (e) {
+    showToast(e.message || 'Failed to remove logo', 'error');
+  }
+}
+
 // ==================== QR CODE GENERATION & DOWNLOAD ====================
 let qrSvgCache = null; // Cache SVG to avoid re-fetching
 
 async function loadQrCode() {
   if (!hotel || !hotel.slug) return;
+
+  // Render logo preview in QR tab
+  renderLogoPreview();
 
   const preview = document.getElementById('qrPreview');
   const codeText = document.getElementById('qrCodeText');
@@ -1720,9 +1787,10 @@ async function generateQrCardBlob() {
     return null;
   }
 
+  const hasLogo = !!hotel.logoUrl;
   const canvas = document.createElement('canvas');
   const W = 1200;
-  const H = 1600;
+  const H = hasLogo ? 1700 : 1600;
   canvas.width = W;
   canvas.height = H;
   const ctx = canvas.getContext('2d');
@@ -1754,6 +1822,44 @@ async function generateQrCardBlob() {
   ctx.font = '400 24px Inter, -apple-system, sans-serif';
   ctx.fillText('Digital Menu', W / 2, 155);
 
+  // === Logo (if available) ===
+  let contentY = 280; // starting Y for content after header
+  if (hasLogo) {
+    const logoImg = new Image();
+    logoImg.crossOrigin = 'anonymous';
+    const logoLoaded = await new Promise((resolve) => {
+      logoImg.onload = () => resolve(true);
+      logoImg.onerror = () => resolve(false);
+      logoImg.src = hotel.logoUrl;
+    });
+    if (logoLoaded) {
+      const logoSize = 140;
+      const logoX = (W - logoSize) / 2;
+      const logoY = contentY;
+      // Circular clip
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(logoX + logoSize / 2, logoY + logoSize / 2, logoSize / 2, 0, Math.PI * 2);
+      ctx.closePath();
+      ctx.clip();
+      // Cover-crop: scale to fill the square, then center
+      const scale = Math.max(logoSize / logoImg.naturalWidth, logoSize / logoImg.naturalHeight);
+      const sw = logoSize / scale, sh = logoSize / scale;
+      const sx = (logoImg.naturalWidth - sw) / 2, sy = (logoImg.naturalHeight - sh) / 2;
+      ctx.drawImage(logoImg, sx, sy, sw, sh, logoX, logoY, logoSize, logoSize);
+      ctx.restore();
+      // Circle border
+      ctx.beginPath();
+      ctx.arc(logoX + logoSize / 2, logoY + logoSize / 2, logoSize / 2, 0, Math.PI * 2);
+      ctx.strokeStyle = '#e2e8f0';
+      ctx.lineWidth = 3;
+      ctx.stroke();
+      contentY += logoSize + 20;
+    } else {
+      console.warn('QR card: Logo failed to load (CORS or network issue). Generating card without logo.');
+    }
+  }
+
   // === QR Code (draw SVG onto canvas) ===
   const svgDataUrl = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(qrSvgCache);
   const qrImg = new Image();
@@ -1766,7 +1872,7 @@ async function generateQrCardBlob() {
   // QR code centered, 700x700
   const qrSize = 700;
   const qrX = (W - qrSize) / 2;
-  const qrY = 280;
+  const qrY = contentY;
 
   // QR background with subtle shadow
   ctx.fillStyle = '#f8fafc';
@@ -1782,6 +1888,7 @@ async function generateQrCardBlob() {
   ctx.drawImage(qrImg, qrX, qrY, qrSize, qrSize);
 
   // === Hotel name ===
+  const nameY = qrY + qrSize + 100;
   const hotelName = hotel.name || 'Restaurant';
   ctx.fillStyle = '#1e293b';
   ctx.font = '700 48px Inter, -apple-system, sans-serif';
@@ -1793,13 +1900,16 @@ async function generateQrCardBlob() {
     displayName = displayName.slice(0, -1);
   }
   if (displayName !== hotelName) displayName += '…';
-  ctx.fillText(displayName, W / 2, 1100);
+  ctx.fillText(displayName, W / 2, nameY);
 
   // City
+  let cityY = nameY + 55;
   if (hotel.city) {
     ctx.fillStyle = '#64748b';
     ctx.font = '400 30px Inter, -apple-system, sans-serif';
-    ctx.fillText('📍 ' + hotel.city, W / 2, 1155);
+    ctx.fillText('📍 ' + hotel.city, W / 2, cityY);
+  } else {
+    cityY = nameY; // tighten gap when no city
   }
 
   // === Menu code ===
@@ -1809,7 +1919,7 @@ async function generateQrCardBlob() {
   ctx.font = '600 36px "JetBrains Mono", "Courier New", monospace';
   const codeWidth = ctx.measureText(codeText).width + 80;
   const codeX = (W - codeWidth) / 2;
-  const codeY = 1200;
+  const codeY = cityY + 50;
   ctx.beginPath();
   roundRect(ctx, codeX, codeY, codeWidth, 60, 12);
   ctx.fill();
@@ -1827,21 +1937,22 @@ async function generateQrCardBlob() {
   // === Instruction text ===
   ctx.fillStyle = '#94a3b8';
   ctx.font = '400 28px Inter, -apple-system, sans-serif';
-  ctx.fillText('Scan QR code to view menu', W / 2, 1340);
+  ctx.fillText('Scan QR code to view menu', W / 2, codeY + 140);
 
   // === Footer ===
+  const footerY = H - 160;
   ctx.fillStyle = '#f1f5f9';
-  ctx.fillRect(0, 1440, W, 160);
+  ctx.fillRect(0, footerY, W, 160);
   ctx.fillStyle = '#e2e8f0';
-  ctx.fillRect(0, 1440, W, 1);
+  ctx.fillRect(0, footerY, W, 1);
 
   ctx.fillStyle = '#c68b52';
   ctx.font = '600 26px Inter, -apple-system, sans-serif';
-  ctx.fillText('kodspot.com', W / 2, 1500);
+  ctx.fillText('kodspot.com', W / 2, footerY + 60);
 
   ctx.fillStyle = '#cbd5e1';
   ctx.font = '400 20px Inter, -apple-system, sans-serif';
-  ctx.fillText('Powered by KodSpot — Digital Menu Management', W / 2, 1545);
+  ctx.fillText('Powered by KodSpot — Digital Menu Management', W / 2, footerY + 105);
 
   // Convert canvas to blob
   return new Promise(resolve => {

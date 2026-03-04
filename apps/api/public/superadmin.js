@@ -344,6 +344,7 @@ function renderTable(hotels) {
           data-name="${escapeHtml(hotel.name)}"
           data-slug="${escapeHtml(hotel.slug)}"
           data-city="${escapeHtml(hotel.city || '')}"
+          data-logourl="${escapeHtml(hotel.logoUrl || '')}"
           title="View & download QR code">
           📱 QR Code
         </button>
@@ -532,7 +533,7 @@ function renderTable(hotels) {
   // Attach QR code button listeners
   tbody.querySelectorAll('.qr-hotel-btn').forEach(btn => {
     btn.addEventListener('click', function() {
-      openQrModal(this.dataset.id, this.dataset.name, this.dataset.slug, this.dataset.city);
+      openQrModal(this.dataset.id, this.dataset.name, this.dataset.slug, this.dataset.city, this.dataset.logourl);
     });
   });
 }
@@ -1108,14 +1109,83 @@ function initAllCustomSelects() {
 
 // ==================== QR CODE MODAL FUNCTIONS ====================
 let qrModalState = {
+  id: '',
   slug: '',
   name: '',
   city: '',
+  logoUrl: '',
   svgCache: null
 };
 
-function openQrModal(hotelId, hotelName, slug, city) {
-  qrModalState = { slug, name: hotelName, city: city || '', svgCache: null };
+function renderSaLogoPreview() {
+  const placeholder = document.getElementById('saLogoPlaceholder');
+  const img = document.getElementById('saLogoImg');
+  const removeBtn = document.getElementById('saRemoveLogoBtn');
+  if (!placeholder || !img || !removeBtn) return;
+
+  if (qrModalState.logoUrl) {
+    placeholder.style.display = 'none';
+    img.style.display = 'block';
+    img.src = qrModalState.logoUrl;
+    removeBtn.style.display = 'inline-flex';
+  } else {
+    placeholder.style.display = 'flex';
+    img.style.display = 'none';
+    img.src = '';
+    removeBtn.style.display = 'none';
+  }
+}
+
+document.getElementById('saLogoFileInput').addEventListener('change', async function() {
+  const file = this.files && this.files[0];
+  if (!file) return;
+  this.value = '';
+
+  if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+    showToast('Only JPEG, PNG, or WebP images allowed', 'error');
+    return;
+  }
+  if (file.size > 2 * 1024 * 1024) {
+    showToast('Logo must be under 2 MB', 'error');
+    return;
+  }
+  if (!qrModalState.id) return;
+
+  try {
+    const fd = new FormData();
+    fd.append('image', file);
+    showToast('Uploading logo...', 'info');
+    const data = await fetchAPI(`/admin/hotels/${qrModalState.id}/logo`, { method: 'POST', body: fd });
+    qrModalState.logoUrl = data.logoUrl || '';
+    // Update source button data attribute to prevent staleness on re-open
+    const srcBtn = document.querySelector(`.qr-hotel-btn[data-id="${qrModalState.id}"]`);
+    if (srcBtn) srcBtn.dataset.logourl = qrModalState.logoUrl;
+    renderSaLogoPreview();
+    showToast('Logo uploaded!', 'success');
+  } catch (e) {
+    showToast(e.message || 'Logo upload failed', 'error');
+  }
+});
+
+async function saRemoveLogo() {
+  if (!qrModalState.id || !qrModalState.logoUrl) return;
+  if (!confirm('Remove restaurant logo?')) return;
+
+  try {
+    await fetchAPI(`/admin/hotels/${qrModalState.id}/logo`, { method: 'DELETE' });
+    qrModalState.logoUrl = '';
+    // Update source button data attribute to prevent staleness on re-open
+    const srcBtn = document.querySelector(`.qr-hotel-btn[data-id="${qrModalState.id}"]`);
+    if (srcBtn) srcBtn.dataset.logourl = '';
+    renderSaLogoPreview();
+    showToast('Logo removed', 'success');
+  } catch (e) {
+    showToast(e.message || 'Failed to remove logo', 'error');
+  }
+}
+
+function openQrModal(hotelId, hotelName, slug, city, logoUrl) {
+  qrModalState = { id: hotelId, slug, name: hotelName, city: city || '', logoUrl: logoUrl || '', svgCache: null };
 
   document.getElementById('qrHotelName').textContent = hotelName;
   document.getElementById('qrModalCode').textContent = slug;
@@ -1135,6 +1205,9 @@ function openQrModal(hotelId, hotelName, slug, city) {
   }
 
   document.getElementById('qrModal').classList.add('active');
+
+  // Render logo preview
+  renderSaLogoPreview();
 
   // Fetch QR SVG directly (not through fetchAPI since it returns SVG, not JSON)
   fetch(`/api/qr/${slug}`, { credentials: 'include' })
@@ -1162,7 +1235,7 @@ function openQrModal(hotelId, hotelName, slug, city) {
 
 function closeQrModal() {
   document.getElementById('qrModal').classList.remove('active');
-  qrModalState = { slug: '', name: '', city: '', svgCache: null };
+  qrModalState = { id: '', slug: '', name: '', city: '', logoUrl: '', svgCache: null };
 }
 
 // Helper: rounded rectangle on canvas
@@ -1183,8 +1256,9 @@ function saRoundRect(ctx, x, y, w, h, r) {
 async function generateSaQrCardBlob() {
   if (!qrModalState.svgCache || !qrModalState.slug) return null;
 
+  const hasLogo = !!qrModalState.logoUrl;
   const canvas = document.createElement('canvas');
-  const W = 1200, H = 1600;
+  const W = 1200, H = hasLogo ? 1700 : 1600;
   canvas.width = W;
   canvas.height = H;
   const ctx = canvas.getContext('2d');
@@ -1216,6 +1290,44 @@ async function generateSaQrCardBlob() {
   ctx.font = '400 24px Inter, -apple-system, sans-serif';
   ctx.fillText('Digital Menu', W / 2, 155);
 
+  // === Logo (if available) ===
+  let contentY = 280;
+  if (hasLogo) {
+    const logoImg = new Image();
+    logoImg.crossOrigin = 'anonymous';
+    const logoLoaded = await new Promise((resolve) => {
+      logoImg.onload = () => resolve(true);
+      logoImg.onerror = () => resolve(false);
+      logoImg.src = qrModalState.logoUrl;
+    });
+    if (logoLoaded) {
+      const logoSize = 140;
+      const logoX = (W - logoSize) / 2;
+      const logoY = contentY;
+      // Circular clip
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(logoX + logoSize / 2, logoY + logoSize / 2, logoSize / 2, 0, Math.PI * 2);
+      ctx.closePath();
+      ctx.clip();
+      // Cover-crop: scale to fill the square, then center
+      const scale = Math.max(logoSize / logoImg.naturalWidth, logoSize / logoImg.naturalHeight);
+      const sw = logoSize / scale, sh = logoSize / scale;
+      const sx = (logoImg.naturalWidth - sw) / 2, sy = (logoImg.naturalHeight - sh) / 2;
+      ctx.drawImage(logoImg, sx, sy, sw, sh, logoX, logoY, logoSize, logoSize);
+      ctx.restore();
+      // Circle border
+      ctx.beginPath();
+      ctx.arc(logoX + logoSize / 2, logoY + logoSize / 2, logoSize / 2, 0, Math.PI * 2);
+      ctx.strokeStyle = '#e2e8f0';
+      ctx.lineWidth = 3;
+      ctx.stroke();
+      contentY += logoSize + 20;
+    } else {
+      console.warn('QR card: Logo failed to load (CORS or network issue). Generating card without logo.');
+    }
+  }
+
   // QR Code (draw SVG)
   const svgDataUrl = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(qrModalState.svgCache);
   const qrImg = new Image();
@@ -1227,7 +1339,7 @@ async function generateSaQrCardBlob() {
 
   const qrSize = 700;
   const qrX = (W - qrSize) / 2;
-  const qrY = 280;
+  const qrY = contentY;
 
   // QR background
   ctx.fillStyle = '#f8fafc';
@@ -1243,6 +1355,7 @@ async function generateSaQrCardBlob() {
   ctx.drawImage(qrImg, qrX, qrY, qrSize, qrSize);
 
   // Hotel name
+  const nameY = qrY + qrSize + 100;
   const hotelName = qrModalState.name || 'Restaurant';
   ctx.fillStyle = '#1e293b';
   ctx.font = '700 48px Inter, -apple-system, sans-serif';
@@ -1252,13 +1365,16 @@ async function generateSaQrCardBlob() {
     displayName = displayName.slice(0, -1);
   }
   if (displayName !== hotelName) displayName += '…';
-  ctx.fillText(displayName, W / 2, 1100);
+  ctx.fillText(displayName, W / 2, nameY);
 
   // City
+  let cityY = nameY + 55;
   if (qrModalState.city) {
     ctx.fillStyle = '#64748b';
     ctx.font = '400 30px Inter, -apple-system, sans-serif';
-    ctx.fillText('📍 ' + qrModalState.city, W / 2, 1155);
+    ctx.fillText('📍 ' + qrModalState.city, W / 2, cityY);
+  } else {
+    cityY = nameY; // tighten gap when no city
   }
 
   // Menu code badge
@@ -1267,7 +1383,7 @@ async function generateSaQrCardBlob() {
   ctx.font = '600 36px "JetBrains Mono", "Courier New", monospace';
   const codeWidth = ctx.measureText(codeText).width + 80;
   const codeX = (W - codeWidth) / 2;
-  const codeY = 1200;
+  const codeY = cityY + 50;
   ctx.beginPath();
   saRoundRect(ctx, codeX, codeY, codeWidth, 60, 12);
   ctx.fill();
@@ -1285,19 +1401,20 @@ async function generateSaQrCardBlob() {
   // Instruction
   ctx.fillStyle = '#94a3b8';
   ctx.font = '400 28px Inter, -apple-system, sans-serif';
-  ctx.fillText('Scan QR code to view menu', W / 2, 1340);
+  ctx.fillText('Scan QR code to view menu', W / 2, codeY + 140);
 
   // Footer
+  const footerY = H - 160;
   ctx.fillStyle = '#f1f5f9';
-  ctx.fillRect(0, 1440, W, 160);
+  ctx.fillRect(0, footerY, W, 160);
   ctx.fillStyle = '#e2e8f0';
-  ctx.fillRect(0, 1440, W, 1);
+  ctx.fillRect(0, footerY, W, 1);
   ctx.fillStyle = '#c68b52';
   ctx.font = '600 26px Inter, -apple-system, sans-serif';
-  ctx.fillText('kodspot.com', W / 2, 1500);
+  ctx.fillText('kodspot.com', W / 2, footerY + 60);
   ctx.fillStyle = '#cbd5e1';
   ctx.font = '400 20px Inter, -apple-system, sans-serif';
-  ctx.fillText('Powered by KodSpot — Digital Menu Management', W / 2, 1545);
+  ctx.fillText('Powered by KodSpot — Digital Menu Management', W / 2, footerY + 105);
 
   return new Promise(resolve => canvas.toBlob(resolve, 'image/png', 1.0));
 }
