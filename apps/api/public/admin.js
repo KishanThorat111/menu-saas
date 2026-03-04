@@ -1274,7 +1274,7 @@ function renderBilling() {
 
   html += '</div>';
 
-  // Payment history
+  // Payment history (only CAPTURED/REFUNDED returned by backend)
   if (b.payments && b.payments.length > 0) {
     html += '<div class="payment-history">';
     html += '<div class="billing-section-title">\ud83d\udcdc Payment History</div>';
@@ -1285,22 +1285,45 @@ function renderBilling() {
     html += '<span class="ph-plan">Plan</span>';
     html += '<span class="ph-status">Status</span>';
     html += '<span class="ph-method">Mode</span>';
-    html += '<span class="ph-date">Date</span>';
+    html += '<span class="ph-date">Period</span>';
     html += '</div>';
     b.payments.forEach(function(p) {
       var amount = '\u20b9' + (p.amount / 100);
       var date = p.paidAt ? new Date(p.paidAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : new Date(p.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+      // Human-friendly status labels
+      var statusLabels = { CAPTURED: 'Paid', REFUNDED: 'Refunded', FAILED: 'Failed', CREATED: 'Pending' };
+      var statusText = statusLabels[p.status] || p.status;
       var statusClass = p.status.toLowerCase();
+      // Period display
+      var periodText = '';
+      if (p.periodStart && p.periodEnd) {
+        var ps = new Date(p.periodStart).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
+        var pe = new Date(p.periodEnd).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+        periodText = ps + ' \u2013 ' + pe;
+      } else {
+        periodText = date;
+      }
+      // Method display
+      var methodText = '\u2014';
+      if (p.method) {
+        var methodLabels = { cash: 'Cash', manual: 'Manual', upi: 'UPI', card: 'Card', netbanking: 'Net Banking', wallet: 'Wallet' };
+        methodText = methodLabels[p.method.toLowerCase()] || p.method;
+      }
       html += '<div class="payment-row">';
       html += '<span class="amount">' + amount + '</span>';
       html += '<span class="plan-tag">' + p.plan + '</span>';
-      html += '<span class="status-tag ' + statusClass + '">' + p.status + '</span>';
-      html += '<span class="method-text">' + (p.method ? escapeHtml(p.method) : '\u2014') + '</span>';
-      html += '<span class="date-text">' + date + '</span>';
+      html += '<span class="status-tag ' + statusClass + '">' + escapeHtml(statusText) + '</span>';
+      html += '<span class="method-text">' + escapeHtml(methodText) + '</span>';
+      html += '<span class="date-text">' + periodText + '</span>';
       html += '</div>';
     });
     html += '</div>'; // end payment-history-list
     html += '</div>'; // end payment-history
+  } else {
+    html += '<div class="payment-history">';
+    html += '<div class="billing-section-title">\ud83d\udcdc Payment History</div>';
+    html += '<div style="text-align:center;padding:2rem 1rem;color:var(--slate-400);font-size:0.875rem;">No payments yet. Choose a plan above to get started.</div>';
+    html += '</div>';
   }
 
   container.innerHTML = html;
