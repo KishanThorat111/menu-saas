@@ -868,7 +868,18 @@
     }
 
     @media (min-width: 640px) {
-      .tabs { max-width: 480px; }
+      .tabs { max-width: 520px; margin-left: auto; margin-right: auto; }
+    }
+    @media (min-width: 768px) {
+      .tabs { max-width: 600px; }
+    }
+    @media (min-width: 1024px) {
+      .tabs { max-width: 680px; }
+      .tab { padding: 0.875rem 1.25rem; font-size: 0.9375rem; }
+    }
+    @media (min-width: 1440px) {
+      .tabs { max-width: 760px; }
+      .tab { font-size: 1rem; }
     }
 
     /* ========================================
@@ -2307,17 +2318,27 @@
       letter-spacing: 0.06em;
       color: var(--slate-400);
       border-bottom: 1px solid var(--border-light);
+      background: var(--slate-50);
     }
     .payment-history-header span {
       display: none;
     }
     @media (min-width: 560px) {
+      .payment-history-header {
+        display: grid;
+        grid-template-columns: 90px 90px 95px 80px 1fr;
+        gap: 0.5rem;
+      }
       .payment-history-header span { display: block; }
-      .payment-history-header .ph-amount { flex: 0 0 90px; }
-      .payment-history-header .ph-plan { flex: 0 0 90px; }
-      .payment-history-header .ph-status { flex: 0 0 90px; }
-      .payment-history-header .ph-method { flex: 0 0 80px; }
-      .payment-history-header .ph-date { flex: 1; text-align: right; }
+      .payment-history-header .ph-plan,
+      .payment-history-header .ph-status,
+      .payment-history-header .ph-method { text-align: center; }
+      .payment-history-header .ph-date { text-align: right; }
+    }
+    @media (min-width: 768px) {
+      .payment-history-header {
+        grid-template-columns: 110px 110px 120px 100px 1fr;
+      }
     }
     .payment-row {
       display: flex;
@@ -2400,12 +2421,22 @@
       .payment-row .date-text { order: 4; margin-left: auto; }
     }
     @media (min-width: 560px) {
-      .payment-row { flex-wrap: nowrap; gap: 0; }
-      .payment-row .amount { flex: 0 0 90px; }
-      .payment-row .plan-tag { flex: 0 0 90px; text-align: center; }
-      .payment-row .status-tag { flex: 0 0 90px; justify-content: center; }
-      .payment-row .method-text { flex: 0 0 80px; text-align: center; }
-      .payment-row .date-text { flex: 1; text-align: right; }
+      .payment-row {
+        display: grid;
+        grid-template-columns: 90px 90px 95px 80px 1fr;
+        gap: 0.5rem;
+        align-items: center;
+      }
+      .payment-row .amount { }
+      .payment-row .plan-tag { text-align: center; justify-self: center; }
+      .payment-row .status-tag { justify-self: center; }
+      .payment-row .method-text { text-align: center; }
+      .payment-row .date-text { text-align: right; }
+    }
+    @media (min-width: 768px) {
+      .payment-row {
+        grid-template-columns: 110px 110px 120px 100px 1fr;
+      }
     }
 
     .payment-history-list {
@@ -2451,6 +2482,19 @@
     }
     @media (min-width: 768px) {
       .qr-section { padding: 2.5rem 3rem; }
+    }
+    @media (min-width: 900px) {
+      .qr-section {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 2rem;
+        align-items: start;
+        justify-items: center;
+      }
+      .qr-tips {
+        grid-column: 1 / -1;
+        max-width: 680px;
+      }
     }
 
     .qr-card {
