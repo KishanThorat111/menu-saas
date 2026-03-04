@@ -827,9 +827,8 @@ function registerRoutes() {
       return reply.code(404).send({ error: 'Menu not found' });
     }
 
-    // Generate QR with uppercase URL for optimal QR Alphanumeric encoding
-    // This produces the smallest/fastest-scanning QR code possible
-    const menuUrl = `HTTPS://KODSPOT.COM/M/${code}`;
+    // Use lowercase path /m/ since URL paths are case-sensitive
+    const menuUrl = `https://kodspot.com/m/${code}`;
     const svg = await QRCode.toString(menuUrl, {
       type: 'svg',
       errorCorrectionLevel: 'M', // 15% error correction — good balance of size vs resilience
