@@ -546,14 +546,10 @@ function renderTable(hotels) {
     document.getElementById('editDetailsPhone').value = latestHotel.phone || '';
     // Fix: treat null/undefined/empty email as blank
     document.getElementById('editDetailsEmail').value = latestHotel.email ? latestHotel.email : '';
-    // Only allow STARTER, STANDARD, PRO
-    const allowedPlans = ['STARTER', 'STANDARD', 'PRO'];
-    const planSelect = document.getElementById('editDetailsPlan');
-    Array.from(planSelect.options).forEach(opt => {
-      if (!allowedPlans.includes(opt.value)) opt.remove();
-    });
-    planSelect.value = allowedPlans.includes(latestHotel.plan) ? latestHotel.plan : 'STARTER';
-    if (typeof initCustomSelect === 'function') initCustomSelect(planSelect);
+    // Plan is readonly — changes only via Record Payment
+    var planLabels = { STARTER: 'Starter (₹299)', STANDARD: 'Standard (₹499)', PRO: 'Pro (₹999)' };
+    document.getElementById('editDetailsPlanDisplay').value = planLabels[latestHotel.plan] || latestHotel.plan;
+    document.getElementById('editDetailsPlan').value = latestHotel.plan;
     document.getElementById('editDetailsCode').value = latestHotel.slug || '';
     document.getElementById('editDetailsModal').classList.add('active');
   }

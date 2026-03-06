@@ -3225,12 +3225,10 @@
           <input type="email" id="editDetailsEmail" maxlength="100">
         </div>
         <div class="form-group">
-          <label for="editDetailsPlan">Plan</label>
-          <select id="editDetailsPlan">
-            <option value="STARTER">Starter (₹299)</option>
-            <option value="STANDARD">Standard (₹499)</option>
-            <option value="PRO">Pro (₹999)</option>
-          </select>
+          <label>Plan</label>
+          <input type="text" id="editDetailsPlanDisplay" readonly style="background:var(--slate-100);color:var(--slate-600);cursor:not-allowed;">
+          <input type="hidden" id="editDetailsPlan">
+          <div style="font-size:0.75rem;color:var(--text-secondary);margin-top:0.25rem;">Plan can only be changed via Record Payment to ensure billing integrity.</div>
         </div>
         <div class="form-group">
           <label for="editDetailsCode">Code</label>
