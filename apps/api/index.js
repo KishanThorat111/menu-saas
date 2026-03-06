@@ -88,6 +88,8 @@ const PLANS = {
   PRO:      { price: 99900, dailyScans: -1,   label: '\u20b9999/mo \u2014 Unlimited + Custom Design' },
 };
 
+const PLAN_TIER = { STARTER: 1, STANDARD: 2, PRO: 3 };
+
 //==================== RAZORPAY CLIENT ====================
 let razorpayClient = null;
 function getRazorpay() {
@@ -526,7 +528,7 @@ async function authenticate(request, reply) {
 
     const hotel = await prisma.hotel.findUnique({
       where: { id: decoded.hotelId },
-      select: { status: true, pinChangedAt: true }
+      select: { status: true, pinChangedAt: true, paidUntil: true, pendingPlan: true, pendingPlanPaid: true }
     });
 
     if (hotel?.status === 'SUSPENDED') {
@@ -534,6 +536,26 @@ async function authenticate(request, reply) {
     }
     if (hotel?.status === 'DELETED') {
       return reply.code(401).send({ error: 'Unauthorized' });
+    }
+
+    // Login-time fallback: catch status transitions the cron hasn't processed yet
+    const now = new Date();
+    if (hotel?.status === 'ACTIVE' && hotel.paidUntil && hotel.paidUntil <= now) {
+      if (hotel.pendingPlan) {
+        const updateData = { plan: hotel.pendingPlan, pendingPlan: null, pendingPlanPaid: false };
+        if (hotel.pendingPlanPaid) {
+          // Paid upgrade/change: extend 30 days from paidUntil
+          updateData.paidUntil = new Date(hotel.paidUntil.getTime() + 30 * 24 * 60 * 60 * 1000);
+          updateData.status = 'ACTIVE';
+        } else {
+          // Free downgrade: switch plan, enter GRACE (no new period)
+          updateData.status = 'GRACE';
+        }
+        await prisma.hotel.update({ where: { id: decoded.hotelId }, data: updateData }).catch(() => {});
+      } else {
+        // No pending plan: ACTIVE → GRACE
+        await prisma.hotel.update({ where: { id: decoded.hotelId }, data: { status: 'GRACE' } }).catch(() => {});
+      }
     }
 
     // Invalidate token if PIN was changed after this token was issued
@@ -581,7 +603,7 @@ async function activatePayment(razorpayOrderId, razorpayPaymentId, razorpaySigna
   try {
     const payment = await prisma.payment.findUnique({
       where: { razorpayOrderId },
-      include: { hotel: { select: { id: true, plan: true, paidUntil: true, status: true } } }
+      include: { hotel: { select: { id: true, plan: true, paidUntil: true, status: true, pendingPlan: true } } }
     });
 
     if (!payment) return { success: false, error: 'Payment not found' };
@@ -593,8 +615,59 @@ async function activatePayment(razorpayOrderId, razorpayPaymentId, razorpaySigna
 
     const hotel = payment.hotel;
     const now = new Date();
+    const isActive = hotel.status === 'ACTIVE' && hotel.paidUntil && hotel.paidUntil > now;
+    const isSamePlan = payment.plan === hotel.plan;
 
-    // Calculate billing period: extend from paidUntil if still active, otherwise from now
+    // If hotel is currently active AND this is a different plan → schedule it
+    if (isActive && !isSamePlan) {
+      // Schedule plan change: activates when current period ends
+      const periodStart = hotel.paidUntil;
+      const periodEnd = new Date(periodStart.getTime() + 30 * 24 * 60 * 60 * 1000);
+
+      await prisma.$transaction([
+        prisma.payment.update({
+          where: { razorpayOrderId },
+          data: {
+            status: 'CAPTURED',
+            razorpayPaymentId: razorpayPaymentId || payment.razorpayPaymentId,
+            razorpaySignature: razorpaySignature || payment.razorpaySignature,
+            paidAt: now,
+            periodStart,
+            periodEnd,
+            method: method || payment.method
+          }
+        }),
+        prisma.hotel.update({
+          where: { id: hotel.id },
+          data: {
+            pendingPlan: payment.plan,
+            pendingPlanPaid: true
+          }
+        }),
+        prisma.auditLog.create({
+          data: {
+            hotelId: hotel.id,
+            actorType: 'system',
+            action: 'plan_change_scheduled',
+            entityType: 'Payment',
+            entityId: razorpayOrderId,
+            newValue: {
+              razorpayPaymentId,
+              amount: payment.amount,
+              currentPlan: hotel.plan,
+              pendingPlan: payment.plan,
+              activatesOn: periodStart.toISOString(),
+              periodEnd: periodEnd.toISOString()
+            }
+          }
+        })
+      ]);
+
+      fastify.log.info(`Plan change scheduled: hotel=${hotel.id} ${hotel.plan}->${payment.plan} activates=${periodStart.toISOString()}`);
+      return { success: true, scheduled: true, activatesOn: periodStart, paidUntil: periodEnd };
+    }
+
+    // Same plan renewal OR expired/trial/grace → activate immediately
     const periodStart = (hotel.paidUntil && hotel.paidUntil > now) ? hotel.paidUntil : now;
     const periodEnd = new Date(periodStart.getTime() + 30 * 24 * 60 * 60 * 1000); // +30 days
 
@@ -618,6 +691,8 @@ async function activatePayment(razorpayOrderId, razorpayPaymentId, razorpaySigna
           status: 'ACTIVE',
           plan: payment.plan,
           paidUntil: periodEnd,
+          pendingPlan: null,
+          pendingPlanPaid: false,
           paymentMode: 'RAZORPAY',
           lastPaymentDate: now,
           lastPaymentAmount: payment.amount,
@@ -1463,7 +1538,7 @@ function registerRoutes() {
     app.get('/me/billing', async (request) => {
       const hotel = await prisma.hotel.findUnique({
         where: { id: request.hotelId },
-        select: { id: true, plan: true, status: true, paidUntil: true, trialEnds: true }
+        select: { id: true, plan: true, status: true, paidUntil: true, trialEnds: true, pendingPlan: true, pendingPlanPaid: true }
       });
       if (!hotel) return { error: 'Not found' };
 
@@ -1493,6 +1568,9 @@ function registerRoutes() {
         status: hotel.status,
         paidUntil: hotel.paidUntil,
         trialEnds: hotel.trialEnds,
+        pendingPlan: hotel.pendingPlan,
+        pendingPlanPaid: hotel.pendingPlanPaid,
+        pendingActivatesOn: (hotel.pendingPlan && hotel.paidUntil) ? hotel.paidUntil : null,
         planLabel: planConfig.label,
         planPrice: planConfig.price,
         dailyScanLimit: planConfig.dailyScans,
@@ -1513,7 +1591,7 @@ function registerRoutes() {
 
       const hotel = await prisma.hotel.findUnique({
         where: { id: request.hotelId },
-        select: { id: true, name: true, email: true, phone: true, plan: true, status: true, paidUntil: true }
+        select: { id: true, name: true, email: true, phone: true, plan: true, status: true, paidUntil: true, pendingPlan: true, pendingPlanPaid: true }
       });
       if (!hotel) return reply.code(404).send({ error: 'Hotel not found' });
 
@@ -1521,6 +1599,17 @@ function registerRoutes() {
       const plan = requestedPlan || hotel.plan;
       const planConfig = PLANS[plan];
       if (!planConfig) return reply.code(400).send({ error: 'Invalid plan' });
+
+      // Block if a paid plan change is already pending
+      if (hotel.pendingPlan && hotel.pendingPlanPaid) {
+        return reply.code(409).send({ error: `You already have a paid plan change to ${hotel.pendingPlan} scheduled. It will activate when your current period ends.` });
+      }
+
+      // Reject downgrades — must use the free downgrade endpoint
+      const isActive = hotel.status === 'ACTIVE' && hotel.paidUntil && hotel.paidUntil > new Date();
+      if (isActive && PLAN_TIER[plan] < PLAN_TIER[hotel.plan]) {
+        return reply.code(400).send({ error: 'To switch to a lower plan, use the downgrade option instead. Downgrades are free and take effect after your current period.' });
+      }
 
       let order;
       try {
@@ -1593,7 +1682,93 @@ function registerRoutes() {
         return reply.code(400).send({ error: result.error || 'Payment activation failed' });
       }
 
-      return { success: true, message: 'Payment verified and activated', paidUntil: result.paidUntil };
+      return { success: true, message: 'Payment verified and activated', paidUntil: result.paidUntil, scheduled: result.scheduled || false };
+    });
+
+    // ==================== BILLING: Schedule Downgrade (free, no payment) ====================
+    app.post('/me/downgrade', async (request, reply) => {
+      const schema = z.object({
+        plan: z.enum(['STARTER', 'STANDARD', 'PRO'])
+      });
+      const { plan: targetPlan } = schema.parse(request.body);
+
+      const hotel = await prisma.hotel.findUnique({
+        where: { id: request.hotelId },
+        select: { id: true, plan: true, status: true, paidUntil: true, pendingPlan: true, pendingPlanPaid: true }
+      });
+      if (!hotel) return reply.code(404).send({ error: 'Hotel not found' });
+
+      // Only active subscribers can schedule downgrades
+      const isActive = hotel.status === 'ACTIVE' && hotel.paidUntil && hotel.paidUntil > new Date();
+      if (!isActive) {
+        return reply.code(400).send({ error: 'Downgrades are only available for active subscriptions. Choose a plan to subscribe.' });
+      }
+
+      // Must be a lower plan
+      if (PLAN_TIER[targetPlan] >= PLAN_TIER[hotel.plan]) {
+        return reply.code(400).send({ error: 'Target plan must be lower than your current plan.' });
+      }
+
+      // Block if a paid plan change is already pending
+      if (hotel.pendingPlan && hotel.pendingPlanPaid) {
+        return reply.code(409).send({ error: `You already have a paid upgrade to ${hotel.pendingPlan} scheduled.` });
+      }
+
+      await prisma.$transaction([
+        prisma.hotel.update({
+          where: { id: hotel.id },
+          data: { pendingPlan: targetPlan, pendingPlanPaid: false }
+        }),
+        prisma.auditLog.create({
+          data: {
+            hotelId: hotel.id,
+            actorType: 'owner',
+            action: 'downgrade_scheduled',
+            entityType: 'Hotel',
+            entityId: hotel.id,
+            newValue: { currentPlan: hotel.plan, pendingPlan: targetPlan }
+          }
+        })
+      ]);
+
+      return { success: true, message: `Downgrade to ${targetPlan} scheduled. It will take effect when your current period ends.` };
+    });
+
+    // ==================== BILLING: Cancel Pending Plan Change ====================
+    app.delete('/me/pending-plan', async (request, reply) => {
+      const hotel = await prisma.hotel.findUnique({
+        where: { id: request.hotelId },
+        select: { id: true, pendingPlan: true, pendingPlanPaid: true }
+      });
+      if (!hotel) return reply.code(404).send({ error: 'Hotel not found' });
+
+      if (!hotel.pendingPlan) {
+        return reply.code(400).send({ error: 'No pending plan change to cancel.' });
+      }
+
+      // Only allow cancelling unpaid (downgrade) pending changes
+      if (hotel.pendingPlanPaid) {
+        return reply.code(400).send({ error: 'Paid plan changes cannot be cancelled. Contact support for a refund.' });
+      }
+
+      await prisma.$transaction([
+        prisma.hotel.update({
+          where: { id: hotel.id },
+          data: { pendingPlan: null, pendingPlanPaid: false }
+        }),
+        prisma.auditLog.create({
+          data: {
+            hotelId: hotel.id,
+            actorType: 'owner',
+            action: 'pending_plan_cancelled',
+            entityType: 'Hotel',
+            entityId: hotel.id,
+            newValue: { cancelledPlan: hotel.pendingPlan }
+          }
+        })
+      ]);
+
+      return { success: true, message: 'Pending plan change cancelled.' };
     });
 
     app.patch('/settings/theme', async (request, reply) => {
@@ -2834,7 +3009,7 @@ function registerRoutes() {
 
       const hotel = await prisma.hotel.findUnique({
         where: { id },
-        select: { id: true, name: true, plan: true, status: true, paidUntil: true }
+        select: { id: true, name: true, plan: true, status: true, paidUntil: true, pendingPlan: true }
       });
       if (!hotel) return reply.code(404).send({ error: 'Hotel not found' });
 
@@ -2842,6 +3017,67 @@ function registerRoutes() {
       if (!planConfig) return reply.code(400).send({ error: 'Invalid plan' });
 
       const now = new Date();
+      const isActive = hotel.status === 'ACTIVE' && hotel.paidUntil && hotel.paidUntil > now;
+      const isSamePlan = plan === hotel.plan;
+
+      // If hotel is currently active AND this is a different plan → schedule it
+      if (isActive && !isSamePlan) {
+        const periodStart = hotel.paidUntil;
+        const periodEnd = new Date(periodStart.getTime() + 30 * 24 * 60 * 60 * 1000);
+        const manualOrderId = `manual_${id}_${Date.now()}`;
+
+        await prisma.$transaction([
+          prisma.payment.create({
+            data: {
+              hotelId: id,
+              razorpayOrderId: manualOrderId,
+              razorpayPaymentId: manualOrderId,
+              amount: planConfig.price,
+              plan: plan,
+              status: 'CAPTURED',
+              paidAt: now,
+              periodStart,
+              periodEnd,
+              method: mode.toLowerCase(),
+              metadata: note ? { note } : null
+            }
+          }),
+          prisma.hotel.update({
+            where: { id },
+            data: {
+              pendingPlan: plan,
+              pendingPlanPaid: true
+            }
+          }),
+          prisma.auditLog.create({
+            data: {
+              hotelId: id,
+              actorType: 'admin',
+              action: 'manual_plan_change_scheduled',
+              entityType: 'Payment',
+              entityId: manualOrderId,
+              newValue: {
+                currentPlan: hotel.plan, pendingPlan: plan,
+                amount: planConfig.price, mode, note,
+                activatesOn: periodStart.toISOString(),
+                periodEnd: periodEnd.toISOString()
+              }
+            }
+          })
+        ]);
+
+        fastify.log.info(`Manual plan change scheduled: hotel=${id} ${hotel.plan}->${plan} activates=${periodStart.toISOString()}`);
+        return {
+          success: true,
+          message: `Plan change to ${plan} scheduled. Activates on ${periodStart.toLocaleDateString('en-IN')}.`,
+          scheduled: true,
+          activatesOn: periodStart,
+          paidUntil: periodEnd,
+          plan
+        };
+      }
+
+      // Same plan renewal OR expired/trial/grace → activate immediately
       const periodStart = (hotel.paidUntil && hotel.paidUntil > now) ? hotel.paidUntil : now;
       const periodEnd = new Date(periodStart.getTime() + 30 * 24 * 60 * 60 * 1000);
 
@@ -2870,6 +3106,8 @@ function registerRoutes() {
             status: 'ACTIVE',
             plan: plan,
             paidUntil: periodEnd,
+            pendingPlan: null,
+            pendingPlanPaid: false,
             paymentMode: mode,
             lastPaymentDate: now,
             lastPaymentAmount: planConfig.price,
@@ -2987,6 +3225,80 @@ async function start() {
     });
 
     fastify.log.info(`🚀 Server listening at ${APP_URL}`);
+
+    // ==================== BILLING LIFECYCLE CRON (hourly) ====================
+    setInterval(async () => {
+      try {
+        const now = new Date();
+        const gracePeriodMs = 3 * 24 * 60 * 60 * 1000; // 3 days
+
+        // Job 1: Activate pending paid plan changes (paidUntil has passed)
+        const pendingActivated = await prisma.$executeRaw`
+          UPDATE "Hotel"
+          SET "plan" = "pendingPlan",
+              "paidUntil" = "paidUntil" + INTERVAL '30 days',
+              "status" = 'ACTIVE'::"HotelStatus",
+              "pendingPlan" = NULL,
+              "pendingPlanPaid" = false,
+              "updatedAt" = NOW()
+          WHERE "pendingPlan" IS NOT NULL
+            AND "pendingPlanPaid" = true
+            AND "paidUntil" <= ${now}
+            AND "status" = 'ACTIVE'::"HotelStatus"
+        `;
+        if (pendingActivated > 0) fastify.log.info(`Cron: activated ${pendingActivated} pending paid plan changes`);
+
+        // Job 2: Apply pending free downgrades (paidUntil has passed)
+        const pendingDowngraded = await prisma.$executeRaw`
+          UPDATE "Hotel"
+          SET "plan" = "pendingPlan",
+              "status" = 'GRACE'::"HotelStatus",
+              "pendingPlan" = NULL,
+              "pendingPlanPaid" = false,
+              "updatedAt" = NOW()
+          WHERE "pendingPlan" IS NOT NULL
+            AND "pendingPlanPaid" = false
+            AND "paidUntil" <= ${now}
+            AND "status" = 'ACTIVE'::"HotelStatus"
+        `;
+        if (pendingDowngraded > 0) fastify.log.info(`Cron: applied ${pendingDowngraded} pending downgrades`);
+
+        // Job 3: ACTIVE → GRACE (paidUntil passed, no pending plan)
+        const graced = await prisma.$executeRaw`
+          UPDATE "Hotel"
+          SET "status" = 'GRACE'::"HotelStatus",
+              "updatedAt" = NOW()
+          WHERE "status" = 'ACTIVE'::"HotelStatus"
+            AND "paidUntil" <= ${now}
+            AND "pendingPlan" IS NULL
+        `;
+        if (graced > 0) fastify.log.info(`Cron: moved ${graced} hotels to GRACE`);
+
+        // Job 4: GRACE → EXPIRED (3 days after paidUntil)
+        const graceDeadline = new Date(now.getTime() - gracePeriodMs);
+        const expired = await prisma.$executeRaw`
+          UPDATE "Hotel"
+          SET "status" = 'EXPIRED'::"HotelStatus",
+              "updatedAt" = NOW()
+          WHERE "status" = 'GRACE'::"HotelStatus"
+            AND "paidUntil" <= ${graceDeadline}
+        `;
+        if (expired > 0) fastify.log.info(`Cron: moved ${expired} hotels to EXPIRED`);
+
+        // Job 5: TRIAL → EXPIRED (trialEnds passed)
+        const trialExpired = await prisma.$executeRaw`
+          UPDATE "Hotel"
+          SET "status" = 'EXPIRED'::"HotelStatus",
+              "updatedAt" = NOW()
+          WHERE "status" = 'TRIAL'::"HotelStatus"
+            AND "trialEnds" <= ${now}
+        `;
+        if (trialExpired > 0) fastify.log.info(`Cron: expired ${trialExpired} trials`);
+
+      } catch (err) {
+        fastify.log.error(`Billing cron error: ${err.message}`);
+      }
+    }, 60 * 60 * 1000); // Run every hour
   } catch (err) {
     fastify.log.error(err);
     process.exit(1);
