@@ -1244,7 +1244,7 @@ function renderBilling() {
     html += '<div class="pending-plan-banner">';
     html += '<div class="pending-plan-info">';
     html += '<span>\ud83d\udd04 Switching to <strong>' + escapeHtml(b.pendingPlan) + '</strong> on ' + pendingDate + '</span>';
-    html += b.pendingPlanPaid ? ' <span class="pending-paid-tag">Paid</span>' : ' <span class="pending-free-tag">Free downgrade</span>';
+    html += b.pendingPlanPaid ? ' <span class="pending-paid-tag">Paid</span>' : ' <span class="pending-free-tag">Free switch</span>';
     html += '</div>';
     if (!b.pendingPlanPaid) {
       html += '<button class="btn btn-sm btn-secondary cancel-pending-btn">\u2716 Cancel</button>';
@@ -1299,6 +1299,8 @@ function renderBilling() {
       html += '<div class="plan-card-badge popular-badge">\u2b50 Most Popular</div>';
     } else if (p.badge === 'value') {
       html += '<div class="plan-card-badge value-badge">\ud83d\udcaa Best Value</div>';
+    } else {
+      html += '<div class="plan-card-badge spacer-badge">\u00a0</div>';
     }
     html += '<div class="plan-card-name">' + escapeHtml(p.name) + '</div>';
     html += '<div class="plan-card-price">' + p.price + '<span class="price-period">/mo</span></div>';
@@ -1319,7 +1321,7 @@ function renderBilling() {
         html += '<button class="btn btn-primary plan-pay-btn" data-plan="' + p.key + '">\ud83d\udd04 Renew</button>';
       }
     } else if (isActive && PLAN_TIER[p.key] < PLAN_TIER[b.plan]) {
-      html += '<button class="btn btn-secondary plan-downgrade-btn" data-plan="' + p.key + '">\u2b07\ufe0f Downgrade</button>';
+      html += '<button class="btn btn-secondary plan-downgrade-btn" data-plan="' + p.key + '">\ud83d\udd04 Switch Plan</button>';
     } else {
       html += '<button class="btn btn-secondary plan-pay-btn" data-plan="' + p.key + '">\u2b06\ufe0f Upgrade</button>';
     }
@@ -1496,24 +1498,53 @@ async function initiatePayment(plan) {
 
 async function initiateDowngrade(plan) {
   var planNames = { STARTER: 'Starter (\u20b9299/mo)', STANDARD: 'Standard (\u20b9499/mo)', PRO: 'Pro (\u20b9999/mo)' };
-  if (!confirm('Downgrade to ' + (planNames[plan] || plan) + '?\n\nThis is free. Your current plan stays active until the end of your billing period, then switches automatically.')) return;
-  try {
-    showToast('Scheduling downgrade...', 'info');
-    var res = await apiFetch('/me/downgrade', {
-      method: 'POST',
-      body: JSON.stringify({ plan: plan })
-    });
-    var data = await res.json();
-    if (data.success) {
-      showToast(data.message, 'success');
-      loadDashboard();
-      setTimeout(function() { switchTab('billing', document.getElementById('tabBilling')); }, 500);
-    } else {
-      showToast(data.error || 'Downgrade failed.', 'error');
-    }
-  } catch (e) {
-    showToast('Downgrade error: ' + e.message, 'error');
+  // Show styled modal instead of browser confirm()
+  var overlay = document.getElementById('switchPlanModalOverlay');
+  document.getElementById('switchPlanName').textContent = planNames[plan] || plan;
+  overlay.classList.add('show');
+  overlay.setAttribute('aria-hidden', 'false');
+
+  // Wire up modal buttons (clean up old listeners via cloneNode)
+  var confirmBtn = document.getElementById('switchPlanModalConfirm');
+  var cancelBtn = document.getElementById('switchPlanModalCancel');
+  var closeBtn = document.getElementById('switchPlanModalClose');
+  var newConfirm = confirmBtn.cloneNode(true);
+  var newCancel = cancelBtn.cloneNode(true);
+  var newClose = closeBtn.cloneNode(true);
+  confirmBtn.parentNode.replaceChild(newConfirm, confirmBtn);
+  cancelBtn.parentNode.replaceChild(newCancel, cancelBtn);
+  closeBtn.parentNode.replaceChild(newClose, closeBtn);
+
+  function closeModal() {
+    overlay.classList.remove('show');
+    overlay.setAttribute('aria-hidden', 'true');
   }
+  newCancel.addEventListener('click', closeModal);
+  newClose.addEventListener('click', closeModal);
+  overlay.addEventListener('click', function(e) { if (e.target === overlay) closeModal(); });
+
+  newConfirm.addEventListener('click', async function() {
+    newConfirm.disabled = true;
+    newConfirm.textContent = 'Switching...';
+    try {
+      var res = await apiFetch('/me/downgrade', {
+        method: 'POST',
+        body: JSON.stringify({ plan: plan })
+      });
+      var data = await res.json();
+      closeModal();
+      if (data.success) {
+        showToast(data.message, 'success');
+        loadDashboard();
+        setTimeout(function() { switchTab('billing', document.getElementById('tabBilling')); }, 500);
+      } else {
+        showToast(data.error || 'Switch failed.', 'error');
+      }
+    } catch (e) {
+      closeModal();
+      showToast('Switch error: ' + e.message, 'error');
+    }
+  });
 }
 
 // ==================== FORGOT PIN FUNCTIONS ====================
