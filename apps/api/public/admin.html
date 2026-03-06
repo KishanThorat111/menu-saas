@@ -2121,6 +2121,45 @@
       transition: width 0.6s var(--ease-out);
     }
 
+    /* --- Scan Nudge Banner --- */
+    .scan-nudge {
+      background: linear-gradient(135deg, #eff6ff, #dbeafe);
+      border: 1.5px solid #93c5fd;
+      border-radius: var(--radius-xl);
+      padding: 1rem 1.25rem;
+      margin-bottom: 1.25rem;
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+    }
+    .scan-nudge .billing-alert-text p:first-child { font-weight: 700; color: #1e40af; margin-bottom: 0.25rem; font-size: 0.9375rem; }
+    .scan-nudge .billing-alert-text p:last-child { font-size: 0.8125rem; color: #1d4ed8; }
+
+    /* --- Pending Plan Banner --- */
+    .pending-plan-banner {
+      background: linear-gradient(135deg, #f0fdf4, #dcfce7);
+      border: 1.5px solid #86efac;
+      border-radius: var(--radius-xl);
+      padding: 1rem 1.25rem;
+      margin-bottom: 1.25rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+    .pending-plan-info { font-size: 0.875rem; color: #166534; }
+    .pending-paid-tag {
+      display: inline-block; background: #16a34a; color: #fff; font-size: 0.6875rem;
+      padding: 0.125rem 0.5rem; border-radius: 999px; font-weight: 600; vertical-align: middle;
+    }
+    .pending-free-tag {
+      display: inline-block; background: #64748b; color: #fff; font-size: 0.6875rem;
+      padding: 0.125rem 0.5rem; border-radius: 999px; font-weight: 600; vertical-align: middle;
+    }
+    .pending-badge { background: #16a34a !important; color: #fff !important; }
+    .btn-sm { padding: 0.25rem 0.75rem; font-size: 0.75rem; }
+
     /* --- CTA Alert Banner --- */
     .billing-alert {
       background: linear-gradient(135deg, #fffbeb, #fef3c7);

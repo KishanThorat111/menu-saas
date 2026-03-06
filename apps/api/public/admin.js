@@ -1229,6 +1229,29 @@ function renderBilling() {
 
   html += '</div>'; // end billing-cards
 
+  // Scan nudge banners
+  if (!isUnlimited && scanPercent >= 80) {
+    html += '<div class="scan-nudge">';
+    html += '<div class="billing-alert-icon">\ud83d\udcc8</div>';
+    html += '<div class="billing-alert-text"><p>You\u2019ve used ' + scanPercent + '% of your daily scans (' + b.todayScans + '/' + b.dailyScanLimit + ').</p>';
+    html += '<p>Consider upgrading for more scans.</p></div>';
+    html += '</div>';
+  }
+
+  // Pending plan banner
+  if (b.pendingPlan) {
+    var pendingDate = b.pendingActivatesOn ? new Date(b.pendingActivatesOn).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : 'end of current period';
+    html += '<div class="pending-plan-banner">';
+    html += '<div class="pending-plan-info">';
+    html += '<span>\ud83d\udd04 Switching to <strong>' + escapeHtml(b.pendingPlan) + '</strong> on ' + pendingDate + '</span>';
+    html += b.pendingPlanPaid ? ' <span class="pending-paid-tag">Paid</span>' : ' <span class="pending-free-tag">Free downgrade</span>';
+    html += '</div>';
+    if (!b.pendingPlanPaid) {
+      html += '<button class="btn btn-sm btn-secondary cancel-pending-btn">\u2716 Cancel</button>';
+    }
+    html += '</div>';
+  }
+
   // Renewal / Upgrade alert
   if (isTrial || isExpired || isExpiring) {
     html += '<div class="billing-alert">';
@@ -1249,6 +1272,10 @@ function renderBilling() {
   }
 
   // Plan selection cards
+  var PLAN_TIER = { STARTER: 1, STANDARD: 2, PRO: 3 };
+  var isActive = b.status === 'ACTIVE' && b.paidUntil && new Date(b.paidUntil) > new Date();
+  var hasPaidPending = b.pendingPlan && b.pendingPlanPaid;
+
   html += '<div class="billing-section-title">' + (isTrial || isExpired ? 'Choose a Plan' : 'Renew or Change Plan') + '</div>';
   html += '<div class="plan-cards">';
 
@@ -1264,15 +1291,28 @@ function renderBilling() {
     html += '<div class="plan-card' + (isCurrent ? ' current' : '') + proClass + '" data-plan="' + p.key + '">';
     if (isCurrent) {
       html += '<div class="plan-card-badge current-badge">Current Plan</div>';
+    } else if (b.pendingPlan === p.key) {
+      html += '<div class="plan-card-badge pending-badge">\ud83d\udd04 Scheduled</div>';
     } else if (p.badge === 'popular') {
       html += '<div class="plan-card-badge popular-badge">\u2b50 Most Popular</div>';
     }
     html += '<div class="plan-card-name">' + escapeHtml(p.name) + '</div>';
     html += '<div class="plan-card-price">' + p.price + '<span class="price-period">/mo</span></div>';
     html += '<div class="plan-card-desc">' + escapeHtml(p.desc) + '</div>';
-    html += '<button class="btn ' + (isCurrent ? 'btn-primary' : 'btn-secondary') + ' plan-pay-btn" data-plan="' + p.key + '">';
-    html += isCurrent ? '\ud83d\udd04 Renew' : '\ud83d\ude80 Choose';
-    html += '</button></div>';
+
+    // Smart button labels
+    if (b.pendingPlan === p.key) {
+      html += '<button class="btn btn-secondary plan-pay-btn" disabled>Scheduled</button>';
+    } else if (hasPaidPending) {
+      html += '<button class="btn btn-secondary plan-pay-btn" disabled>Change pending</button>';
+    } else if (isCurrent) {
+      html += '<button class="btn btn-primary plan-pay-btn" data-plan="' + p.key + '">\ud83d\udd04 Renew</button>';
+    } else if (isActive && PLAN_TIER[p.key] < PLAN_TIER[b.plan]) {
+      html += '<button class="btn btn-secondary plan-downgrade-btn" data-plan="' + p.key + '">\u2b07\ufe0f Downgrade</button>';
+    } else {
+      html += '<button class="btn btn-secondary plan-pay-btn" data-plan="' + p.key + '">\u2b06\ufe0f Upgrade</button>';
+    }
+    html += '</div>';
   });
 
   html += '</div>';
@@ -1334,7 +1374,12 @@ function renderBilling() {
   // Attach plan card click handlers (avoid inline onclick for CSP compliance)
   container.querySelectorAll('.plan-card[data-plan]').forEach(function(card) {
     card.addEventListener('click', function() {
-      initiatePayment(this.dataset.plan);
+      var plan = this.dataset.plan;
+      if (this.querySelector('.plan-downgrade-btn')) {
+        initiateDowngrade(plan);
+      } else if (this.querySelector('.plan-pay-btn[data-plan]')) {
+        initiatePayment(plan);
+      }
     });
   });
   container.querySelectorAll('.plan-pay-btn[data-plan]').forEach(function(btn) {
@@ -1343,6 +1388,32 @@ function renderBilling() {
       initiatePayment(this.dataset.plan);
     });
   });
+  container.querySelectorAll('.plan-downgrade-btn[data-plan]').forEach(function(btn) {
+    btn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      initiateDowngrade(this.dataset.plan);
+    });
+  });
+  // Cancel pending plan
+  var cancelBtn = container.querySelector('.cancel-pending-btn');
+  if (cancelBtn) {
+    cancelBtn.addEventListener('click', async function() {
+      if (!confirm('Cancel your pending downgrade?')) return;
+      try {
+        var res = await apiFetch('/me/pending-plan', { method: 'DELETE' });
+        var data = await res.json();
+        if (data.success) {
+          showToast('Pending plan change cancelled.', 'success');
+          loadDashboard();
+          setTimeout(function() { switchTab('billing', document.getElementById('tabBilling')); }, 500);
+        } else {
+          showToast(data.error || 'Failed to cancel.', 'error');
+        }
+      } catch (e) {
+        showToast('Error cancelling pending plan: ' + e.message, 'error');
+      }
+    });
+  }
 }
 
 async function initiatePayment(plan) {
@@ -1355,7 +1426,7 @@ async function initiatePayment(plan) {
     const order = await res.json();
 
     if (!order.orderId || !order.keyId) {
-      showToast('Payment system not available. Contact support.', 'error');
+      showToast(order.error || 'Payment system not available. Contact support.', 'error');
       return;
     }
 
@@ -1385,7 +1456,7 @@ async function initiatePayment(plan) {
           });
           const result = await verifyRes.json();
           if (result.success) {
-            showToast('Payment successful! Your plan is now active.', 'success');
+            showToast(result.scheduled ? 'Payment successful! Plan change scheduled for your next billing period.' : 'Payment successful! Your plan is now active.', 'success');
             loadDashboard();
             setTimeout(function() { switchTab('billing', document.getElementById('tabBilling')); }, 500);
           } else {
@@ -1409,6 +1480,28 @@ async function initiatePayment(plan) {
     rzp.open();
   } catch (e) {
     showToast('Failed to create order: ' + e.message, 'error');
+  }
+}
+
+async function initiateDowngrade(plan) {
+  var planNames = { STARTER: 'Starter (\u20b9299/mo)', STANDARD: 'Standard (\u20b9499/mo)', PRO: 'Pro (\u20b9999/mo)' };
+  if (!confirm('Downgrade to ' + (planNames[plan] || plan) + '?\n\nThis is free. Your current plan stays active until the end of your billing period, then switches automatically.')) return;
+  try {
+    showToast('Scheduling downgrade...', 'info');
+    var res = await apiFetch('/me/downgrade', {
+      method: 'POST',
+      body: JSON.stringify({ plan: plan })
+    });
+    var data = await res.json();
+    if (data.success) {
+      showToast(data.message, 'success');
+      loadDashboard();
+      setTimeout(function() { switchTab('billing', document.getElementById('tabBilling')); }, 500);
+    } else {
+      showToast(data.error || 'Downgrade failed.', 'error');
+    }
+  } catch (e) {
+    showToast('Downgrade error: ' + e.message, 'error');
   }
 }
 

@@ -34,6 +34,9 @@ model Hotel {
   trialEnds DateTime?
   paidUntil DateTime?
 
+  pendingPlan     PlanType?
+  pendingPlanPaid Boolean   @default(false)
+
   paymentMode       PaymentMode @default(MANUAL)
   lastPaymentDate   DateTime?
   lastPaymentAmount Int?
