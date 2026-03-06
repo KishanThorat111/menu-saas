@@ -2256,6 +2256,22 @@
       background: linear-gradient(90deg, var(--saffron-400), var(--saffron-600));
       height: 4px;
     }
+    /* Standard card accent */
+    .plan-card.plan-standard::before {
+      background: linear-gradient(90deg, #3b82f6, #2563eb);
+    }
+    .plan-card.plan-standard:hover {
+      border-color: #3b82f6;
+      box-shadow: 0 8px 24px rgba(59,130,246,0.12), 0 2px 6px rgba(0,0,0,0.04);
+    }
+    .plan-card.plan-standard.current {
+      border-color: #3b82f6;
+      background: linear-gradient(180deg, #eff6ff 0%, white 100%);
+      box-shadow: 0 4px 16px rgba(59,130,246,0.15);
+    }
+    .plan-card.plan-standard.current::before {
+      background: linear-gradient(90deg, #3b82f6, #2563eb);
+    }
     /* Pro card premium accent */
     .plan-card.plan-pro {
       border-color: var(--slate-300);
@@ -2294,6 +2310,10 @@
     .plan-card-badge.popular-badge {
       background: linear-gradient(135deg, #ede9fe, #ddd6fe);
       color: #6d28d9;
+    }
+    .plan-card-badge.value-badge {
+      background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+      color: #1d4ed8;
     }
     .plan-card-name {
       font-size: 1.0625rem;
@@ -2341,6 +2361,21 @@
       background: var(--saffron-50);
       border-color: var(--saffron-400);
       color: var(--saffron-700);
+    }
+    /* Downgrade button inside plan card — match plan-pay-btn sizing */
+    .plan-card .plan-downgrade-btn {
+      width: 100%;
+      font-size: 0.8125rem;
+      font-weight: 700;
+      padding: 0.625rem 1rem;
+      border-radius: var(--radius-md);
+      min-height: 40px;
+      transition: all var(--duration-fast) var(--ease-out);
+    }
+    .plan-card .plan-downgrade-btn:hover {
+      background: #fef2f2;
+      border-color: #f87171;
+      color: #b91c1c;
     }
 
     /* --- Payment History --- */
@@ -2516,6 +2551,11 @@
       .plan-card-price { font-size: 1.75rem; }
       .billing-alert { padding: 1rem 1.25rem; gap: 0.75rem; }
       .billing-section-title { font-size: 0.75rem; }
+      .scan-nudge { padding: 0.875rem 1rem; gap: 0.625rem; }
+      .scan-nudge .billing-alert-text p:first-child { font-size: 0.8125rem; }
+      .scan-nudge .billing-alert-text p:last-child { font-size: 0.75rem; }
+      .pending-plan-banner { padding: 0.875rem 1rem; gap: 0.5rem; }
+      .pending-plan-info { font-size: 0.8125rem; }
     }
 
     /* ========================================
