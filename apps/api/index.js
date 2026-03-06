@@ -1748,7 +1748,7 @@ function registerRoutes() {
         })
       ]);
 
-      return { success: true, message: `Downgrade to ${targetPlan} scheduled. It will take effect when your current period ends.` };
+      return { success: true, message: `Switch to ${targetPlan} scheduled. Your current plan stays active until the end of your billing period, then switches automatically.` };
     });
 
     // ==================== BILLING: Cancel Pending Plan Change ====================
