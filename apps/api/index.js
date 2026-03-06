@@ -1611,6 +1611,23 @@ function registerRoutes() {
         return reply.code(400).send({ error: 'To switch to a lower plan, use the downgrade option instead. Downgrades are free and take effect after your current period.' });
       }
 
+      // Block same-plan renewal when subscription has >7 days remaining
+      if (isActive && plan === hotel.plan) {
+        const daysLeft = Math.ceil((hotel.paidUntil - new Date()) / (24 * 60 * 60 * 1000));
+        if (daysLeft > 7) {
+          return reply.code(409).send({
+            error: `Your ${plan} plan is active until ${hotel.paidUntil.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}. You can renew within 7 days of expiry.`,
+            daysLeft
+          });
+        }
+      }
+
+      // Expire any stale CREATED orders for this hotel (prevents duplicate checkouts)
+      await prisma.payment.updateMany({
+        where: { hotelId: hotel.id, status: 'CREATED' },
+        data: { status: 'FAILED', metadata: { note: 'Superseded by new order' } }
+      });
+
       let order;
       try {
         order = await rz.orders.create({
@@ -3009,16 +3026,31 @@ function registerRoutes() {
 
       const hotel = await prisma.hotel.findUnique({
         where: { id },
-        select: { id: true, name: true, plan: true, status: true, paidUntil: true, pendingPlan: true }
+        select: { id: true, name: true, plan: true, status: true, paidUntil: true, pendingPlan: true, pendingPlanPaid: true }
       });
       if (!hotel) return reply.code(404).send({ error: 'Hotel not found' });
 
       const planConfig = PLANS[plan];
       if (!planConfig) return reply.code(400).send({ error: 'Invalid plan' });
 
+      // Block if a paid plan change is already pending
+      if (hotel.pendingPlan && hotel.pendingPlanPaid) {
+        return reply.code(409).send({ error: `Hotel already has a paid plan change to ${hotel.pendingPlan} scheduled.` });
+      }
+
       const now = new Date();
       const isActive = hotel.status === 'ACTIVE' && hotel.paidUntil && hotel.paidUntil > now;
       const isSamePlan = plan === hotel.plan;
+
+      // Block same-plan renewal when subscription has >7 days remaining
+      if (isActive && isSamePlan) {
+        const daysLeft = Math.ceil((hotel.paidUntil - now) / (24 * 60 * 60 * 1000));
+        if (daysLeft > 7) {
+          return reply.code(409).send({
+            error: `Hotel's ${plan} plan is active until ${hotel.paidUntil.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}. Can renew within 7 days of expiry. (${daysLeft} days left)`
+          });
+        }
+      }
 
       // If hotel is currently active AND this is a different plan → schedule it
       if (isActive && !isSamePlan) {

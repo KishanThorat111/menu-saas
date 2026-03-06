@@ -1281,13 +1281,13 @@ function renderBilling() {
 
   var plans = [
     { key: 'STARTER', name: 'Starter', price: '\u20b9299', desc: '300 scans/day', badge: '' },
-    { key: 'STANDARD', name: 'Standard', price: '\u20b9499', desc: '500 scans/day', badge: '' },
+    { key: 'STANDARD', name: 'Standard', price: '\u20b9499', desc: '500 scans/day', badge: 'value' },
     { key: 'PRO', name: 'Pro', price: '\u20b9999', desc: 'Unlimited scans + Custom design', badge: 'popular' }
   ];
 
   plans.forEach(function(p) {
     var isCurrent = p.key === b.plan;
-    var proClass = p.key === 'PRO' ? ' plan-pro' : '';
+    var proClass = p.key === 'PRO' ? ' plan-pro' : (p.key === 'STANDARD' ? ' plan-standard' : '');
     html += '<div class="plan-card' + (isCurrent ? ' current' : '') + proClass + '" data-plan="' + p.key + '">';
     if (isCurrent) {
       html += '<div class="plan-card-badge current-badge">Current Plan</div>';
@@ -1295,6 +1295,8 @@ function renderBilling() {
       html += '<div class="plan-card-badge pending-badge">\ud83d\udd04 Scheduled</div>';
     } else if (p.badge === 'popular') {
       html += '<div class="plan-card-badge popular-badge">\u2b50 Most Popular</div>';
+    } else if (p.badge === 'value') {
+      html += '<div class="plan-card-badge value-badge">\ud83d\udcaa Best Value</div>';
     }
     html += '<div class="plan-card-name">' + escapeHtml(p.name) + '</div>';
     html += '<div class="plan-card-price">' + p.price + '<span class="price-period">/mo</span></div>';
@@ -1306,7 +1308,12 @@ function renderBilling() {
     } else if (hasPaidPending) {
       html += '<button class="btn btn-secondary plan-pay-btn" disabled>Change pending</button>';
     } else if (isCurrent) {
-      html += '<button class="btn btn-primary plan-pay-btn" data-plan="' + p.key + '">\ud83d\udd04 Renew</button>';
+      var daysLeft = b.paidUntil ? Math.ceil((new Date(b.paidUntil) - new Date()) / (24*60*60*1000)) : 0;
+      if (isActive && daysLeft > 7) {
+        html += '<button class="btn btn-secondary plan-pay-btn" disabled>Active \u2714 \u00b7 Renew in ' + (daysLeft - 7) + 'd</button>';
+      } else {
+        html += '<button class="btn btn-primary plan-pay-btn" data-plan="' + p.key + '">\ud83d\udd04 Renew</button>';
+      }
     } else if (isActive && PLAN_TIER[p.key] < PLAN_TIER[b.plan]) {
       html += '<button class="btn btn-secondary plan-downgrade-btn" data-plan="' + p.key + '">\u2b07\ufe0f Downgrade</button>';
     } else {

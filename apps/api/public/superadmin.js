@@ -458,6 +458,9 @@ function renderTable(hotels) {
           <button class="btn btn-sm btn-success record-payment-btn"
             data-id="${hotel.id}"
             data-name="${escapeHtml(hotel.name)}"
+            data-plan="${hotel.plan}"
+            data-status="${hotel.status}"
+            data-paid-until="${hotel.paidUntil || ''}"
             title="Record an offline/manual payment">
             💰 Record Payment
           </button>
@@ -605,7 +608,7 @@ function renderTable(hotels) {
   // Attach record payment button listeners
   tbody.querySelectorAll('.record-payment-btn').forEach(btn => {
     btn.addEventListener('click', function() {
-      openRecordPaymentModal(this.dataset.id, this.dataset.name);
+      openRecordPaymentModal(this.dataset.id, this.dataset.name, this.dataset.plan, this.dataset.status, this.dataset.paidUntil);
     });
   });
 
@@ -794,12 +797,24 @@ async function confirmResetPin() {
 // ==================== RECORD PAYMENT MODAL ====================
 let currentRecordPaymentId = null;
 
-function openRecordPaymentModal(hotelId, hotelName) {
+function openRecordPaymentModal(hotelId, hotelName, currentPlan, status, paidUntil) {
   currentRecordPaymentId = hotelId;
   document.getElementById('recordPaymentHotelName').textContent = hotelName;
-  document.getElementById('recordPaymentPlan').value = 'STARTER';
+  document.getElementById('recordPaymentPlan').value = currentPlan || 'STARTER';
   document.getElementById('recordPaymentMode').value = 'CASH';
   document.getElementById('recordPaymentNote').value = '';
+  // Show info banner if hotel has active subscription
+  var infoEl = document.getElementById('recordPaymentInfo');
+  if (infoEl) {
+    if (status === 'ACTIVE' && paidUntil && new Date(paidUntil) > new Date()) {
+      var paidDate = new Date(paidUntil).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+      var daysLeft = Math.ceil((new Date(paidUntil) - new Date()) / (24*60*60*1000));
+      infoEl.innerHTML = '<strong>\u26a0\ufe0f Active subscription</strong> \u2014 ' + escapeHtml(currentPlan || '') + ' plan active until ' + paidDate + ' (' + daysLeft + ' days left). Same-plan renewal blocked if >7 days remain.';
+      infoEl.style.display = 'block';
+    } else {
+      infoEl.style.display = 'none';
+    }
+  }
   document.getElementById('recordPaymentModal').classList.add('active');
 }
 
