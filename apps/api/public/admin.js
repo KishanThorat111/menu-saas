@@ -1211,7 +1211,7 @@ function renderBilling() {
   html += '<div class="billing-card ' + statusCard + '">';
   html += '<div class="billing-card-icon">' + statusIcon + '</div>';
   html += '<div class="billing-card-label">Status</div>';
-  html += '<div class="billing-card-value">' + escapeHtml(b.status) + '</div>';
+  html += '<div class="billing-card-value">' + escapeHtml(b.status === 'GRACE' ? 'PAYMENT DUE' : b.status) + '</div>';
   if (isTrial) html += '<div class="billing-card-sub">Trial ends: ' + trialEndsStr + '</div>';
   else if (b.paidUntil) html += '<div class="billing-card-sub">Active until: ' + paidUntilStr + '</div>';
   html += '</div>';
@@ -1275,6 +1275,7 @@ function renderBilling() {
   var PLAN_TIER = { STARTER: 1, STANDARD: 2, PRO: 3 };
   var isActive = b.status === 'ACTIVE' && b.paidUntil && new Date(b.paidUntil) > new Date();
   var hasPaidPending = b.pendingPlan && b.pendingPlanPaid;
+  var daysLeft = b.paidUntil ? Math.ceil((new Date(b.paidUntil) - new Date()) / (24*60*60*1000)) : 0;
 
   html += '<div class="billing-section-title">' + (isTrial || isExpired ? 'Choose a Plan' : 'Renew or Change Plan') + '</div>';
   html += '<div class="plan-cards">';
@@ -1286,7 +1287,8 @@ function renderBilling() {
   ];
 
   plans.forEach(function(p) {
-    var isCurrent = p.key === b.plan;
+    // During TRIAL/EXPIRED, no plan is "current" (they haven't paid for any)
+    var isCurrent = (isTrial || isExpired) ? false : (p.key === b.plan);
     var proClass = p.key === 'PRO' ? ' plan-pro' : (p.key === 'STANDARD' ? ' plan-standard' : '');
     html += '<div class="plan-card' + (isCurrent ? ' current' : '') + proClass + '" data-plan="' + p.key + '">';
     if (isCurrent) {
@@ -1303,14 +1305,16 @@ function renderBilling() {
     html += '<div class="plan-card-desc">' + escapeHtml(p.desc) + '</div>';
 
     // Smart button labels
-    if (b.pendingPlan === p.key) {
+    if (isTrial || isExpired) {
+      // Trial/Expired: all plans show "Buy Plan" (no renew, no downgrade concept)
+      html += '<button class="btn btn-primary plan-pay-btn" data-plan="' + p.key + '">\ud83d\uded2 Buy Plan</button>';
+    } else if (b.pendingPlan === p.key) {
       html += '<button class="btn btn-secondary plan-pay-btn" disabled>Scheduled</button>';
     } else if (hasPaidPending) {
       html += '<button class="btn btn-secondary plan-pay-btn" disabled>Change pending</button>';
     } else if (isCurrent) {
-      var daysLeft = b.paidUntil ? Math.ceil((new Date(b.paidUntil) - new Date()) / (24*60*60*1000)) : 0;
       if (isActive && daysLeft > 7) {
-        html += '<button class="btn btn-secondary plan-pay-btn" disabled>Active \u2714 \u00b7 Renew in ' + (daysLeft - 7) + 'd</button>';
+        html += '<button class="btn btn-secondary plan-pay-btn" disabled>Active \u2714 \u00b7 ' + daysLeft + 'd left</button>';
       } else {
         html += '<button class="btn btn-primary plan-pay-btn" data-plan="' + p.key + '">\ud83d\udd04 Renew</button>';
       }

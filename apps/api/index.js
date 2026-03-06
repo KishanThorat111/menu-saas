@@ -2297,7 +2297,7 @@ function registerRoutes() {
         city: z.string().min(1).max(100),
         phone: z.string().min(10).max(15),
         email: z.string().email().max(100).optional().or(z.literal('')),
-        plan: z.enum(['FREE', 'BASIC', 'PREMIUM', 'STARTER', 'STANDARD', 'PRO'])
+        plan: z.enum(['FREE', 'BASIC', 'PREMIUM', 'STARTER', 'STANDARD', 'PRO']).optional() // accepted but ignored — plan changes only via payments
       });
       let data;
       try {
@@ -2312,15 +2312,14 @@ function registerRoutes() {
         select: { name: true, city: true, phone: true, email: true, plan: true }
       });
       if (!existing) return reply.code(404).send({ error: 'Hotel not found' });
-      // Update
+      // Update — plan is NOT updated here (only via record-payment / Razorpay)
       const updated = await prisma.hotel.update({
         where: { id },
         data: {
           name: data.name,
           city: data.city,
           phone: data.phone,
-          email: data.email || null,
-          plan: data.plan
+          email: data.email || null
         },
         select: { id: true, name: true, city: true, phone: true, email: true, plan: true, slug: true }
       });
