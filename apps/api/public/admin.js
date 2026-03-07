@@ -197,7 +197,17 @@ function renderMenu() {
     const catDiv = document.createElement('div');
     const titleDiv = document.createElement('div');
     titleDiv.className = 'category-title';
-    titleDiv.textContent = cat.name;
+    
+    const titleText = document.createElement('span');
+    titleText.textContent = cat.name;
+    titleDiv.appendChild(titleText);
+    
+    const renameBtn = document.createElement('button');
+    renameBtn.className = 'btn-category-rename';
+    renameBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"></path></svg>';
+    renameBtn.title = 'Rename category';
+    renameBtn.addEventListener('click', function(e) { e.stopPropagation(); renameCategory(cat.id, cat.name); });
+    titleDiv.appendChild(renameBtn);
     catDiv.appendChild(titleDiv);
     
     const items = cat.items || [];
@@ -332,9 +342,9 @@ function createItemElement(item, categoryId, isHidden = false) {
     // Edit Description Button
     const descBtn = document.createElement('button');
     descBtn.className = 'btn btn-secondary btn-sm';
-    descBtn.innerHTML = `<span class="btn-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"></path></svg></span><span class="btn-text">Desc</span>`;
-    descBtn.title = 'Edit description';
-    descBtn.addEventListener('click', () => editDescription(item.id, item.description));
+    descBtn.innerHTML = `<span class="btn-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"></path></svg></span><span class="btn-text">Edit</span>`;
+    descBtn.title = 'Edit description & category';
+    descBtn.addEventListener('click', () => editDishDetails(item.id, item.description, categoryId));
     actionsDiv.appendChild(descBtn);
   } else {
     const restoreBtn = document.createElement('button');
@@ -762,6 +772,150 @@ async function editDescription(id, currentDesc) {
   } catch (e) {
     showToast(e.message, 'error');
   }
+}
+
+async function renameCategory(catId, currentName) {
+  try {
+    const result = await openEditModal({
+      title: 'Rename Category',
+      type: 'text',
+      value: currentName,
+      placeholder: 'Category name',
+      maxLength: 100
+    });
+    if (result == null || result === currentName) return;
+
+    await apiFetch(`/categories/${catId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ name: result })
+    });
+    showToast('Category renamed!');
+
+    if (hotel && hotel.categories) {
+      var cat = hotel.categories.find(c => c.id === catId);
+      if (cat) cat.name = result;
+    }
+    renderMenu();
+    updateCategorySelect();
+  } catch (e) {
+    showToast(e.message, 'error');
+  }
+}
+
+async function editDishDetails(itemId, currentDesc, currentCategoryId) {
+  var overlay = document.getElementById('dishEditModalOverlay');
+  var descField = document.getElementById('dishEditDesc');
+  var catSelect = document.getElementById('dishEditCategory');
+  var saveBtn = document.getElementById('dishEditSave');
+  var cancelBtn = document.getElementById('dishEditCancel');
+  var closeBtn = document.getElementById('dishEditClose');
+  var errorEl = document.getElementById('dishEditError');
+
+  descField.value = currentDesc || '';
+  errorEl.style.display = 'none';
+
+  // Populate category dropdown
+  catSelect.innerHTML = '';
+  if (hotel && hotel.categories) {
+    hotel.categories.forEach(function(cat) {
+      var opt = document.createElement('option');
+      opt.value = cat.id;
+      opt.textContent = cat.name;
+      if (cat.id === currentCategoryId) opt.selected = true;
+      catSelect.appendChild(opt);
+    });
+  }
+
+  overlay.classList.add('show');
+  overlay.setAttribute('aria-hidden', 'false');
+  descField.focus();
+
+  // Clean listeners via cloneNode
+  var newSave = saveBtn.cloneNode(true);
+  var newCancel = cancelBtn.cloneNode(true);
+  var newClose = closeBtn.cloneNode(true);
+  saveBtn.parentNode.replaceChild(newSave, saveBtn);
+  cancelBtn.parentNode.replaceChild(newCancel, cancelBtn);
+  closeBtn.parentNode.replaceChild(newClose, closeBtn);
+
+  function closeModal() {
+    overlay.classList.remove('show');
+    overlay.setAttribute('aria-hidden', 'true');
+  }
+
+  newCancel.addEventListener('click', closeModal);
+  newClose.addEventListener('click', closeModal);
+  overlay.addEventListener('click', function(e) { if (e.target === overlay) closeModal(); });
+
+  newSave.addEventListener('click', async function() {
+    var newDesc = descField.value.trim();
+    var newCatId = catSelect.value;
+
+    if (newDesc.length > 500) {
+      errorEl.textContent = 'Description must be 500 characters or less';
+      errorEl.style.display = 'block';
+      return;
+    }
+
+    var updates = {};
+    var descChanged = newDesc !== (currentDesc || '');
+    var catChanged = newCatId !== currentCategoryId;
+
+    if (!descChanged && !catChanged) { closeModal(); return; }
+
+    if (descChanged) updates.description = newDesc;
+    if (catChanged) updates.categoryId = newCatId;
+
+    newSave.disabled = true;
+    newSave.textContent = 'Saving...';
+
+    try {
+      await apiFetch(`/items/${itemId}`, {
+        method: 'PATCH',
+        body: JSON.stringify(updates)
+      });
+
+      closeModal();
+
+      if (catChanged) {
+        showToast('Dish moved & updated!');
+        loadDashboard();
+      } else {
+        showToast('Description updated!');
+        if (hotel && hotel.categories) {
+          for (var cat of hotel.categories) {
+            var item = cat.items?.find(function(i) { return i.id === itemId; });
+            if (item) {
+              item.description = newDesc;
+              var itemDiv = document.getElementById('item-' + itemId);
+              if (itemDiv) {
+                var metaDiv = itemDiv.querySelector('.item-meta');
+                if (metaDiv) {
+                  var priceSpan = document.createElement('span');
+                  priceSpan.className = 'price';
+                  priceSpan.textContent = '₹' + item.price;
+                  metaDiv.innerHTML = '';
+                  metaDiv.appendChild(priceSpan);
+                  if (newDesc) {
+                    var descSpan = document.createElement('span');
+                    descSpan.style.cssText = 'color:#64748b;font-size:0.8125rem;';
+                    descSpan.textContent = ' • ' + newDesc;
+                    metaDiv.appendChild(descSpan);
+                  }
+                }
+              }
+              break;
+            }
+          }
+        }
+      }
+    } catch (e) {
+      showToast(e.message, 'error');
+    } finally {
+      newSave.disabled = false;
+      newSave.textContent = 'Save';
+    }
+  });
 }
 
 // Modal helpers
