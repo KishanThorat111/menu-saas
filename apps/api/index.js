@@ -1944,6 +1944,45 @@ function registerRoutes() {
       return category;
     });
 
+    app.patch('/categories/:id', async (request, reply) => {
+      const { id } = request.params;
+      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
+        return reply.code(400).send({ error: 'Invalid category ID format' });
+      }
+
+      const { name } = z.object({
+        name: z.string().min(1).max(100).trim()
+      }).parse(request.body);
+
+      const category = await prisma.category.findFirst({
+        where: { id, hotelId: request.hotelId }
+      });
+      if (!category) return reply.code(404).send({ error: 'Category not found' });
+
+      const duplicate = await prisma.category.findFirst({
+        where: { hotelId: request.hotelId, name: { equals: name, mode: 'insensitive' }, id: { not: id } }
+      });
+      if (duplicate) return reply.code(409).send({ error: 'Category with this name already exists' });
+
+      const updated = await prisma.category.update({ where: { id }, data: { name } });
+
+      await prisma.auditLog.create({
+        data: {
+          hotelId: request.hotelId,
+          actorType: 'owner',
+          action: 'category_renamed',
+          entityType: 'Category',
+          entityId: id,
+          oldValue: { name: category.name },
+          newValue: { name }
+        }
+      });
+
+      try { await purgeMenuCacheForHotel(request.hotelId); } catch (e) { fastify.log.warn('purge error', e.message || e); }
+
+      return updated;
+    });
+
     app.post('/items', async (request, reply) => {
       let imageUrl = null;
       try {
@@ -2220,7 +2259,8 @@ function registerRoutes() {
         isVeg: z.boolean().optional(),
         isAvailable: z.boolean().optional(),
         isPopular: z.boolean().optional(),
-        sortOrder: z.number().optional()
+        sortOrder: z.number().optional(),
+        categoryId: z.string().uuid().optional()
       });
 
       const data = schema.parse(request.body);
@@ -2229,6 +2269,13 @@ function registerRoutes() {
       });
 
       if (!item) return reply.code(404).send({ error: 'Item not found' });
+
+      if (data.categoryId && data.categoryId !== item.categoryId) {
+        const targetCat = await prisma.category.findFirst({
+          where: { id: data.categoryId, hotelId: request.hotelId }
+        });
+        if (!targetCat) return reply.code(400).send({ error: 'Target category not found' });
+      }
 
       const updated = await prisma.item.update({ where: { id }, data });
 
