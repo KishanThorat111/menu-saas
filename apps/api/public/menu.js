@@ -361,41 +361,62 @@
     checkFade();
   }
 
-  // ── Wire images: lazy load with fade-in transition ─────────────────────
+  // ── Wire images: IntersectionObserver lazy loading ─────────────────────
+  // Only loads images as they approach the viewport (200px buffer).
+  // Prevents 60+ concurrent downloads that overwhelm the connection.
   function wireImages() {
-    content.querySelectorAll('.img-slot').forEach(function (slot) {
-      var src = slot.getAttribute('data-src');
-      if (!src) return;
+    var slots = content.querySelectorAll('.img-slot');
+    if (!slots.length) return;
 
-      var img = document.createElement('img');
-      img.className = 'item-img';
-      img.alt = 'Dish photo';
-      img.loading = 'lazy';
-      img.decoding = 'async';
-      img.style.opacity = '0';
-      img.style.transition = 'opacity 0.25s';
-      img.src = src;
+    var imgObserver = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (!entry.isIntersecting) return;
 
-      img.addEventListener('load', function () {
-        this.style.opacity = '1';
+        var slot = entry.target;
+        imgObserver.unobserve(slot);
+
+        var src = slot.getAttribute('data-src');
+        if (!src) return;
+
+        var img = document.createElement('img');
+        img.className = 'item-img';
+        img.alt = 'Dish photo';
+        img.decoding = 'async';
+        img.style.opacity = '0';
+        img.style.transition = 'opacity 0.25s';
+
+        img.addEventListener('load', function () {
+          this.style.opacity = '1';
+        });
+
+        img.addEventListener('error', function () {
+          // Retry once with cache-bust before giving up
+          if (!this.getAttribute('data-retried')) {
+            this.setAttribute('data-retried', '1');
+            this.src = src + (src.indexOf('?') === -1 ? '?' : '&') + '_r=1';
+            return;
+          }
+          this.style.display = 'none';
+          var ph = document.createElement('div');
+          ph.className = 'item-placeholder';
+          ph.setAttribute('aria-hidden', 'true');
+          ph.textContent = '🍽️';
+          if (this.parentNode) this.parentNode.insertBefore(ph, this);
+        });
+
+        img.addEventListener('click', function () {
+          openModal(this.src);
+        });
+
+        img.src = src;
+        slot.replaceWith(img);
       });
-
-      img.addEventListener('error', function () {
-        // Revert to placeholder on error — don't show broken image
-        this.style.display = 'none';
-        var ph = document.createElement('div');
-        ph.className = 'item-placeholder';
-        ph.setAttribute('aria-hidden', 'true');
-        ph.textContent = '🍽️';
-        if (this.parentNode) this.parentNode.insertBefore(ph, this);
-      });
-
-      img.addEventListener('click', function () {
-        openModal(this.src);
-      });
-
-      slot.replaceWith(img);
+    }, {
+      rootMargin: '200px 0px',
+      threshold: 0
     });
+
+    slots.forEach(function (slot) { imgObserver.observe(slot); });
   }
 
   // ── Wire category nav: click → smooth scroll + observer ────────────────
