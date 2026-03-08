@@ -519,12 +519,18 @@ async function compressImage(file, maxWidth, quality) {
 
 async function uploadImage(itemId, input) {
   if (!input.files[0]) return;
+  const file = input.files[0];
+  if (file.size > 5 * 1024 * 1024) {
+    showToast('Image must be less than 5MB', 'error');
+    input.value = '';
+    return;
+  }
   const label = document.getElementById(`label-${itemId}`);
   const originalText = label.textContent;
   label.textContent = 'Compressing...';
   
   try {
-    const compressed = await compressImage(input.files[0], 800, 0.85);
+    const compressed = await compressImage(file, 800, 0.85);
     const fd = new FormData();
     fd.append('image', compressed);
     label.textContent = 'Uploading...';
