@@ -362,17 +362,35 @@
   }
 
   // ── Wire images: IntersectionObserver lazy loading ─────────────────────
-  // Staggered loading prevents overwhelming a cold CDN connection.
-  // Retries with delay give the connection time to establish.
+  // ── Wire images: IntersectionObserver + concurrency-limited queue ─────
+  // Max 4 concurrent downloads prevents overwhelming R2 CDN.
+  // Retries free the queue slot immediately so they don't block other images.
   function wireImages() {
     var slots = content.querySelectorAll('.img-slot');
     if (!slots.length) return;
 
+    var queue = [];
+    var active = 0;
+    var MAX_CONCURRENT = 4;
+
+    function processQueue() {
+      while (active < MAX_CONCURRENT && queue.length > 0) {
+        active++;
+        loadImage(queue.shift());
+      }
+    }
+
+    function onDone() {
+      active--;
+      processQueue();
+    }
+
     function loadImage(slot) {
       var src = slot.getAttribute('data-src');
-      if (!src) return;
+      if (!src) { onDone(); return; }
 
       var img = document.createElement('img');
+      var settled = false;
       img.className = 'item-img';
       img.alt = 'Dish photo';
       img.decoding = 'async';
@@ -381,10 +399,14 @@
 
       img.addEventListener('load', function () {
         this.style.opacity = '1';
+        if (!settled) { settled = true; onDone(); }
       });
 
       img.addEventListener('error', function () {
         var self = this;
+        // Free queue slot on first failure so other images aren't blocked
+        if (!settled) { settled = true; onDone(); }
+
         var retries = parseInt(self.getAttribute('data-retries') || '0', 10);
         if (retries < 2) {
           self.setAttribute('data-retries', String(retries + 1));
@@ -410,21 +432,12 @@
     }
 
     var imgObserver = new IntersectionObserver(function (entries) {
-      var pending = [];
       entries.forEach(function (entry) {
         if (!entry.isIntersecting) return;
         imgObserver.unobserve(entry.target);
-        pending.push(entry.target);
+        queue.push(entry.target);
       });
-      // Stagger requests so first image warms the HTTP/2 connection
-      // before subsequent images fire (100ms apart)
-      pending.forEach(function (slot, i) {
-        if (i === 0) {
-          loadImage(slot);
-        } else {
-          setTimeout(function () { loadImage(slot); }, i * 100);
-        }
-      });
+      processQueue();
     }, {
       rootMargin: '200px 0px',
       threshold: 0
@@ -445,6 +458,17 @@
       return nav ? nav.offsetHeight : 56;
     }
 
+    // Scroll the nav track to center the active pill (horizontal only)
+    function centerPill(pill) {
+      var track = document.getElementById('catNavTrack');
+      if (!track) return;
+      var trackRect = track.getBoundingClientRect();
+      var pillRect = pill.getBoundingClientRect();
+      var offset = pillRect.left - trackRect.left + track.scrollLeft
+                   - (track.clientWidth - pill.offsetWidth) / 2;
+      track.scrollTo({ left: Math.max(0, offset), behavior: 'smooth' });
+    }
+
     content.querySelectorAll('.cat-pill').forEach(function (pill) {
       var catId = pill.getAttribute('data-cat');
       catPills[catId] = pill;
@@ -454,22 +478,24 @@
         var target = document.getElementById('cat-' + catId);
         if (!target) return;
 
-        // Calculate exact scroll position accounting for sticky nav + 8px breathing room
+        // Calculate exact scroll position accounting for sticky nav
         var navH = getNavHeight() + 8;
-        var targetTop = target.getBoundingClientRect().top + window.pageYOffset - navH;
+        var targetTop = Math.max(0, target.getBoundingClientRect().top + window.pageYOffset - navH);
 
-        // Skip if already within 2px of the correct position (avoids jiggle on re-click)
+        // Skip if already within 2px of the correct position
         if (Math.abs(window.pageYOffset - targetTop) < 2) return;
 
         isNavClick = true;
         setActivePill('cat-' + catId);
         window.scrollTo({ top: targetTop, behavior: 'smooth' });
 
-        // Keep pill visible in nav track
-        pill.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+        // Scroll nav track horizontally (won't interfere with page scroll)
+        centerPill(pill);
 
-        // Release observer lock after scroll animation settles
-        setTimeout(function () { isNavClick = false; }, 850);
+        // Release observer lock — scale timeout with scroll distance
+        var distance = Math.abs(window.pageYOffset - targetTop);
+        var timeout = Math.min(1500, Math.max(600, distance / 2));
+        setTimeout(function () { isNavClick = false; }, timeout);
       });
     });
 
