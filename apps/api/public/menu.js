@@ -440,6 +440,11 @@
     catPills = {};
     catSections = {};
 
+    function getNavHeight() {
+      var nav = document.getElementById('catNav');
+      return nav ? nav.offsetHeight : 56;
+    }
+
     content.querySelectorAll('.cat-pill').forEach(function (pill) {
       var catId = pill.getAttribute('data-cat');
       catPills[catId] = pill;
@@ -449,9 +454,16 @@
         var target = document.getElementById('cat-' + catId);
         if (!target) return;
 
+        // Calculate exact scroll position accounting for sticky nav + 8px breathing room
+        var navH = getNavHeight() + 8;
+        var targetTop = target.getBoundingClientRect().top + window.pageYOffset - navH;
+
+        // Skip if already within 2px of the correct position (avoids jiggle on re-click)
+        if (Math.abs(window.pageYOffset - targetTop) < 2) return;
+
         isNavClick = true;
         setActivePill('cat-' + catId);
-        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        window.scrollTo({ top: targetTop, behavior: 'smooth' });
 
         // Keep pill visible in nav track
         pill.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
