@@ -74,6 +74,7 @@ const { S3Client, PutObjectCommand, DeleteObjectCommand } = require('@aws-sdk/cl
 const nodemailer = require('nodemailer');
 const Razorpay = require('razorpay');
 const QRCode = require('qrcode');
+const sharp = require('sharp');
 
 //==================== CONFIGURATION ====================
 const BUCKET_NAME = process.env.R2_BUCKET_NAME;
@@ -310,6 +311,18 @@ function buildOtpEmailText(hotelName, otp, expiryMinutes) {
 
 //==================== HELPERS ====================
 async function uploadToR2(buffer, mimetype, hotelId) {
+  // Compress and convert to WebP for optimal delivery
+  try {
+    buffer = await sharp(buffer)
+      .resize(800, 800, { fit: 'inside', withoutEnlargement: true })
+      .webp({ quality: 80 })
+      .toBuffer();
+    mimetype = 'image/webp';
+  } catch (e) {
+    // If sharp fails (corrupt image edge case), upload original
+    fastify.log.warn('sharp compression failed, uploading original:', e.message);
+  }
+
   const ext = mimetype === 'image/png' ? '.png' :
     mimetype === 'image/webp' ? '.webp' : '.jpg';
   const key = `hotels/${hotelId}/${Date.now()}-${crypto.randomBytes(8).toString('hex')}${ext}`;
