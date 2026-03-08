@@ -362,54 +362,68 @@
   }
 
   // ── Wire images: IntersectionObserver lazy loading ─────────────────────
-  // Only loads images as they approach the viewport (200px buffer).
-  // Prevents 60+ concurrent downloads that overwhelm the connection.
+  // Staggered loading prevents overwhelming a cold CDN connection.
+  // Retries with delay give the connection time to establish.
   function wireImages() {
     var slots = content.querySelectorAll('.img-slot');
     if (!slots.length) return;
 
+    function loadImage(slot) {
+      var src = slot.getAttribute('data-src');
+      if (!src) return;
+
+      var img = document.createElement('img');
+      img.className = 'item-img';
+      img.alt = 'Dish photo';
+      img.decoding = 'async';
+      img.style.opacity = '0';
+      img.style.transition = 'opacity 0.25s';
+
+      img.addEventListener('load', function () {
+        this.style.opacity = '1';
+      });
+
+      img.addEventListener('error', function () {
+        var self = this;
+        var retries = parseInt(self.getAttribute('data-retries') || '0', 10);
+        if (retries < 2) {
+          self.setAttribute('data-retries', String(retries + 1));
+          setTimeout(function () {
+            self.src = src + (src.indexOf('?') === -1 ? '?' : '&') + '_r=' + (retries + 1);
+          }, 1500);
+          return;
+        }
+        self.style.display = 'none';
+        var ph = document.createElement('div');
+        ph.className = 'item-placeholder';
+        ph.setAttribute('aria-hidden', 'true');
+        ph.textContent = '🍽️';
+        if (self.parentNode) self.parentNode.insertBefore(ph, self);
+      });
+
+      img.addEventListener('click', function () {
+        openModal(this.src);
+      });
+
+      img.src = src;
+      slot.replaceWith(img);
+    }
+
     var imgObserver = new IntersectionObserver(function (entries) {
+      var pending = [];
       entries.forEach(function (entry) {
         if (!entry.isIntersecting) return;
-
-        var slot = entry.target;
-        imgObserver.unobserve(slot);
-
-        var src = slot.getAttribute('data-src');
-        if (!src) return;
-
-        var img = document.createElement('img');
-        img.className = 'item-img';
-        img.alt = 'Dish photo';
-        img.decoding = 'async';
-        img.style.opacity = '0';
-        img.style.transition = 'opacity 0.25s';
-
-        img.addEventListener('load', function () {
-          this.style.opacity = '1';
-        });
-
-        img.addEventListener('error', function () {
-          // Retry once with cache-bust before giving up
-          if (!this.getAttribute('data-retried')) {
-            this.setAttribute('data-retried', '1');
-            this.src = src + (src.indexOf('?') === -1 ? '?' : '&') + '_r=1';
-            return;
-          }
-          this.style.display = 'none';
-          var ph = document.createElement('div');
-          ph.className = 'item-placeholder';
-          ph.setAttribute('aria-hidden', 'true');
-          ph.textContent = '🍽️';
-          if (this.parentNode) this.parentNode.insertBefore(ph, this);
-        });
-
-        img.addEventListener('click', function () {
-          openModal(this.src);
-        });
-
-        img.src = src;
-        slot.replaceWith(img);
+        imgObserver.unobserve(entry.target);
+        pending.push(entry.target);
+      });
+      // Stagger requests so first image warms the HTTP/2 connection
+      // before subsequent images fire (100ms apart)
+      pending.forEach(function (slot, i) {
+        if (i === 0) {
+          loadImage(slot);
+        } else {
+          setTimeout(function () { loadImage(slot); }, i * 100);
+        }
       });
     }, {
       rootMargin: '200px 0px',
