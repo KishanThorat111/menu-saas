@@ -1,3 +1,7 @@
+www.kodspot.com {
+    redir https://kodspot.com{uri} permanent
+}
+
 kodspot.com {
     reverse_proxy api:3000 {
         header_up Host {host}
