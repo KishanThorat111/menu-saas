@@ -1371,9 +1371,32 @@
       animation: csDropSlide 0.15s var(--ease-out);
     }
 
+    /* Dropup: opens above the trigger when not enough space below */
+    .custom-select-dropdown.dropup {
+      top: auto;
+      bottom: 100%;
+      border-radius: var(--radius-md) var(--radius-md) 0 0;
+      border-top: 1.5px solid var(--saffron-400);
+      border-bottom: 1px solid var(--border-light);
+      box-shadow: 0 -12px 32px rgba(0,0,0,0.12), 0 -4px 8px rgba(0,0,0,0.06);
+      animation: csDropSlideUp 0.15s var(--ease-out);
+    }
+
     @keyframes csDropSlide {
       from { opacity: 0; transform: translateY(-6px); }
       to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes csDropSlideUp {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* When trigger opens upward, flip the corner rounding */
+    .custom-select-trigger.dropup.open {
+      border-bottom-left-radius: var(--radius-md);
+      border-bottom-right-radius: var(--radius-md);
+      border-top-left-radius: 0;
+      border-top-right-radius: 0;
     }
 
     .custom-select-dropdown.open { display: block; }
