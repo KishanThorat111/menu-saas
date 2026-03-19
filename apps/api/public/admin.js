@@ -1278,8 +1278,8 @@ if (logoutBtn) logoutBtn.addEventListener('click', logout);
     }
 
     function closeDD() {
-      trigger.classList.remove('open', 'dropup');
-      dropdown.classList.remove('open', 'dropup');
+      trigger.classList.remove('open');
+      dropdown.classList.remove('open');
       // Restore overflow on modal ancestors
       var m = wrap.closest('.modal');
       if (m) m.style.overflow = '';
@@ -1291,34 +1291,27 @@ if (logoutBtn) logoutBtn.addEventListener('click', logout);
       e.stopPropagation();
       document.querySelectorAll('.custom-select-trigger.open').forEach(function(t) {
         if (t !== trigger) {
-          t.classList.remove('open', 'dropup');
-          t.nextElementSibling.classList.remove('open', 'dropup');
+          t.classList.remove('open');
+          t.nextElementSibling.classList.remove('open');
         }
       });
       if (trigger.classList.contains('open')) { closeDD(); }
       else {
         buildOpts();
-
-        // Decide direction: check if dropdown fits below trigger
-        var rect = trigger.getBoundingClientRect();
-        var spaceBelow = window.innerHeight - rect.bottom;
-        var needsDropup = spaceBelow < 200; // dropdown max-height is 260; 200 is a safe threshold
-
-        dropdown.classList.remove('dropup');
-        trigger.classList.remove('dropup');
-        if (needsDropup) {
-          dropdown.classList.add('dropup');
-          trigger.classList.add('dropup');
-        }
-
         trigger.classList.add('open');
         dropdown.classList.add('open');
-
         // Allow overflow on modal ancestors so dropdown isn't clipped
         var m = wrap.closest('.modal');
         if (m) m.style.overflow = 'visible';
         var mb = wrap.closest('.modal-body');
         if (mb) mb.style.overflow = 'visible';
+        // Scroll dropdown into view if inside a modal
+        setTimeout(function() {
+          var ddRect = dropdown.getBoundingClientRect();
+          if (ddRect.bottom > window.innerHeight) {
+            dropdown.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+          }
+        }, 20);
       }
     });
 
