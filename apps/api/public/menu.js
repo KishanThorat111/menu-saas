@@ -286,6 +286,14 @@
 
   // ── Description expand/collapse ─────────────────────────────────────────
   function wireDescToggles() {
+    // Mark names that are actually truncated so they get pointer cursor
+    var names = content.querySelectorAll('.item-name');
+    names.forEach(function (name) {
+      if (name.scrollHeight > name.clientHeight + 1) {
+        name.classList.add('truncated');
+      }
+    });
+
     // Mark descriptions that are actually truncated so they get pointer cursor
     var descs = content.querySelectorAll('.item-desc');
     descs.forEach(function (desc) {
@@ -294,12 +302,12 @@
       }
     });
 
-    // Tap description text to expand/collapse
+    // Tap name or description text to expand/collapse
     content.addEventListener('click', function (e) {
-      var desc = e.target.closest('.item-desc');
-      if (!desc) return;
-      if (!desc.classList.contains('truncated') && !desc.classList.contains('expanded')) return;
-      desc.classList.toggle('expanded');
+      var el = e.target.closest('.item-name') || e.target.closest('.item-desc');
+      if (!el) return;
+      if (!el.classList.contains('truncated') && !el.classList.contains('expanded')) return;
+      el.classList.toggle('expanded');
     });
   }
 

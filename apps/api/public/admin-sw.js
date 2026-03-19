@@ -43,7 +43,11 @@ self.addEventListener('fetch', function (e) {
   if (req.url.indexOf('/api/') !== -1) return;
 
   // Skip cross-origin requests (fonts, analytics, razorpay, etc.)
-  if (new URL(req.url).origin !== self.location.origin) return;
+  var url = new URL(req.url);
+  if (url.origin !== self.location.origin) return;
+
+  // Only handle admin app resources — don't interfere with menu or other pages
+  if (url.pathname.indexOf('/admin') !== 0) return;
 
   e.respondWith(
     fetch(req).then(function (response) {
