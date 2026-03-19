@@ -20,6 +20,9 @@ kodspot.com {
     header /admin.html Cache-Control "no-cache, no-store, must-revalidate"
     header /superadmin.js Cache-Control "no-cache, no-store, must-revalidate"
     header /admin.js Cache-Control "no-cache, no-store, must-revalidate"
+    header /admin-sw.js Cache-Control "no-cache, no-store, must-revalidate"
+    header /admin.webmanifest Cache-Control "no-cache, must-revalidate"
+    header /superadmin.webmanifest Cache-Control "no-cache, must-revalidate"
     header /menu.html Cache-Control "no-cache, must-revalidate"
     header /menu.js Cache-Control "no-cache, must-revalidate"
     header /m/* Cache-Control "no-cache, must-revalidate"
@@ -28,7 +31,7 @@ kodspot.com {
 
     # Security headers - STRICT for production
     header {
-        Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' https://checkout.razorpay.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' blob: data: https: *.r2.dev; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://lumberjack-cx.razorpay.com https://api.razorpay.com; frame-src https://api.razorpay.com https://checkout.razorpay.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests;"
+        Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' https://checkout.razorpay.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' blob: data: https: *.r2.dev; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://lumberjack-cx.razorpay.com https://api.razorpay.com; frame-src https://api.razorpay.com https://checkout.razorpay.com; worker-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests;"
         
         X-Content-Type-Options "nosniff"
         X-Frame-Options "DENY"

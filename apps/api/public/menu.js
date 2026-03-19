@@ -281,6 +281,37 @@
     wireFilter();
     wireCollapse();
     wireClearFilters();
+    wireDescToggles();
+  }
+
+  // ── Description expand/collapse ─────────────────────────────────────────
+  function wireDescToggles() {
+    var descs = content.querySelectorAll('.item-desc');
+    descs.forEach(function (desc) {
+      if (desc.scrollHeight > desc.clientHeight + 1) {
+        var toggle = desc.parentElement.querySelector('.desc-toggle');
+        if (toggle) toggle.classList.add('visible');
+      }
+    });
+
+    content.addEventListener('click', function (e) {
+      var toggle = e.target.closest('.desc-toggle');
+      if (!toggle) return;
+      var body = toggle.closest('.item-body');
+      if (!body) return;
+      var desc = body.querySelector('.item-desc');
+      if (!desc) return;
+      var expanded = desc.classList.toggle('expanded');
+      toggle.textContent = expanded ? 'less' : 'more';
+      toggle.setAttribute('aria-label', expanded ? 'Show less' : 'Show full description');
+    });
+
+    content.addEventListener('keydown', function (e) {
+      if ((e.key === 'Enter' || e.key === ' ') && e.target.classList.contains('desc-toggle')) {
+        e.preventDefault();
+        e.target.click();
+      }
+    });
   }
 
   // ── Build Toolbar HTML (search + filter) ───────────────────────────────
@@ -365,6 +396,7 @@
 
     if (item.description) {
       h += '<div class="item-desc">' + esc(item.description) + '</div>';
+      h += '<span class="desc-toggle" role="button" tabindex="0" aria-label="Show full description">more</span>';
     }
 
     h += '<div class="item-price-row">';

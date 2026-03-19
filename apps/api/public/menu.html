@@ -10,6 +10,10 @@
   <meta name="color-scheme" content="light dark">
   <meta name="description" content="Digital menu — browse dishes, prices, and more.">
   <title>Menu</title>
+  <link rel="icon" href="/favicon.ico" sizes="any">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
   <link rel="dns-prefetch" href="https://pub-ee32ad45508049beb4f451f5b6f33d47.r2.dev">
   <link rel="preconnect" href="https://pub-ee32ad45508049beb4f451f5b6f33d47.r2.dev">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -936,6 +940,25 @@
       overflow: hidden;
     }
 
+    .item-desc.expanded {
+      -webkit-line-clamp: unset;
+      display: block;
+    }
+
+    .desc-toggle {
+      display: none;
+      font-size: 0.625rem;
+      color: var(--accent);
+      cursor: pointer;
+      font-weight: 600;
+      letter-spacing: 0.01em;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+      padding: 2px 0;
+    }
+
+    .desc-toggle.visible { display: inline; }
+
     .item-price-row {
       display: flex;
       align-items: center;
@@ -1262,6 +1285,7 @@
     @media (min-width: 400px) {
       .item-name { font-size: 0.875rem; }
       .item-desc { font-size: 0.75rem; }
+      .desc-toggle { font-size: 0.6875rem; }
       .item-price { font-size: 0.9375rem; }
     }
     @media (min-width: 640px) {
@@ -1272,6 +1296,7 @@
       .item-body { padding: var(--s-3) var(--s-4); }
       .item-name { font-size: 0.9375rem; }
       .item-desc { font-size: 0.8125rem; }
+      .desc-toggle { font-size: 0.75rem; }
       .item-price { font-size: 1rem; }
     }
     @media (min-width: 768px) {
@@ -1287,6 +1312,7 @@
       .cat-title { font-size: 1.5rem; }
       .item-name { font-size: 1.0625rem; }
       .item-desc { font-size: 0.875rem; -webkit-line-clamp: 2; }
+      .desc-toggle { font-size: 0.8125rem; }
       .item-price { font-size: 1.125rem; }
       .cat-count { font-size: 0.6875rem; }
       .search-box input { height: 46px; font-size: 0.9375rem; }

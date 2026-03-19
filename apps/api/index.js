@@ -310,8 +310,22 @@ function buildOtpEmailText(hotelName, otp, expiryMinutes) {
 }
 
 //==================== HELPERS ====================
+// Semaphore to limit concurrent sharp() image processing (prevents OOM)
+let _sharpActive = 0;
+const _sharpQueue = [];
+const SHARP_MAX_CONCURRENT = 2;
+function acquireSharp() {
+  if (_sharpActive < SHARP_MAX_CONCURRENT) { _sharpActive++; return Promise.resolve(); }
+  return new Promise(resolve => _sharpQueue.push(resolve));
+}
+function releaseSharp() {
+  if (_sharpQueue.length > 0) { _sharpQueue.shift()(); }
+  else { _sharpActive--; }
+}
+
 async function uploadToR2(buffer, mimetype, hotelId) {
   // Compress and convert to WebP for optimal delivery
+  await acquireSharp();
   try {
     buffer = await sharp(buffer)
       .resize(800, 800, { fit: 'inside', withoutEnlargement: true })
@@ -321,6 +335,8 @@ async function uploadToR2(buffer, mimetype, hotelId) {
   } catch (e) {
     // If sharp fails (corrupt image edge case), upload original
     fastify.log.warn('sharp compression failed, uploading original:', e.message);
+  } finally {
+    releaseSharp();
   }
 
   const ext = mimetype === 'image/png' ? '.png' :
@@ -339,7 +355,7 @@ async function uploadToR2(buffer, mimetype, hotelId) {
 
 //==================== MENU CACHE (in-memory with TTL) ====================
 const menuCache = new Map(); // slug → { data, hotelId, expiresAt }
-const MENU_CACHE_TTL = 60 * 1000; // 60 seconds
+const MENU_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
 function getCachedMenu(slug) {
   const entry = menuCache.get(slug);
