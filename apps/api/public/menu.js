@@ -240,9 +240,12 @@
       // Collapsible items wrapper
       html += '<div class="cat-items-wrap" data-cat-wrap="' + cat.id + '">';
 
-      // Items GRID
+      // Items GRID — popular items shown first within each category
       html += '<div class="items-grid">';
-      cat.items.forEach(function (item, ii) {
+      var sortedItems = cat.items.slice().sort(function (a, b) {
+        return (b.isPopular ? 1 : 0) - (a.isPopular ? 1 : 0);
+      });
+      sortedItems.forEach(function (item, ii) {
         html += buildItemCardHTML(item, ii, ci, useAnim);
       });
       html += '</div>'; // .items-grid

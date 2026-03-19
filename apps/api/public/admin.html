@@ -1976,10 +1976,41 @@
     .modal-header { display:flex; align-items:center; justify-content:space-between; gap:0.5rem; margin-bottom:0.75rem }
     .modal-title { font-family:var(--font-display); font-size:1.125rem; font-weight:700; color:var(--slate-900) }
     .modal-body { margin-bottom:0.75rem }
-    .modal-body input[type="number"], .modal-body textarea {
+    .modal-body input[type="number"],
+    .modal-body input[type="text"],
+    .modal-body textarea,
+    .modal-body select {
       width:100%; padding:0.75rem 1rem; border-radius:var(--radius-md); border:1.5px solid var(--border-light); font-size:0.95rem; font-family:var(--font-body);
+      background: var(--bg-card); color: var(--text-primary);
+      transition: border-color var(--duration-fast) var(--ease-in-out), box-shadow var(--duration-fast) var(--ease-in-out);
+    }
+    .modal-body input[type="number"]:focus,
+    .modal-body input[type="text"]:focus,
+    .modal-body textarea:focus,
+    .modal-body select:focus {
+      outline: none;
+      border-color: var(--saffron-500);
+      box-shadow: 0 0 0 3px rgba(198,139,82,0.15);
     }
     .modal-body textarea { min-height:120px; resize:vertical }
+    .modal-body select {
+      appearance: none;
+      -webkit-appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 0.75rem center;
+      padding-right: 2.5rem;
+      cursor: pointer;
+    }
+    .modal-field { margin-bottom: 1rem }
+    .modal-field:last-child { margin-bottom: 0 }
+    .modal-field-label {
+      display: block;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      color: var(--slate-600);
+      margin-bottom: 0.375rem;
+    }
     .modal-footer { display:flex; gap:0.5rem; justify-content:flex-end }
     .modal .btn { min-width:110px }
 
@@ -3310,13 +3341,13 @@
       </div>
       <div class="modal-body">
         <div id="dishEditError" class="error-message" style="display:none;margin-bottom:0.75rem;"></div>
-        <div style="margin-bottom:1rem;">
-          <label style="display:block;font-size:0.8125rem;font-weight:600;color:var(--slate-600);margin-bottom:0.375rem;">Description</label>
-          <textarea id="dishEditDesc" rows="3" maxlength="500" placeholder="Enter description (optional)" style="width:100%;padding:0.625rem 0.875rem;border:1.5px solid var(--border-color);border-radius:var(--radius-md);background:var(--card-bg);color:var(--text-primary);font-size:0.875rem;font-family:inherit;resize:vertical;"></textarea>
+        <div class="modal-field">
+          <label class="modal-field-label">Description</label>
+          <textarea id="dishEditDesc" rows="3" maxlength="500" placeholder="Enter description (optional)"></textarea>
         </div>
-        <div>
-          <label style="display:block;font-size:0.8125rem;font-weight:600;color:var(--slate-600);margin-bottom:0.375rem;">Category</label>
-          <select id="dishEditCategory" style="width:100%;padding:0.625rem 0.875rem;border:1.5px solid var(--border-color);border-radius:var(--radius-md);background:var(--card-bg);color:var(--text-primary);font-size:0.875rem;font-family:inherit;"></select>
+        <div class="modal-field">
+          <label class="modal-field-label">Category</label>
+          <select id="dishEditCategory"></select>
         </div>
       </div>
       <div class="modal-footer">
