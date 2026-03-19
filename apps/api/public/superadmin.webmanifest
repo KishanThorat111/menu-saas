@@ -1,0 +1,15 @@
+{
+  "name": "KodSpot Super Admin",
+  "short_name": "KodSpot SA",
+  "description": "KodSpot platform administration dashboard.",
+  "start_url": "/superadmin.html",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "theme_color": "#c68b52",
+  "background_color": "#fdf8f3",
+  "icons": [
+    { "src": "/android-chrome-192x192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/android-chrome-512x512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}
