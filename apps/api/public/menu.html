@@ -923,7 +923,7 @@
       line-height: 1.35;
       color: var(--c1);
       display: -webkit-box;
-      -webkit-line-clamp: 2;
+      -webkit-line-clamp: 1;
       -webkit-box-orient: vertical;
       overflow: hidden;
       flex: 1;
@@ -940,24 +940,15 @@
       overflow: hidden;
     }
 
+    .item-desc.truncated {
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+
     .item-desc.expanded {
       -webkit-line-clamp: unset;
       display: block;
     }
-
-    .desc-toggle {
-      display: none;
-      font-size: 0.625rem;
-      color: var(--accent);
-      cursor: pointer;
-      font-weight: 600;
-      letter-spacing: 0.01em;
-      -webkit-tap-highlight-color: transparent;
-      user-select: none;
-      padding: 2px 0;
-    }
-
-    .desc-toggle.visible { display: inline; }
 
     .item-price-row {
       display: flex;
@@ -1285,7 +1276,6 @@
     @media (min-width: 400px) {
       .item-name { font-size: 0.875rem; }
       .item-desc { font-size: 0.75rem; }
-      .desc-toggle { font-size: 0.6875rem; }
       .item-price { font-size: 0.9375rem; }
     }
     @media (min-width: 640px) {
@@ -1294,9 +1284,8 @@
       .cat-section { margin-top: var(--s-5); }
       .cat-section:first-of-type { margin-top: var(--s-3); }
       .item-body { padding: var(--s-3) var(--s-4); }
-      .item-name { font-size: 0.9375rem; }
-      .item-desc { font-size: 0.8125rem; }
-      .desc-toggle { font-size: 0.75rem; }
+      .item-name { font-size: 0.9375rem; -webkit-line-clamp: 2; }
+      .item-desc { font-size: 0.8125rem; -webkit-line-clamp: 2; }
       .item-price { font-size: 1rem; }
     }
     @media (min-width: 768px) {
@@ -1304,15 +1293,14 @@
       .cat-bar { height: 26px; }
       .cat-section { margin-top: var(--s-6); }
       .cat-section:first-of-type { margin-top: var(--s-4); }
-      .item-name { font-size: 1rem; }
+      .item-name { font-size: 1rem; -webkit-line-clamp: 2; }
       .item-price { font-size: 1.0625rem; }
       .pop-ribbon { font-size: 0.625rem; padding: 3px 10px; }
     }
     @media (min-width: 1024px) {
       .cat-title { font-size: 1.5rem; }
       .item-name { font-size: 1.0625rem; }
-      .item-desc { font-size: 0.875rem; -webkit-line-clamp: 2; }
-      .desc-toggle { font-size: 0.8125rem; }
+      .item-desc { font-size: 0.875rem; }
       .item-price { font-size: 1.125rem; }
       .cat-count { font-size: 0.6875rem; }
       .search-box input { height: 46px; font-size: 0.9375rem; }
