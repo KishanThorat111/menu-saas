@@ -1278,9 +1278,13 @@ if (logoutBtn) logoutBtn.addEventListener('click', logout);
     }
 
     function closeDD() {
-      // close dropdown
       trigger.classList.remove('open');
       dropdown.classList.remove('open');
+      // Restore overflow on modal ancestors
+      var m = wrap.closest('.modal');
+      if (m) m.style.overflow = '';
+      var mb = wrap.closest('.modal-body');
+      if (mb) mb.style.overflow = '';
     }
 
     trigger.addEventListener('click', function(e) {
@@ -1292,7 +1296,16 @@ if (logoutBtn) logoutBtn.addEventListener('click', logout);
         }
       });
       if (trigger.classList.contains('open')) { closeDD(); }
-      else { buildOpts(); trigger.classList.add('open'); dropdown.classList.add('open'); }
+      else {
+        buildOpts();
+        trigger.classList.add('open');
+        dropdown.classList.add('open');
+        // Allow overflow on modal ancestors so dropdown isn't clipped
+        var m = wrap.closest('.modal');
+        if (m) m.style.overflow = 'visible';
+        var mb = wrap.closest('.modal-body');
+        if (mb) mb.style.overflow = 'visible';
+      }
     });
 
     document.addEventListener('click', closeDD);
@@ -1310,6 +1323,7 @@ if (logoutBtn) logoutBtn.addEventListener('click', logout);
 
   initCustomSelect(document.getElementById('catSelect'));
   initCustomSelect(document.getElementById('themeSelect'));
+  initCustomSelect(document.getElementById('dishEditCategory'));
 })();
 
 // ==================== BILLING / PAYMENT FUNCTIONS ====================
