@@ -5,7 +5,7 @@
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://checkout.razorpay.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' blob: data: https://pub-ee32ad45508049beb4f451f5b6f33d47.r2.dev; connect-src 'self' https://lumberjack-cx.razorpay.com https://api.razorpay.com; font-src 'self' https://fonts.gstatic.com; frame-src https://api.razorpay.com https://checkout.razorpay.com; worker-src 'self';">
   <meta http-equiv="X-XSS-Protection" content="1; mode=block">
   <meta name="referrer" content="no-referrer">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, interactive-widget=resizes-content">
   <meta name="theme-color" content="#c68b52">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -1371,32 +1371,9 @@
       animation: csDropSlide 0.15s var(--ease-out);
     }
 
-    /* Dropup: opens above the trigger when not enough space below */
-    .custom-select-dropdown.dropup {
-      top: auto;
-      bottom: 100%;
-      border-radius: var(--radius-md) var(--radius-md) 0 0;
-      border-top: 1.5px solid var(--saffron-400);
-      border-bottom: 1px solid var(--border-light);
-      box-shadow: 0 -12px 32px rgba(0,0,0,0.12), 0 -4px 8px rgba(0,0,0,0.06);
-      animation: csDropSlideUp 0.15s var(--ease-out);
-    }
-
     @keyframes csDropSlide {
       from { opacity: 0; transform: translateY(-6px); }
       to { opacity: 1; transform: translateY(0); }
-    }
-    @keyframes csDropSlideUp {
-      from { opacity: 0; transform: translateY(6px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    /* When trigger opens upward, flip the corner rounding */
-    .custom-select-trigger.dropup.open {
-      border-bottom-left-radius: var(--radius-md);
-      border-bottom-right-radius: var(--radius-md);
-      border-top-left-radius: 0;
-      border-top-right-radius: 0;
     }
 
     .custom-select-dropdown.open { display: block; }
@@ -1987,7 +1964,7 @@
       box-shadow: var(--shadow-2xl);
       padding: 1.25rem;
       /* Keep modal visible when mobile keyboard opens */
-      max-height: calc(100vh - 3.5rem);
+      max-height: calc(100dvh - 3rem);
       overflow: auto;
       -webkit-overflow-scrolling: touch;
       border: 1px solid var(--border-light);
@@ -2037,17 +2014,16 @@
     .modal-footer { display:flex; gap:0.5rem; justify-content:flex-end }
     .modal .btn { min-width:110px }
 
-    /* Mobile: pin modal near bottom so keyboard doesn't cover it */
+    /* Mobile modal adjustments */
     @media (max-width: 640px) {
       .modal-overlay {
-        align-items: flex-end;
         padding: 0.5rem 0.75rem;
       }
       .modal {
         width: calc(100% - 1rem);
         max-width: 100%;
         border-radius: var(--radius-lg);
-        max-height: calc(100vh - 2.5rem);
+        max-height: calc(100dvh - 2rem);
       }
       .modal-header, .modal-footer { position: relative; z-index: 2 }
       .modal-body { overflow: auto }
