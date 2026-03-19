@@ -286,31 +286,20 @@
 
   // ── Description expand/collapse ─────────────────────────────────────────
   function wireDescToggles() {
+    // Mark descriptions that are actually truncated so they get pointer cursor
     var descs = content.querySelectorAll('.item-desc');
     descs.forEach(function (desc) {
       if (desc.scrollHeight > desc.clientHeight + 1) {
-        var toggle = desc.parentElement.querySelector('.desc-toggle');
-        if (toggle) toggle.classList.add('visible');
+        desc.classList.add('truncated');
       }
     });
 
+    // Tap description text to expand/collapse
     content.addEventListener('click', function (e) {
-      var toggle = e.target.closest('.desc-toggle');
-      if (!toggle) return;
-      var body = toggle.closest('.item-body');
-      if (!body) return;
-      var desc = body.querySelector('.item-desc');
+      var desc = e.target.closest('.item-desc');
       if (!desc) return;
-      var expanded = desc.classList.toggle('expanded');
-      toggle.textContent = expanded ? 'less' : 'more';
-      toggle.setAttribute('aria-label', expanded ? 'Show less' : 'Show full description');
-    });
-
-    content.addEventListener('keydown', function (e) {
-      if ((e.key === 'Enter' || e.key === ' ') && e.target.classList.contains('desc-toggle')) {
-        e.preventDefault();
-        e.target.click();
-      }
+      if (!desc.classList.contains('truncated') && !desc.classList.contains('expanded')) return;
+      desc.classList.toggle('expanded');
     });
   }
 
@@ -396,7 +385,6 @@
 
     if (item.description) {
       h += '<div class="item-desc">' + esc(item.description) + '</div>';
-      h += '<span class="desc-toggle" role="button" tabindex="0" aria-label="Show full description">more</span>';
     }
 
     h += '<div class="item-price-row">';
