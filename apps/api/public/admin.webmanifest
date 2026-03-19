@@ -3,7 +3,7 @@
   "short_name": "KodSpot Admin",
   "description": "Manage your restaurant's digital menu — categories, items, pricing, and more.",
   "start_url": "/admin.html",
-  "scope": "/",
+  "scope": "/admin",
   "display": "standalone",
   "orientation": "portrait",
   "theme_color": "#c68b52",

@@ -930,6 +930,16 @@
       min-width: 0;
     }
 
+    .item-name.truncated {
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .item-name.expanded {
+      -webkit-line-clamp: unset;
+      display: block;
+    }
+
     .item-desc {
       font-size: 0.6875rem;
       color: var(--c3);
