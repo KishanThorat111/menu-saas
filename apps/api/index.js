@@ -913,12 +913,14 @@ function registerRoutes() {
   });
 
   // Public Menu API — base32 code lookup
-  // Fire-and-forget helper: increment views + daily scan log
-  function incrementMenuViews(hotelId) {
+  // Fire-and-forget helper: increment views + daily scan log + unique visitors
+  const VISITOR_SALT = crypto.createHash('sha256').update('visitor-salt:' + process.env.JWT_SECRET).digest('hex');
+
+  function incrementMenuViews(hotelId, clientIp) {
     const todayIST = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
     const todayDate = new Date(todayIST.getFullYear(), todayIST.getMonth(), todayIST.getDate());
 
-    Promise.all([
+    const ops = [
       prisma.hotel.update({
         where: { id: hotelId },
         data: { views: { increment: 1 }, lastViewAt: new Date() }
@@ -928,7 +930,32 @@ function registerRoutes() {
         update: { count: { increment: 1 } },
         create: { hotelId: hotelId, date: todayDate, count: 1 }
       })
-    ]).catch((err) => { fastify.log.error(`View/scan increment failed for hotel ${hotelId}: ${err.message}`); });
+    ];
+
+    // Unique visitor tracking via hashed IP (privacy-safe, no raw IP stored)
+    if (clientIp) {
+      const visitorHash = crypto.createHash('sha256')
+        .update(clientIp + todayDate.toISOString() + hotelId + VISITOR_SALT)
+        .digest('hex');
+
+      ops.push(
+        prisma.$executeRaw`
+          INSERT INTO "DailyScanVisitor" ("id", "hotelId", "date", "visitorHash")
+          VALUES (gen_random_uuid(), ${hotelId}, ${todayDate}, ${visitorHash})
+          ON CONFLICT ("hotelId", "date", "visitorHash") DO NOTHING
+        `.then((inserted) => {
+          if (inserted > 0) {
+            return prisma.dailyScanLog.upsert({
+              where: { hotelId_date: { hotelId: hotelId, date: todayDate } },
+              update: { uniqueCount: { increment: 1 } },
+              create: { hotelId: hotelId, date: todayDate, count: 0, uniqueCount: 1 }
+            });
+          }
+        })
+      );
+    }
+
+    Promise.all(ops).catch((err) => { fastify.log.error(`View/scan increment failed for hotel ${hotelId}: ${err.message}`); });
   }
 
   fastify.get('/api/menu/:code', {
@@ -947,7 +974,7 @@ function registerRoutes() {
     // Check in-memory cache first
     const cached = getCachedMenu(code);
     if (cached) {
-      incrementMenuViews(cached.hotelId);
+      incrementMenuViews(cached.hotelId, request.ip);
       reply.header('Cache-Control', 'no-cache, must-revalidate');
       reply.header('X-Cache', 'HIT');
       return cached.data;
@@ -989,7 +1016,7 @@ function registerRoutes() {
     setCachedMenu(code, menuData, hotel.id);
 
     // Fire-and-forget: increment views + daily scan log
-    incrementMenuViews(hotel.id);
+    incrementMenuViews(hotel.id, request.ip);
 
     // Force revalidation so clients see updates immediately after writes
     reply.header('Cache-Control', 'no-cache, must-revalidate');
@@ -1604,7 +1631,58 @@ function registerRoutes() {
         planPrice: planConfig.price,
         dailyScanLimit: planConfig.dailyScans,
         todayScans: scanLog?.count || 0,
+        todayUnique: scanLog?.uniqueCount || 0,
         payments
+      };
+    });
+
+    // ==================== ANALYTICS: Unique visitors + scan breakdown ====================
+    app.get('/me/analytics', async (request) => {
+      const hotelId = request.hotelId;
+      const todayIST = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
+      const todayDate = new Date(todayIST.getFullYear(), todayIST.getMonth(), todayIST.getDate());
+
+      // Last 30 days of scan data
+      const thirtyDaysAgo = new Date(todayDate);
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 29);
+
+      const logs = await prisma.dailyScanLog.findMany({
+        where: { hotelId, date: { gte: thirtyDaysAgo, lte: todayDate } },
+        orderBy: { date: 'asc' },
+        select: { date: true, count: true, uniqueCount: true }
+      });
+
+      // Build day-by-day array for last 30 days (fill gaps with zeros)
+      const daily = [];
+      const logMap = {};
+      for (const l of logs) {
+        const key = l.date.toISOString().slice(0, 10);
+        logMap[key] = { scans: l.count, unique: l.uniqueCount };
+      }
+      for (let i = 0; i < 30; i++) {
+        const d = new Date(thirtyDaysAgo);
+        d.setDate(d.getDate() + i);
+        const key = d.toISOString().slice(0, 10);
+        daily.push({
+          date: key,
+          scans: logMap[key]?.scans || 0,
+          unique: logMap[key]?.unique || 0
+        });
+      }
+
+      // Aggregates
+      const today = daily[daily.length - 1] || { scans: 0, unique: 0 };
+      const last7 = daily.slice(-7);
+      const week = { scans: 0, unique: 0 };
+      for (const d of last7) { week.scans += d.scans; week.unique += d.unique; }
+      const month = { scans: 0, unique: 0 };
+      for (const d of daily) { month.scans += d.scans; month.unique += d.unique; }
+
+      return {
+        today: { scans: today.scans, unique: today.unique },
+        week,
+        month,
+        daily
       };
     });
 
@@ -3401,6 +3479,13 @@ async function start() {
             AND "trialEnds" <= ${now}
         `;
         if (trialExpired > 0) fastify.log.info(`Cron: expired ${trialExpired} trials`);
+
+        // Job 6: Cleanup old DailyScanVisitor rows (>90 days) to save storage
+        const cutoffDate = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+        const purgedVisitors = await prisma.$executeRaw`
+          DELETE FROM "DailyScanVisitor" WHERE "date" < ${cutoffDate}
+        `;
+        if (purgedVisitors > 0) fastify.log.info(`Cron: purged ${purgedVisitors} old visitor hash rows`);
 
       } catch (err) {
         fastify.log.error(`Billing cron error: ${err.message}`);
