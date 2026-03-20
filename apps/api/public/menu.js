@@ -147,7 +147,18 @@
     classic: '#be7928',
     warm: '#ea580c',
     nature: '#059669',
-    elegant: '#b8860b'
+    elegant: '#b8860b',
+    royal: '#7c3aed',
+    ocean: '#0284c7',
+    rustic: '#92400e',
+    minimal: '#374151',
+    spice: '#dc2626',
+    neon: '#10b981',
+    cherry: '#e11d48',
+    midnight: '#1e40af',
+    sunset: '#ea580c',
+    forest: '#166534',
+    marble: '#6b7280'
   };
 
   // ── Render Menu ────────────────────────────────────────────────────────
@@ -263,7 +274,9 @@
 
     // ── Footer ──
     html += '<footer class="menu-footer anim" style="animation-delay:0.2s">';
-    html += '<div class="menu-footer-brand">Powered by KodSpot</div>';
+    if (data.plan !== 'PRO') {
+      html += '<div class="menu-footer-brand">Powered by KodSpot</div>';
+    }
     html += '<a href="/privacy.html">Privacy</a> &middot; <a href="/terms.html">Terms</a>';
     html += '</footer>';
 
