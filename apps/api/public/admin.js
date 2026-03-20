@@ -162,7 +162,50 @@ async function changeTheme(newTheme) {
     showToast('Theme updated! Refresh your public menu to see changes.');
     hotel.theme = newTheme;
   } catch (e) {
+    // Revert select to current theme on error (e.g. plan gating)
+    document.getElementById('themeSelect').value = hotel.theme || 'classic';
+    var wrapper = document.getElementById('themeSelect')?.closest('.custom-select-wrapper');
+    if (wrapper) {
+      var display = wrapper.querySelector('.custom-select-display span');
+      var opts = document.getElementById('themeSelect').options;
+      for (var i = 0; i < opts.length; i++) {
+        if (opts[i].value === hotel.theme) { if (display) display.textContent = opts[i].textContent; break; }
+      }
+    }
     showToast(e.message, 'error');
+  }
+}
+
+function updateThemeGating() {
+  var sel = document.getElementById('themeSelect');
+  if (!sel || !billingData || !billingData.allowedThemes) return;
+  var allowed = billingData.allowedThemes;
+  for (var i = 0; i < sel.options.length; i++) {
+    var opt = sel.options[i];
+    if (allowed.indexOf(opt.value) === -1) {
+      opt.disabled = true;
+      opt.textContent = opt.textContent.replace(/ 🔒$/, '') + ' \ud83d\udd12';
+    } else {
+      opt.disabled = false;
+      opt.textContent = opt.textContent.replace(/ 🔒$/, '');
+    }
+  }
+  // Refresh custom dropdown if present
+  var wrapper = sel.closest('.custom-select-wrapper');
+  if (wrapper) {
+    var items = wrapper.querySelectorAll('.custom-select-option');
+    items.forEach(function(item) {
+      var val = item.getAttribute('data-value');
+      if (allowed.indexOf(val) === -1) {
+        item.classList.add('disabled');
+        item.style.opacity = '0.5';
+        item.style.pointerEvents = 'none';
+      } else {
+        item.classList.remove('disabled');
+        item.style.opacity = '';
+        item.style.pointerEvents = '';
+      }
+    });
   }
 }
 
@@ -1353,6 +1396,7 @@ async function loadBilling() {
       try { analyticsData = await analyticsRes.json(); } catch(e) { analyticsData = null; }
     }
     renderBilling();
+    updateThemeGating();
   } catch (e) {
     container.innerHTML = '<div style="text-align:center;padding:3rem 1.5rem;"><div style="font-size:1.5rem;margin-bottom:0.75rem;">\u274c</div><div style="color:var(--red-500);font-weight:600;font-size:0.875rem;">Failed to load billing info</div><div style="color:var(--slate-400);font-size:0.8125rem;margin-top:0.5rem;">Please try refreshing the page</div></div>';
   }
@@ -1363,9 +1407,9 @@ function renderBilling() {
   if (!container || !billingData) return;
 
   const b = billingData;
-  const isUnlimited = b.dailyScanLimit === -1;
-  const scanPercent = isUnlimited ? 0 : Math.min(100, Math.round((b.todayScans / b.dailyScanLimit) * 100));
-  const scanBarColor = scanPercent >= 90 ? '#ef4444' : scanPercent >= 70 ? '#f59e0b' : '#10b981';
+  const isUnlimited = b.dailyUniqueLimit === -1;
+  const uniquePercent = isUnlimited ? 0 : Math.min(100, Math.round(((b.todayUnique || 0) / b.dailyUniqueLimit) * 100));
+  const barColor = uniquePercent >= 90 ? '#ef4444' : uniquePercent >= 70 ? '#f59e0b' : '#10b981';
 
   const paidUntilStr = b.paidUntil ? new Date(b.paidUntil).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A';
   const trialEndsStr = b.trialEnds ? new Date(b.trialEnds).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A';
@@ -1407,25 +1451,22 @@ function renderBilling() {
   // Scans card (with inline analytics when available)
   html += '<div class="billing-card">';
   html += '<div class="billing-card-icon">\ud83d\udcca</div>';
-  html += '<div class="billing-card-label">Today\u2019s Scans</div>';
-  html += '<div class="billing-card-value">' + b.todayScans + (isUnlimited ? '' : ' / ' + b.dailyScanLimit) + '</div>';
-  if (analyticsData && analyticsData.today) {
-    html += '<div class="billing-card-sub">\ud83d\udc64 ' + analyticsData.today.unique + ' unique visitor' + (analyticsData.today.unique !== 1 ? 's' : '') + '</div>';
-  } else {
-    html += '<div class="billing-card-sub">' + (isUnlimited ? 'Unlimited scans' : scanPercent + '% used') + '</div>';
-  }
+  html += '<div class="billing-card-label">Today\u2019s Visitors</div>';
+  html += '<div class="billing-card-value">' + (b.todayUnique || 0) + (isUnlimited ? '' : ' / ' + b.dailyUniqueLimit) + '</div>';
+  html += '<div class="billing-card-sub">' + b.todayScans + ' total scan' + (b.todayScans !== 1 ? 's' : '') + '</div>';
   if (!isUnlimited) {
-    html += '<div class="scan-bar"><div class="scan-bar-fill" style="width:' + scanPercent + '%;background:' + scanBarColor + ';"></div></div>';
+    html += '<div class="scan-bar"><div class="scan-bar-fill" style="width:' + uniquePercent + '%;background:' + barColor + ';"></div></div>';
   }
-  // Inline sparkline (last 7 days)
-  if (analyticsData && analyticsData.daily && analyticsData.daily.length >= 7) {
-    var spark = analyticsData.daily.slice(-7);
+  // Inline sparkline (show available days based on plan)
+  var sparkDays = (analyticsData && analyticsData.analyticsDays) || 1;
+  if (analyticsData && analyticsData.daily && analyticsData.daily.length >= 2) {
+    var spark = analyticsData.daily.slice(-Math.min(sparkDays, analyticsData.daily.length));
     var sparkMax = 1;
     for (var si = 0; si < spark.length; si++) {
       if (spark[si].scans > sparkMax) sparkMax = spark[si].scans;
     }
     html += '<div class="sparkline-row">';
-    html += '<span class="sparkline-label">7-day trend</span>';
+    html += '<span class="sparkline-label">' + spark.length + '-day trend</span>';
     html += '<div class="sparkline-bars">';
     for (var si = 0; si < spark.length; si++) {
       var sh = spark[si].scans > 0 ? Math.max(4, Math.round((spark[si].scans / sparkMax) * 24)) : 0;
@@ -1441,12 +1482,12 @@ function renderBilling() {
 
   html += '</div>'; // end billing-cards
 
-  // Scan nudge banners
-  if (!isUnlimited && scanPercent >= 80) {
+  // Visitor limit nudge banners
+  if (!isUnlimited && uniquePercent >= 80) {
     html += '<div class="scan-nudge">';
     html += '<div class="billing-alert-icon">\ud83d\udcc8</div>';
-    html += '<div class="billing-alert-text"><p>You\u2019ve used ' + scanPercent + '% of your daily scans (' + b.todayScans + '/' + b.dailyScanLimit + ').</p>';
-    html += '<p>Consider upgrading for more scans.</p></div>';
+    html += '<div class="billing-alert-text"><p>You\u2019ve used ' + uniquePercent + '% of your daily unique visitors (' + (b.todayUnique || 0) + '/' + b.dailyUniqueLimit + ').</p>';
+    html += '<p>Consider upgrading for more visitors.</p></div>';
     html += '</div>';
   }
 
@@ -1493,9 +1534,9 @@ function renderBilling() {
   html += '<div class="plan-cards">';
 
   var plans = [
-    { key: 'STARTER', name: 'Starter', price: '\u20b9299', desc: '300 scans/day', badge: '' },
-    { key: 'STANDARD', name: 'Standard', price: '\u20b9499', desc: '500 scans/day', badge: 'value' },
-    { key: 'PRO', name: 'Pro', price: '\u20b9999', desc: 'Unlimited scans + Custom design', badge: 'popular' }
+    { key: 'STARTER', name: 'Starter', price: '\u20b9499', desc: '150 unique visitors/day \u00b7 4 themes', badge: '' },
+    { key: 'STANDARD', name: 'Standard', price: '\u20b9999', desc: '500 unique visitors/day \u00b7 8 themes', badge: 'value' },
+    { key: 'PRO', name: 'Pro', price: '\u20b91,499', desc: 'Unlimited visitors \u00b7 All 15 themes \u00b7 No branding', badge: 'popular' }
   ];
 
   plans.forEach(function(p) {

@@ -84,12 +84,30 @@ const isProduction = process.env.NODE_ENV === 'production';
 
 //==================== PLAN CONFIGURATION ====================
 const PLANS = {
-  STARTER:  { price: 29900, dailyScans: 300,  label: '\u20b9299/mo \u2014 300 scans/day' },
-  STANDARD: { price: 49900, dailyScans: 500,  label: '\u20b9499/mo \u2014 500 scans/day' },
-  PRO:      { price: 99900, dailyScans: -1,   label: '\u20b9999/mo \u2014 Unlimited + Custom Design' },
+  STARTER:  { price: 49900, dailyUniqueVisitors: 150,  label: '\u20b9499/mo \u2014 150 unique visitors/day',  themes: 4,  analyticsDays: 1,  hideBranding: false },
+  STANDARD: { price: 99900, dailyUniqueVisitors: 500,  label: '\u20b9999/mo \u2014 500 unique visitors/day',  themes: 8,  analyticsDays: 7,  hideBranding: false },
+  PRO:      { price: 149900, dailyUniqueVisitors: -1,  label: '\u20b91,499/mo \u2014 Unlimited + All Themes', themes: 15, analyticsDays: 30, hideBranding: true },
 };
 
 const PLAN_TIER = { STARTER: 1, STANDARD: 2, PRO: 3 };
+
+// Theme tiers: which themes each plan unlocks
+const ALL_THEMES = [
+  'classic', 'warm', 'nature', 'elegant',
+  'royal', 'ocean', 'rustic', 'minimal',
+  'spice', 'neon', 'cherry', 'midnight', 'sunset', 'forest', 'marble'
+];
+const THEME_TIERS = {
+  STARTER:  ALL_THEMES.slice(0, 4),
+  STANDARD: ALL_THEMES.slice(0, 8),
+  PRO:      ALL_THEMES
+};
+
+// During trial, hotels get STANDARD-level features
+function effectivePlan(plan, status) {
+  if (status === 'TRIAL') return 'STANDARD';
+  return plan || 'STARTER';
+}
 
 //==================== RAZORPAY CLIENT ====================
 let razorpayClient = null;
@@ -354,7 +372,7 @@ async function uploadToR2(buffer, mimetype, hotelId) {
 }
 
 //==================== MENU CACHE (in-memory with TTL) ====================
-const menuCache = new Map(); // slug → { data, hotelId, expiresAt }
+const menuCache = new Map(); // slug → { data, hotelId, plan, expiresAt }
 const MENU_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
 function getCachedMenu(slug) {
@@ -367,8 +385,8 @@ function getCachedMenu(slug) {
   return entry;
 }
 
-function setCachedMenu(slug, data, hotelId) {
-  menuCache.set(slug, { data, hotelId, expiresAt: Date.now() + MENU_CACHE_TTL });
+function setCachedMenu(slug, data, hotelId, plan) {
+  menuCache.set(slug, { data, hotelId, plan, expiresAt: Date.now() + MENU_CACHE_TTL });
   // Prevent unbounded memory growth: evict oldest entry if over 10,000
   if (menuCache.size > 10000) {
     const oldest = menuCache.keys().next().value;
@@ -916,7 +934,7 @@ function registerRoutes() {
   // Fire-and-forget helper: increment views + daily scan log + unique visitors
   const VISITOR_SALT = crypto.createHash('sha256').update('visitor-salt:' + process.env.JWT_SECRET).digest('hex');
 
-  function incrementMenuViews(hotelId, clientIp) {
+  function incrementMenuViews(hotelId, clientIp, plan) {
     const todayIST = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
     const todayDate = new Date(todayIST.getFullYear(), todayIST.getMonth(), todayIST.getDate());
 
@@ -933,26 +951,40 @@ function registerRoutes() {
     ];
 
     // Unique visitor tracking via hashed IP (privacy-safe, no raw IP stored)
+    // Soft-cap: stop counting new unique visitors once plan limit is reached (menu still loads)
     if (clientIp) {
-      const visitorHash = crypto.createHash('sha256')
-        .update(clientIp + todayDate.toISOString() + hotelId + VISITOR_SALT)
-        .digest('hex');
+      const planConfig = PLANS[plan] || PLANS.STARTER;
+      const limit = planConfig.dailyUniqueVisitors;
 
-      ops.push(
-        prisma.$executeRaw`
+      const trackVisitor = async () => {
+        // Check current unique count if plan has a limit
+        if (limit > 0) {
+          const log = await prisma.dailyScanLog.findUnique({
+            where: { hotelId_date: { hotelId, date: todayDate } },
+            select: { uniqueCount: true }
+          });
+          if ((log?.uniqueCount || 0) >= limit) return; // Soft-cap reached
+        }
+
+        const visitorHash = crypto.createHash('sha256')
+          .update(clientIp + todayDate.toISOString() + hotelId + VISITOR_SALT)
+          .digest('hex');
+
+        const inserted = await prisma.$executeRaw`
           INSERT INTO "DailyScanVisitor" ("id", "hotelId", "date", "visitorHash")
           VALUES (gen_random_uuid(), ${hotelId}, ${todayDate}, ${visitorHash})
           ON CONFLICT ("hotelId", "date", "visitorHash") DO NOTHING
-        `.then((inserted) => {
-          if (inserted > 0) {
-            return prisma.dailyScanLog.upsert({
-              where: { hotelId_date: { hotelId: hotelId, date: todayDate } },
-              update: { uniqueCount: { increment: 1 } },
-              create: { hotelId: hotelId, date: todayDate, count: 0, uniqueCount: 1 }
-            });
-          }
-        })
-      );
+        `;
+        if (inserted > 0) {
+          await prisma.dailyScanLog.upsert({
+            where: { hotelId_date: { hotelId, date: todayDate } },
+            update: { uniqueCount: { increment: 1 } },
+            create: { hotelId, date: todayDate, count: 0, uniqueCount: 1 }
+          });
+        }
+      };
+
+      ops.push(trackVisitor());
     }
 
     Promise.all(ops).catch((err) => { fastify.log.error(`View/scan increment failed for hotel ${hotelId}: ${err.message}`); });
@@ -974,7 +1006,7 @@ function registerRoutes() {
     // Check in-memory cache first
     const cached = getCachedMenu(code);
     if (cached) {
-      incrementMenuViews(cached.hotelId, request.ip);
+      incrementMenuViews(cached.hotelId, request.ip, cached.plan);
       reply.header('Cache-Control', 'no-cache, must-revalidate');
       reply.header('X-Cache', 'HIT');
       return cached.data;
@@ -1009,14 +1041,15 @@ function registerRoutes() {
       city: hotel.city,
       theme: hotel.theme,
       logoUrl: hotel.logoUrl || null,
+      plan: effectivePlan(hotel.plan, hotel.status),
       categories: hotel.categories
     };
 
     // Cache the result
-    setCachedMenu(code, menuData, hotel.id);
+    setCachedMenu(code, menuData, hotel.id, effectivePlan(hotel.plan, hotel.status));
 
     // Fire-and-forget: increment views + daily scan log
-    incrementMenuViews(hotel.id, request.ip);
+    incrementMenuViews(hotel.id, request.ip, effectivePlan(hotel.plan, hotel.status));
 
     // Force revalidation so clients see updates immediately after writes
     reply.header('Cache-Control', 'no-cache, must-revalidate');
@@ -1617,7 +1650,8 @@ function registerRoutes() {
         where: { hotelId_date: { hotelId: request.hotelId, date: todayDate } }
       });
 
-      const planConfig = PLANS[hotel.plan] || PLANS.STARTER;
+      const ePlan = effectivePlan(hotel.plan, hotel.status);
+      const planConfig = PLANS[ePlan] || PLANS.STARTER;
 
       return {
         plan: hotel.plan,
@@ -1629,9 +1663,12 @@ function registerRoutes() {
         pendingActivatesOn: (hotel.pendingPlan && hotel.paidUntil) ? hotel.paidUntil : null,
         planLabel: planConfig.label,
         planPrice: planConfig.price,
-        dailyScanLimit: planConfig.dailyScans,
+        dailyUniqueLimit: planConfig.dailyUniqueVisitors,
         todayScans: scanLog?.count || 0,
         todayUnique: scanLog?.uniqueCount || 0,
+        allowedThemes: THEME_TIERS[ePlan] || THEME_TIERS.STARTER,
+        analyticsDays: planConfig.analyticsDays,
+        hideBranding: planConfig.hideBranding,
         payments
       };
     });
@@ -1642,25 +1679,30 @@ function registerRoutes() {
       const todayIST = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
       const todayDate = new Date(todayIST.getFullYear(), todayIST.getMonth(), todayIST.getDate());
 
-      // Last 30 days of scan data
-      const thirtyDaysAgo = new Date(todayDate);
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 29);
+      // Determine analytics depth from plan
+      const hotel = await prisma.hotel.findUnique({ where: { id: hotelId }, select: { plan: true, status: true } });
+      const ePlan = effectivePlan(hotel?.plan, hotel?.status);
+      const planConfig = PLANS[ePlan] || PLANS.STARTER;
+      const days = planConfig.analyticsDays; // 1, 7, or 30
+
+      const startDate = new Date(todayDate);
+      startDate.setDate(startDate.getDate() - (days - 1));
 
       const logs = await prisma.dailyScanLog.findMany({
-        where: { hotelId, date: { gte: thirtyDaysAgo, lte: todayDate } },
+        where: { hotelId, date: { gte: startDate, lte: todayDate } },
         orderBy: { date: 'asc' },
         select: { date: true, count: true, uniqueCount: true }
       });
 
-      // Build day-by-day array for last 30 days (fill gaps with zeros)
+      // Build day-by-day array (fill gaps with zeros)
       const daily = [];
       const logMap = {};
       for (const l of logs) {
         const key = l.date.toISOString().slice(0, 10);
         logMap[key] = { scans: l.count, unique: l.uniqueCount };
       }
-      for (let i = 0; i < 30; i++) {
-        const d = new Date(thirtyDaysAgo);
+      for (let i = 0; i < days; i++) {
+        const d = new Date(startDate);
         d.setDate(d.getDate() + i);
         const key = d.toISOString().slice(0, 10);
         daily.push({
@@ -1672,7 +1714,7 @@ function registerRoutes() {
 
       // Aggregates
       const today = daily[daily.length - 1] || { scans: 0, unique: 0 };
-      const last7 = daily.slice(-7);
+      const last7 = daily.slice(-Math.min(7, days));
       const week = { scans: 0, unique: 0 };
       for (const d of last7) { week.scans += d.scans; week.unique += d.unique; }
       const month = { scans: 0, unique: 0 };
@@ -1682,7 +1724,8 @@ function registerRoutes() {
         today: { scans: today.scans, unique: today.unique },
         week,
         month,
-        daily
+        daily,
+        analyticsDays: days
       };
     });
 
@@ -1897,9 +1940,17 @@ function registerRoutes() {
 
     app.patch('/settings/theme', async (request, reply) => {
       const schema = z.object({
-        theme: z.enum(['classic', 'warm', 'nature', 'elegant'])
+        theme: z.enum(ALL_THEMES)
       });
       const { theme } = schema.parse(request.body);
+
+      // Check if hotel's plan allows this theme
+      const hotel = await prisma.hotel.findUnique({ where: { id: request.hotelId }, select: { plan: true, status: true } });
+      const ePlan = effectivePlan(hotel?.plan, hotel?.status);
+      const allowed = THEME_TIERS[ePlan] || THEME_TIERS.STARTER;
+      if (!allowed.includes(theme)) {
+        return reply.code(403).send({ error: 'Theme not available on your current plan. Please upgrade.' });
+      }
 
       const updated = await prisma.hotel.update({
         where: { id: request.hotelId },
@@ -2722,7 +2773,7 @@ function registerRoutes() {
         where: { status: 'ACTIVE', deletedAt: null },
         _count: true
       });
-      const PLAN_PRICES = { STARTER: 29900, STANDARD: 49900, PRO: 99900 };
+      const PLAN_PRICES = { STARTER: 49900, STANDARD: 99900, PRO: 149900 };
       let mrr = 0;
       const planBreakdown = {};
       for (const row of activePaidHotels) {

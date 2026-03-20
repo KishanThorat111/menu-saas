@@ -547,7 +547,7 @@ function renderTable(hotels) {
     // Fix: treat null/undefined/empty email as blank
     document.getElementById('editDetailsEmail').value = latestHotel.email ? latestHotel.email : '';
     // Plan is readonly — changes only via Record Payment
-    var planLabels = { STARTER: 'Starter (₹299)', STANDARD: 'Standard (₹499)', PRO: 'Pro (₹999)' };
+    var planLabels = { STARTER: 'Starter (\u20b9499)', STANDARD: 'Standard (\u20b9999)', PRO: 'Pro (\u20b91,499)' };
     document.getElementById('editDetailsPlanDisplay').value = planLabels[latestHotel.plan] || latestHotel.plan;
     document.getElementById('editDetailsPlan').value = latestHotel.plan;
     document.getElementById('editDetailsCode').value = latestHotel.slug || '';

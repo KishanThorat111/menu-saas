@@ -166,7 +166,7 @@ model Payment {
   razorpayPaymentId String? @unique
   razorpaySignature String?
 
-  amount   Int // Amount in paise (29900 = ₹299)
+  amount   Int // Amount in paise (49900 = ₹499)
   currency String        @default("INR")
   plan     PlanType
   status   PaymentStatus @default(CREATED)
