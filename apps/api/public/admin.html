@@ -2626,6 +2626,48 @@
     }
 
     /* ========================================
+       22b. INLINE SPARKLINE (inside scans card)
+       ======================================== */
+    .sparkline-row {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-top: 0.75rem;
+      padding-top: 0.625rem;
+      border-top: 1px solid var(--border-light);
+    }
+    .sparkline-label {
+      font-size: 0.625rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--slate-400);
+      white-space: nowrap;
+    }
+    .sparkline-bars {
+      display: flex;
+      align-items: flex-end;
+      gap: 2px;
+      height: 24px;
+    }
+    .sparkline-bar {
+      width: 6px;
+      border-radius: 2px 2px 0 0;
+      background: var(--saffron-400);
+      transition: height 0.3s var(--ease-out);
+    }
+    .sparkline-stat {
+      font-size: 0.625rem;
+      color: var(--slate-400);
+      white-space: nowrap;
+      margin-left: auto;
+    }
+    @media (max-width: 559px) {
+      .sparkline-row { flex-wrap: wrap; }
+      .sparkline-stat { width: 100%; margin-left: 0; margin-top: 0.25rem; }
+    }
+
+    /* ========================================
        23. QR CODE TAB STYLES
        ======================================== */
     .qr-section {

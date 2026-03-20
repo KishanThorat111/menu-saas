@@ -48,8 +48,9 @@ model Hotel {
   categories    Category[]
   auditLogs     AuditLog[]
   pinResetOtps  PinResetOtp[]
-  payments      Payment[]
-  dailyScanLogs DailyScanLog[]
+  payments           Payment[]
+  dailyScanLogs      DailyScanLog[]
+  dailyScanVisitors  DailyScanVisitor[]
 
   views      Int       @default(0)
   lastViewAt DateTime?
@@ -186,14 +187,27 @@ model Payment {
 }
 
 model DailyScanLog {
-  id      String   @id @default(uuid())
-  hotelId String
-  hotel   Hotel    @relation(fields: [hotelId], references: [id], onDelete: Cascade)
-  date    DateTime @db.Date
-  count   Int      @default(0)
+  id          String   @id @default(uuid())
+  hotelId     String
+  hotel       Hotel    @relation(fields: [hotelId], references: [id], onDelete: Cascade)
+  date        DateTime @db.Date
+  count       Int      @default(0)
+  uniqueCount Int      @default(0)
 
   @@unique([hotelId, date])
   @@index([hotelId, date])
+}
+
+model DailyScanVisitor {
+  id          String   @id @default(uuid())
+  hotelId     String
+  hotel       Hotel    @relation(fields: [hotelId], references: [id], onDelete: Cascade)
+  date        DateTime @db.Date
+  visitorHash String   @db.Char(64)
+
+  @@unique([hotelId, date, visitorHash])
+  @@index([hotelId, date])
+  @@index([date])
 }
 
 model PinResetOtp {

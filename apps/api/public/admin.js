@@ -1336,6 +1336,7 @@ if (logoutBtn) logoutBtn.addEventListener('click', logout);
 // ==================== BILLING / PAYMENT FUNCTIONS ====================
 
 let billingData = null;
+let analyticsData = null;
 
 async function loadBilling() {
   const container = document.getElementById('billingContent');
@@ -1343,8 +1344,14 @@ async function loadBilling() {
   container.innerHTML = '<div style="text-align:center;padding:3rem 1.5rem;color:var(--slate-400);"><div style="font-size:1.5rem;margin-bottom:0.75rem;animation:pulse 1.5s ease-in-out infinite;">\ud83d\udcb3</div><div style="font-size:0.875rem;font-weight:500;">Loading billing...</div></div>';
 
   try {
-    const res = await apiFetch('/me/billing');
-    billingData = await res.json();
+    const [billingRes, analyticsRes] = await Promise.all([
+      apiFetch('/me/billing'),
+      apiFetch('/me/analytics').catch(function() { return null; })
+    ]);
+    billingData = await billingRes.json();
+    if (analyticsRes) {
+      try { analyticsData = await analyticsRes.json(); } catch(e) { analyticsData = null; }
+    }
     renderBilling();
   } catch (e) {
     container.innerHTML = '<div style="text-align:center;padding:3rem 1.5rem;"><div style="font-size:1.5rem;margin-bottom:0.75rem;">\u274c</div><div style="color:var(--red-500);font-weight:600;font-size:0.875rem;">Failed to load billing info</div><div style="color:var(--slate-400);font-size:0.8125rem;margin-top:0.5rem;">Please try refreshing the page</div></div>';
@@ -1397,14 +1404,38 @@ function renderBilling() {
   else if (b.paidUntil) html += '<div class="billing-card-sub">Active until: ' + paidUntilStr + '</div>';
   html += '</div>';
 
-  // Scans card
+  // Scans card (with inline analytics when available)
   html += '<div class="billing-card">';
   html += '<div class="billing-card-icon">\ud83d\udcca</div>';
   html += '<div class="billing-card-label">Today\u2019s Scans</div>';
   html += '<div class="billing-card-value">' + b.todayScans + (isUnlimited ? '' : ' / ' + b.dailyScanLimit) + '</div>';
-  html += '<div class="billing-card-sub">' + (isUnlimited ? 'Unlimited scans' : scanPercent + '% used') + '</div>';
+  if (analyticsData && analyticsData.today) {
+    html += '<div class="billing-card-sub">\ud83d\udc64 ' + analyticsData.today.unique + ' unique visitor' + (analyticsData.today.unique !== 1 ? 's' : '') + '</div>';
+  } else {
+    html += '<div class="billing-card-sub">' + (isUnlimited ? 'Unlimited scans' : scanPercent + '% used') + '</div>';
+  }
   if (!isUnlimited) {
     html += '<div class="scan-bar"><div class="scan-bar-fill" style="width:' + scanPercent + '%;background:' + scanBarColor + ';"></div></div>';
+  }
+  // Inline sparkline (last 7 days)
+  if (analyticsData && analyticsData.daily && analyticsData.daily.length >= 7) {
+    var spark = analyticsData.daily.slice(-7);
+    var sparkMax = 1;
+    for (var si = 0; si < spark.length; si++) {
+      if (spark[si].scans > sparkMax) sparkMax = spark[si].scans;
+    }
+    html += '<div class="sparkline-row">';
+    html += '<span class="sparkline-label">7-day trend</span>';
+    html += '<div class="sparkline-bars">';
+    for (var si = 0; si < spark.length; si++) {
+      var sh = spark[si].scans > 0 ? Math.max(4, Math.round((spark[si].scans / sparkMax) * 24)) : 0;
+      html += '<div class="sparkline-bar" style="height:' + sh + 'px" title="' + spark[si].scans + ' scans"></div>';
+    }
+    html += '</div>';
+    if (analyticsData.week) {
+      html += '<span class="sparkline-stat">' + analyticsData.week.unique + ' unique this week</span>';
+    }
+    html += '</div>';
   }
   html += '</div>';
 
