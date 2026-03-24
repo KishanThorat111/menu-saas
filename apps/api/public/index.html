@@ -32,166 +32,203 @@
     /* ── Reset & Base ─────────────────────────────────────── */
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
     html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
-    body{font-family:'Inter',system-ui,-apple-system,sans-serif;color:#1e293b;background:#ffffff;line-height:1.6;-webkit-font-smoothing:antialiased}
+    body{font-family:'Inter',system-ui,-apple-system,sans-serif;color:#1e293b;background:#ffffff;line-height:1.6;-webkit-font-smoothing:antialiased;overflow-x:hidden}
     img{max-width:100%;display:block}
     a{color:inherit;text-decoration:none}
 
+    /* ── Scroll Reveal ────────────────────────────────────── */
+    .reveal{opacity:0;transform:translateY(32px);transition:opacity 0.7s cubic-bezier(0.16,1,0.3,1),transform 0.7s cubic-bezier(0.16,1,0.3,1)}
+    .reveal.visible{opacity:1;transform:translateY(0)}
+
     /* ── Layout ───────────────────────────────────────────── */
     .container{max-width:1120px;margin:0 auto;padding:0 24px}
-    section{padding:80px 0}
+    section{padding:100px 0}
 
     /* ── Navbar ────────────────────────────────────────────── */
-    .navbar{position:sticky;top:0;z-index:100;background:rgba(255,255,255,0.92);backdrop-filter:blur(12px);border-bottom:1px solid #f1f5f9;padding:0 24px}
-    .navbar .container{display:flex;align-items:center;justify-content:space-between;height:64px}
-    .nav-logo{font-size:22px;font-weight:800;letter-spacing:-0.02em;color:#1e293b}
-    .nav-logo span{color:#c68b52}
-    .nav-links{display:flex;gap:32px;align-items:center}
-    .nav-links a{font-size:14px;font-weight:500;color:#64748b;transition:color .2s}
-    .nav-links a:hover{color:#1e293b}
-    .nav-cta{background:#c68b52;color:#fff !important;padding:8px 20px;border-radius:8px;font-weight:600;font-size:14px;transition:background .2s}
-    .nav-cta:hover{background:#b07440}
+    .navbar{position:sticky;top:0;z-index:100;background:rgba(255,255,255,0.85);backdrop-filter:blur(20px) saturate(180%);-webkit-backdrop-filter:blur(20px) saturate(180%);border-bottom:1px solid rgba(241,245,249,0.8);padding:0 24px;transition:box-shadow 0.3s}
+    .navbar.scrolled{box-shadow:0 1px 24px rgba(0,0,0,0.06)}
+    .navbar .container{display:flex;align-items:center;justify-content:space-between;height:72px}
+    .nav-logo{font-size:24px;font-weight:800;letter-spacing:-0.03em;color:#0f172a}
+    .nav-logo span{background:linear-gradient(135deg,#c68b52,#e2a86b);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+    .nav-links{display:flex;gap:36px;align-items:center}
+    .nav-links a{font-size:14px;font-weight:500;color:#64748b;transition:color .2s;position:relative}
+    .nav-links a:not(.nav-cta):hover{color:#0f172a}
+    .nav-links a:not(.nav-cta)::after{content:'';position:absolute;bottom:-2px;left:0;width:0;height:2px;background:#c68b52;border-radius:1px;transition:width .25s ease}
+    .nav-links a:not(.nav-cta):hover::after{width:100%}
+    .nav-cta{background:linear-gradient(135deg,#c68b52,#b07440);color:#fff !important;padding:10px 24px;border-radius:10px;font-weight:600;font-size:14px;transition:all .25s;box-shadow:0 2px 8px rgba(198,139,82,0.25)}
+    .nav-cta:hover{transform:translateY(-1px);box-shadow:0 4px 16px rgba(198,139,82,0.35)}
 
     .nav-toggle{display:none;background:none;border:none;cursor:pointer;padding:4px}
     .nav-toggle svg{width:28px;height:28px;color:#1e293b}
 
     /* ── Hero ──────────────────────────────────────────────── */
-    .hero{padding:80px 0 0;background:linear-gradient(180deg,#fffbf5 0%,#ffffff 100%)}
-    .hero .container{display:flex;flex-direction:column;align-items:center;text-align:center}
-    .hero-content{max-width:720px}
-    .hero-badge{display:inline-flex;align-items:center;gap:6px;background:#fef3c7;color:#92400e;font-size:13px;font-weight:600;padding:6px 16px;border-radius:999px;margin-bottom:24px}
-    .hero h1{font-size:clamp(32px,5vw,52px);font-weight:800;line-height:1.1;letter-spacing:-0.03em;color:#0f172a;margin-bottom:20px}
-    .hero h1 span{color:#c68b52}
-    .hero p.hero-sub{font-size:clamp(15px,1.8vw,18px);color:#64748b;max-width:560px;margin:0 auto 28px;line-height:1.65}
-    .hero-actions{display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
-    .hero-note{margin-top:20px;font-size:13px;color:#94a3b8}
-    .hero-visual{margin-top:56px;width:100%;max-width:900px}
-    .hero-visual img{width:100%;height:auto;border-radius:16px 16px 0 0;box-shadow:0 -4px 40px rgba(0,0,0,0.08),0 -1px 0 rgba(0,0,0,0.04)}
-    .btn-primary{background:#c68b52;color:#fff;padding:14px 32px;border-radius:10px;font-weight:700;font-size:16px;border:none;cursor:pointer;transition:background .2s,transform .1s}
-    .btn-primary:hover{background:#b07440;transform:translateY(-1px)}
-    .btn-secondary{background:#f8fafc;color:#1e293b;padding:14px 32px;border-radius:10px;font-weight:600;font-size:16px;border:1.5px solid #e2e8f0;cursor:pointer;transition:all .2s}
-    .btn-secondary:hover{border-color:#c68b52;color:#c68b52}
+    .hero{padding:100px 0 0;background:radial-gradient(ellipse 80% 50% at 50% -20%,rgba(198,139,82,0.08),transparent),linear-gradient(180deg,#fffbf5 0%,#ffffff 100%);position:relative;overflow:hidden}
+    .hero::before{content:'';position:absolute;top:-40%;right:-20%;width:600px;height:600px;background:radial-gradient(circle,rgba(198,139,82,0.06) 0%,transparent 70%);border-radius:50%;pointer-events:none}
+    .hero .container{display:flex;flex-direction:column;align-items:center;text-align:center;position:relative;z-index:1}
+    .hero-content{max-width:740px}
+    .hero-content > *{opacity:0;transform:translateY(24px);animation:heroFadeIn 0.8s cubic-bezier(0.16,1,0.3,1) forwards}
+    .hero-content > *:nth-child(1){animation-delay:0.1s}
+    .hero-content > *:nth-child(2){animation-delay:0.2s}
+    .hero-content > *:nth-child(3){animation-delay:0.35s}
+    .hero-content > *:nth-child(4){animation-delay:0.5s}
+    .hero-content > *:nth-child(5){animation-delay:0.6s}
+    @keyframes heroFadeIn{to{opacity:1;transform:translateY(0)}}
+    .hero-badge{display:inline-flex;align-items:center;gap:6px;background:rgba(254,243,199,0.9);backdrop-filter:blur(8px);color:#92400e;font-size:13px;font-weight:600;padding:7px 18px;border-radius:999px;margin-bottom:28px;border:1px solid rgba(253,230,138,0.5)}
+    .hero h1{font-size:clamp(36px,5.5vw,56px);font-weight:800;line-height:1.08;letter-spacing:-0.035em;color:#0f172a;margin-bottom:24px}
+    .hero h1 span{background:linear-gradient(135deg,#c68b52 0%,#e2a86b 50%,#c68b52 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+    .hero p.hero-sub{font-size:clamp(16px,1.8vw,19px);color:#64748b;max-width:560px;margin:0 auto 32px;line-height:1.7}
+    .hero-actions{display:flex;gap:14px;flex-wrap:wrap;justify-content:center}
+    .hero-meta{margin-top:24px;font-size:13px;color:#94a3b8;line-height:1.8}
+    .hero-meta a{color:#c68b52;text-decoration:underline;font-weight:500;transition:color .2s}
+    .hero-meta a:hover{color:#b07440}
+    .hero-visual{margin-top:56px;width:100%;max-width:860px;opacity:0;transform:translateY(40px);animation:heroFadeIn 1s cubic-bezier(0.16,1,0.3,1) 0.5s forwards}
+    .hero-visual img{width:100%;height:auto;border-radius:20px 20px 0 0;box-shadow:0 -8px 60px rgba(0,0,0,0.10),0 -2px 0 rgba(0,0,0,0.02)}
+    .btn-primary{background:linear-gradient(135deg,#c68b52,#b07440);color:#fff;padding:15px 36px;border-radius:12px;font-weight:700;font-size:16px;border:none;cursor:pointer;transition:all .25s;box-shadow:0 2px 12px rgba(198,139,82,0.3)}
+    .btn-primary:hover{transform:translateY(-2px);box-shadow:0 6px 24px rgba(198,139,82,0.4)}
+    .btn-primary:active{transform:translateY(0)}
+    .btn-secondary{background:#ffffff;color:#1e293b;padding:15px 36px;border-radius:12px;font-weight:600;font-size:16px;border:1.5px solid #e2e8f0;cursor:pointer;transition:all .25s;box-shadow:0 1px 4px rgba(0,0,0,0.04)}
+    .btn-secondary:hover{border-color:#c68b52;color:#c68b52;box-shadow:0 4px 16px rgba(0,0,0,0.06);transform:translateY(-1px)}
+
     /* ── Trust Strip ──────────────────────────────────────── */
-    .trust-strip{padding:32px 0;border-top:1px solid #f1f5f9;border-bottom:1px solid #f1f5f9;background:#fafafa}
-    .trust-strip .container{display:flex;justify-content:center;gap:36px;flex-wrap:wrap}
-    .trust-pill{display:inline-flex;align-items:center;gap:8px;font-size:14px;font-weight:500;color:#475569}
+    .trust-strip{padding:36px 0;border-top:1px solid #f1f5f9;border-bottom:1px solid #f1f5f9;background:linear-gradient(180deg,#fafafa,#ffffff)}
+    .trust-strip .container{display:flex;justify-content:center;gap:40px;flex-wrap:wrap}
+    .trust-pill{display:inline-flex;align-items:center;gap:8px;font-size:14px;font-weight:500;color:#475569;transition:color .2s}
+    .trust-pill:hover{color:#0f172a}
     .trust-pill .tp-icon{font-size:18px;flex-shrink:0}
 
+    /* ── Section Shared ───────────────────────────────────── */
+    .section-label{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:#c68b52;text-align:center;margin-bottom:14px}
+    .section-title{font-size:clamp(28px,3.5vw,40px);font-weight:800;text-align:center;color:#0f172a;margin-bottom:16px;letter-spacing:-0.025em;line-height:1.15}
+    .section-sub{text-align:center;color:#64748b;max-width:540px;margin:0 auto 60px;font-size:16px;line-height:1.65}
+
     /* ── How It Works ─────────────────────────────────────── */
-    .how-it-works{background:#fafafa}
-    .section-label{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#c68b52;text-align:center;margin-bottom:12px}
-    .section-title{font-size:clamp(24px,3.5vw,36px);font-weight:800;text-align:center;color:#0f172a;margin-bottom:16px;letter-spacing:-0.02em}
-    .section-sub{text-align:center;color:#64748b;max-width:520px;margin:0 auto 56px;font-size:16px}
-    .steps{display:grid;grid-template-columns:repeat(3,1fr);gap:32px}
-    .step{text-align:center;padding:32px 24px;background:#fff;border-radius:16px;border:1px solid #f1f5f9;transition:box-shadow .3s}
-    .step:hover{box-shadow:0 8px 32px rgba(0,0,0,0.06)}
-    .step-icon{width:56px;height:56px;border-radius:14px;background:linear-gradient(135deg,#fef3c7,#fde68a);display:flex;align-items:center;justify-content:center;margin:0 auto 20px;font-size:26px}
-    .step-num{font-size:12px;font-weight:700;color:#c68b52;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px}
-    .step h3{font-size:18px;font-weight:700;color:#0f172a;margin-bottom:8px}
-    .step p{font-size:14px;color:#64748b;line-height:1.6}
+    .how-it-works{background:linear-gradient(180deg,#fafafa 0%,#ffffff 100%)}
+    .steps{display:grid;grid-template-columns:repeat(3,1fr);gap:28px}
+    .step{text-align:center;padding:40px 28px;background:#fff;border-radius:20px;border:1px solid #f1f5f9;transition:all .35s cubic-bezier(0.16,1,0.3,1);position:relative;overflow:hidden}
+    .step::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#c68b52,#e2a86b);opacity:0;transition:opacity .3s}
+    .step:hover{box-shadow:0 16px 48px rgba(0,0,0,0.08);transform:translateY(-4px);border-color:transparent}
+    .step:hover::before{opacity:1}
+    .step-icon{width:64px;height:64px;border-radius:18px;background:linear-gradient(135deg,#fef3c7,#fde68a);display:flex;align-items:center;justify-content:center;margin:0 auto 24px;font-size:28px;box-shadow:0 4px 12px rgba(253,230,138,0.4)}
+    .step-num{font-size:11px;font-weight:700;color:#c68b52;text-transform:uppercase;letter-spacing:0.12em;margin-bottom:10px}
+    .step h3{font-size:18px;font-weight:700;color:#0f172a;margin-bottom:10px}
+    .step p{font-size:14px;color:#64748b;line-height:1.65}
 
     /* ── Features ──────────────────────────────────────────── */
     .features-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
-    .feature-card{padding:28px;background:#fff;border:1px solid #f1f5f9;border-radius:14px;transition:box-shadow .3s}
-    .feature-card:hover{box-shadow:0 4px 24px rgba(0,0,0,0.05)}
-    .feature-icon{font-size:28px;margin-bottom:14px}
-    .feature-card h3{font-size:16px;font-weight:700;color:#0f172a;margin-bottom:6px}
-    .feature-card p{font-size:14px;color:#64748b;line-height:1.55}
+    .feature-card{padding:32px;background:#fff;border:1px solid #f1f5f9;border-radius:18px;transition:all .35s cubic-bezier(0.16,1,0.3,1);position:relative}
+    .feature-card:hover{box-shadow:0 12px 40px rgba(0,0,0,0.06);transform:translateY(-3px);border-color:transparent}
+    .feature-icon{width:52px;height:52px;border-radius:14px;background:linear-gradient(135deg,#fffbf5,#fef3c7);display:flex;align-items:center;justify-content:center;margin-bottom:18px;font-size:26px}
+    .feature-card h3{font-size:17px;font-weight:700;color:#0f172a;margin-bottom:8px}
+    .feature-card p{font-size:14px;color:#64748b;line-height:1.6}
 
     /* ── Pricing ───────────────────────────────────────────── */
-    .pricing{background:#fafafa}
-    .pricing-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;max-width:960px;margin:0 auto}
-    .price-card{background:#fff;border:1.5px solid #e2e8f0;border-radius:16px;padding:36px 28px;text-align:center;position:relative;transition:transform .2s,box-shadow .2s}
-    .price-card:hover{transform:translateY(-4px);box-shadow:0 12px 40px rgba(0,0,0,0.08)}
-    .price-card.highlighted{border-color:#c68b52;box-shadow:0 0 0 1px #c68b52}
-    .recommend-tag{position:absolute;top:-13px;left:50%;transform:translateX(-50%);background:#c68b52;color:#fff;font-size:11px;font-weight:700;padding:4px 16px;border-radius:999px;text-transform:uppercase;letter-spacing:0.06em}
-    .price-card h3{font-size:20px;font-weight:700;color:#0f172a;margin-bottom:4px}
-    .price-card .desc{font-size:13px;color:#94a3b8;margin-bottom:20px}
-    .price-amount{font-size:40px;font-weight:800;color:#0f172a;line-height:1}
+    .pricing{background:linear-gradient(180deg,#fafafa 0%,#f8fafc 100%)}
+    .pricing-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;max-width:980px;margin:0 auto}
+    .price-card{background:#fff;border:1.5px solid #e2e8f0;border-radius:20px;padding:40px 30px;text-align:center;position:relative;transition:all .35s cubic-bezier(0.16,1,0.3,1)}
+    .price-card:hover{transform:translateY(-6px);box-shadow:0 20px 60px rgba(0,0,0,0.08)}
+    .price-card.highlighted{border-color:#c68b52;box-shadow:0 0 0 1px #c68b52,0 16px 48px rgba(198,139,82,0.15);transform:scale(1.03)}
+    .price-card.highlighted:hover{transform:scale(1.03) translateY(-4px);box-shadow:0 0 0 1px #c68b52,0 24px 60px rgba(198,139,82,0.2)}
+    .recommend-tag{position:absolute;top:-13px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,#c68b52,#e2a86b);color:#fff;font-size:11px;font-weight:700;padding:5px 20px;border-radius:999px;text-transform:uppercase;letter-spacing:0.06em;box-shadow:0 2px 8px rgba(198,139,82,0.3)}
+    .price-card h3{font-size:22px;font-weight:700;color:#0f172a;margin-bottom:4px}
+    .price-card .desc{font-size:13px;color:#94a3b8;margin-bottom:24px}
+    .price-amount{font-size:44px;font-weight:800;color:#0f172a;line-height:1;letter-spacing:-0.02em}
     .price-amount span{font-size:16px;font-weight:500;color:#94a3b8}
-    .price-per{font-size:13px;color:#94a3b8;margin-bottom:24px}
-    .price-features{list-style:none;text-align:left;margin-bottom:28px}
-    .price-features li{font-size:14px;color:#475569;padding:6px 0;display:flex;align-items:flex-start;gap:8px}
+    .price-per{font-size:13px;color:#94a3b8;margin-bottom:28px}
+    .price-features{list-style:none;text-align:left;margin-bottom:32px}
+    .price-features li{font-size:14px;color:#475569;padding:7px 0;display:flex;align-items:flex-start;gap:10px}
     .price-features li::before{content:'✓';color:#c68b52;font-weight:700;flex-shrink:0}
-    .price-btn{display:block;width:100%;padding:12px;border-radius:10px;font-weight:600;font-size:14px;border:none;cursor:pointer;transition:all .2s}
-    .price-btn-primary{background:#c68b52;color:#fff}
-    .price-btn-primary:hover{background:#b07440}
+    .price-btn{display:block;width:100%;padding:13px;border-radius:12px;font-weight:600;font-size:15px;border:none;cursor:pointer;transition:all .25s}
+    .price-btn-primary{background:linear-gradient(135deg,#c68b52,#b07440);color:#fff;box-shadow:0 2px 12px rgba(198,139,82,0.3)}
+    .price-btn-primary:hover{box-shadow:0 6px 24px rgba(198,139,82,0.4);transform:translateY(-1px)}
     .price-btn-outline{background:transparent;color:#1e293b;border:1.5px solid #e2e8f0}
-    .price-btn-outline:hover{border-color:#c68b52;color:#c68b52}
-    .pricing-note{text-align:center;margin-top:32px;font-size:13px;color:#94a3b8}
+    .price-btn-outline:hover{border-color:#c68b52;color:#c68b52;transform:translateY(-1px)}
+    .pricing-note{text-align:center;margin-top:36px;font-size:13px;color:#94a3b8}
 
     /* ── FAQ ───────────────────────────────────────────────── */
     .faq-list{max-width:680px;margin:0 auto}
-    .faq-item{border-bottom:1px solid #f1f5f9;padding:20px 0}
-    .faq-q{font-size:16px;font-weight:600;color:#0f172a;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:16px;user-select:none}
-    .faq-q::after{content:'+';font-size:22px;color:#94a3b8;flex-shrink:0;transition:transform .2s}
+    .faq-item{border-bottom:1px solid #f1f5f9;padding:24px 0}
+    .faq-q{font-size:16px;font-weight:600;color:#0f172a;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:16px;user-select:none;transition:color .2s}
+    .faq-q:hover{color:#c68b52}
+    .faq-q::after{content:'+';font-size:22px;color:#94a3b8;flex-shrink:0;transition:all .25s}
     .faq-item.open .faq-q::after{transform:rotate(45deg);color:#c68b52}
-    .faq-a{max-height:0;overflow:hidden;transition:max-height .3s ease;font-size:14px;color:#64748b;line-height:1.7}
+    .faq-a{max-height:0;overflow:hidden;transition:max-height .35s ease;font-size:14px;color:#64748b;line-height:1.75}
     .faq-a a{color:#c68b52;text-decoration:underline}
-    .faq-item.open .faq-a{max-height:260px;padding-top:12px}
-
-    /* ── CTA Banner ───────────────────────────────────────── */
-    .cta-banner{background:linear-gradient(135deg,#1e293b,#0f172a);color:#fff;text-align:center;padding:72px 24px;border-radius:0}
-    .cta-banner h2{font-size:clamp(24px,3.5vw,36px);font-weight:800;margin-bottom:12px;letter-spacing:-0.02em}
-    .cta-banner p{font-size:16px;color:#94a3b8;margin-bottom:32px;max-width:520px;margin-left:auto;margin-right:auto}
-    .cta-banner .btn-primary{padding:16px 40px;font-size:17px}
-    .cta-note{margin-top:16px;font-size:12.5px;color:#64748b}
-
-    /* ── Footer ────────────────────────────────────────────── */
-    .site-footer{background:#0f172a;color:#94a3b8;padding:56px 0 32px}
-    .footer-grid{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:40px;margin-bottom:40px}
-    .footer-brand .logo{font-size:20px;font-weight:800;color:#fff;margin-bottom:10px}
-    .footer-brand .logo span{color:#c68b52}
-    .footer-brand p{font-size:13px;line-height:1.65;max-width:260px}
-    .footer-col h4{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#e2e8f0;margin-bottom:14px}
-    .footer-col a{display:block;font-size:13.5px;color:#94a3b8;padding:4px 0;transition:color .2s}
-    .footer-col a:hover{color:#fff}
-    .footer-bottom{border-top:1px solid #1e293b;padding-top:24px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;font-size:12.5px}
-    .footer-bottom a{color:#94a3b8;transition:color .2s}
-    .footer-bottom a:hover{color:#fff}
+    .faq-item.open .faq-a{max-height:280px;padding-top:14px}
 
     /* ── Request Trial ─────────────────────────────────── */
-    .request-trial{background:#fffbf5}
-    .trial-form{max-width:540px;margin:0 auto;background:#fff;padding:40px;border-radius:16px;border:1px solid #f1f5f9;box-shadow:0 4px 24px rgba(0,0,0,0.04)}
+    .request-trial{background:linear-gradient(180deg,#fffbf5,#fff8f0);position:relative}
+    .request-trial::before{content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);width:100%;max-width:640px;height:100%;background:radial-gradient(ellipse at 50% 0%,rgba(198,139,82,0.06),transparent 70%);pointer-events:none}
+    .trial-form{max-width:540px;margin:0 auto;background:#fff;padding:44px;border-radius:20px;border:1px solid rgba(241,245,249,0.8);box-shadow:0 8px 40px rgba(0,0,0,0.06);position:relative;z-index:1}
     .trial-form .form-row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-    .trial-form .form-group{margin-bottom:18px}
-    .trial-form label{display:block;font-size:14px;font-weight:600;color:#1e293b;margin-bottom:6px}
-    .trial-form input{width:100%;padding:12px 14px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:15px;font-family:inherit;transition:border-color .2s;outline:none}
-    .trial-form input:focus{border-color:#c68b52}
-    .trial-form .btn-primary{width:100%;padding:14px;font-size:16px;margin-top:8px}
-    .trial-form .form-note{text-align:center;margin-top:14px;font-size:13px;color:#94a3b8}
+    .trial-form .form-group{margin-bottom:20px}
+    .trial-form label{display:block;font-size:14px;font-weight:600;color:#1e293b;margin-bottom:8px}
+    .trial-form input{width:100%;padding:13px 16px;border:1.5px solid #e2e8f0;border-radius:12px;font-size:15px;font-family:inherit;transition:all .25s;outline:none;background:#fafafa}
+    .trial-form input:focus{border-color:#c68b52;background:#fff;box-shadow:0 0 0 3px rgba(198,139,82,0.1)}
+    .trial-form .btn-primary{width:100%;padding:15px;font-size:16px;margin-top:8px}
+    .trial-form .form-note{text-align:center;margin-top:16px;font-size:13px;color:#94a3b8}
     .trial-success{display:none;text-align:center;padding:20px 0}
     .trial-success .success-icon{font-size:48px;margin-bottom:16px}
     .trial-success h3{font-size:20px;font-weight:700;color:#0f172a;margin-bottom:8px}
     .trial-success p{font-size:15px;color:#64748b;line-height:1.6}
 
+    /* ── CTA Banner ───────────────────────────────────────── */
+    .cta-banner{background:linear-gradient(135deg,#1e293b 0%,#0f172a 50%,#1a1f35 100%);color:#fff;text-align:center;padding:88px 24px;position:relative;overflow:hidden}
+    .cta-banner::before{content:'';position:absolute;top:-50%;right:-20%;width:500px;height:500px;background:radial-gradient(circle,rgba(198,139,82,0.12) 0%,transparent 70%);border-radius:50%;pointer-events:none}
+    .cta-banner::after{content:'';position:absolute;bottom:-40%;left:-15%;width:400px;height:400px;background:radial-gradient(circle,rgba(198,139,82,0.08) 0%,transparent 70%);border-radius:50%;pointer-events:none}
+    .cta-banner h2{font-size:clamp(28px,3.5vw,40px);font-weight:800;margin-bottom:14px;letter-spacing:-0.025em;position:relative;z-index:1}
+    .cta-banner p{font-size:17px;color:rgba(148,163,184,0.9);margin-bottom:36px;max-width:520px;margin-left:auto;margin-right:auto;position:relative;z-index:1;line-height:1.65}
+    .cta-banner .btn-primary{padding:17px 44px;font-size:17px;position:relative;z-index:1}
+    .cta-note{margin-top:18px;font-size:12.5px;color:#64748b;position:relative;z-index:1}
+
     /* ── About ─────────────────────────────────────────── */
     .about{background:#fff}
     .about-content{max-width:680px;margin:0 auto;text-align:center}
-    .about-content .founder-info{margin-top:32px;padding:28px;background:#fafafa;border-radius:14px;border:1px solid #f1f5f9}
+    .about-content .founder-info{margin-top:36px;padding:32px;background:linear-gradient(135deg,#fafafa,#f8fafc);border-radius:18px;border:1px solid #f1f5f9;transition:box-shadow .3s}
+    .about-content .founder-info:hover{box-shadow:0 8px 32px rgba(0,0,0,0.05)}
     .about-content .founder-info h3{font-size:18px;font-weight:700;color:#0f172a;margin-bottom:4px}
     .about-content .founder-info .role{font-size:14px;color:#c68b52;font-weight:600;margin-bottom:12px}
     .about-content .founder-info p{font-size:14px;color:#64748b;line-height:1.65}
-    .about-content .mission{font-size:16px;color:#475569;line-height:1.7;margin-top:24px}
+    .about-content .mission{font-size:16px;color:#475569;line-height:1.75;margin-top:24px}
+
+    /* ── Footer ────────────────────────────────────────────── */
+    .site-footer{background:#0f172a;color:#94a3b8;padding:64px 0 36px}
+    .footer-grid{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:48px;margin-bottom:48px}
+    .footer-brand .logo{font-size:22px;font-weight:800;color:#fff;margin-bottom:12px;letter-spacing:-0.02em}
+    .footer-brand .logo span{background:linear-gradient(135deg,#c68b52,#e2a86b);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+    .footer-brand p{font-size:14px;line-height:1.7;max-width:280px}
+    .footer-col h4{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:#e2e8f0;margin-bottom:16px}
+    .footer-col a{display:block;font-size:14px;color:#94a3b8;padding:5px 0;transition:all .2s}
+    .footer-col a:hover{color:#fff;transform:translateX(2px)}
+    .footer-bottom{border-top:1px solid rgba(30,41,59,0.8);padding-top:28px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;font-size:13px}
+    .footer-bottom a{color:#94a3b8;transition:color .2s}
+    .footer-bottom a:hover{color:#fff}
 
     /* ── WhatsApp Button ───────────────────────────────── */
-    .whatsapp-float{position:fixed;bottom:24px;right:24px;z-index:90;width:56px;height:56px;border-radius:50%;background:#25d366;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(37,211,102,0.4);transition:transform .2s;cursor:pointer;text-decoration:none}
-    .whatsapp-float:hover{transform:scale(1.1)}
-    .whatsapp-float svg{width:28px;height:28px;fill:#fff}
+    .whatsapp-float{position:fixed;bottom:28px;right:28px;z-index:90;width:60px;height:60px;border-radius:50%;background:#25d366;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 20px rgba(37,211,102,0.4);transition:all .3s;cursor:pointer;text-decoration:none}
+    .whatsapp-float:hover{transform:scale(1.08) translateY(-2px);box-shadow:0 8px 28px rgba(37,211,102,0.5)}
+    .whatsapp-float svg{width:30px;height:30px;fill:#fff}
 
     /* ── Responsive ────────────────────────────────────── */
     @media(max-width:900px){
-      .hero{padding:60px 0 0}
+      section{padding:80px 0}
+      .hero{padding:72px 0 0}
       .hero-visual{margin-top:40px}
       .steps,.features-grid,.pricing-grid{grid-template-columns:1fr}
+      .price-card.highlighted{transform:none}
+      .price-card.highlighted:hover{transform:translateY(-4px)}
       .footer-grid{grid-template-columns:1fr 1fr}
       .trial-form .form-row{grid-template-columns:1fr}
+      .trial-form{padding:32px 24px}
     }
     @media(max-width:640px){
-      section{padding:56px 0}
-      .hero{padding:40px 0 0}
-      .hero h1{font-size:28px}
+      section{padding:64px 0}
+      .hero{padding:48px 0 0}
+      .hero h1{font-size:30px}
+      .hero-actions{flex-direction:column;width:100%;max-width:320px;margin:0 auto}
+      .hero-actions .btn-primary,.hero-actions .btn-secondary{width:100%;text-align:center;padding:14px 24px}
       .hero-visual{margin-top:32px}
-      .navbar .nav-links{display:none;position:absolute;top:64px;left:0;right:0;flex-direction:column;background:#fff;border-bottom:1px solid #e2e8f0;padding:16px 24px;gap:16px;box-shadow:0 8px 24px rgba(0,0,0,0.08)}
+      .navbar .container{height:64px}
+      .navbar .nav-links{display:none;position:absolute;top:64px;left:0;right:0;flex-direction:column;background:rgba(255,255,255,0.98);backdrop-filter:blur(20px);border-bottom:1px solid #e2e8f0;padding:20px 24px;gap:16px;box-shadow:0 12px 32px rgba(0,0,0,0.08)}
       .navbar .nav-links.open{display:flex}
       .nav-toggle{display:block}
       .trust-strip .container{gap:16px}
@@ -199,6 +236,7 @@
       .footer-grid{grid-template-columns:1fr}
       .footer-bottom{flex-direction:column;text-align:center}
       .pricing-note{font-size:12px}
+      .cta-banner{padding:64px 24px}
     }
   </style>
 </head>
@@ -236,8 +274,7 @@
         <a href="#request-trial" class="btn-primary">Get Your Free Trial</a>
         <a href="#how-it-works" class="btn-secondary">See How It Works</a>
       </div>
-      <p class="hero-sub" style="font-size:14px;color:#64748b;margin-top:14px;margin-bottom:0;">We'll set up your menu and WhatsApp you the login &mdash; usually within a few hours.</p>
-      <p class="hero-note">14-day free trial &bull; No credit card required &bull; Cancel anytime &bull; <a href="/m/33OONR" target="_blank" style="color:#c68b52;text-decoration:underline">View a live demo menu &rarr;</a></p>
+      <p class="hero-meta">14-day free trial &bull; No credit card &bull; We WhatsApp you the login<br><a href="/m/33OONR" target="_blank">View a live demo menu &rarr;</a></p>
     </div>
     <div class="hero-visual">
       <img src="/og-image.png" alt="KodSpot digital QR menu platform showing restaurant menu on a smartphone with QR code" width="1200" height="630" loading="eager">
@@ -261,7 +298,7 @@
 <!-- ============================================================
      HOW IT WORKS
      ============================================================ -->
-<section class="how-it-works" id="how-it-works">
+<section class="how-it-works reveal" id="how-it-works">
   <div class="container">
     <div class="section-label">How It Works</div>
     <h2 class="section-title">Go live in 3 simple steps</h2>
@@ -292,7 +329,7 @@
 <!-- ============================================================
      FEATURES
      ============================================================ -->
-<section id="features">
+<section id="features" class="reveal">
   <div class="container">
     <div class="section-label">Features</div>
     <h2 class="section-title">Everything your restaurant needs to go digital</h2>
@@ -335,7 +372,7 @@
 <!-- ============================================================
      PRICING
      ============================================================ -->
-<section class="pricing" id="pricing">
+<section class="pricing reveal" id="pricing">
   <div class="container">
     <div class="section-label">Pricing</div>
     <h2 class="section-title">Simple, honest pricing</h2>
@@ -399,7 +436,7 @@
 <!-- ============================================================
      FAQ
      ============================================================ -->
-<section id="faq">
+<section id="faq" class="reveal">
   <div class="container">
     <div class="section-label">FAQ</div>
     <h2 class="section-title">Common questions, straight answers</h2>
@@ -444,7 +481,7 @@
 <!-- ============================================================
      REQUEST TRIAL FORM
      ============================================================ -->
-<section class="request-trial" id="request-trial">
+<section class="request-trial reveal" id="request-trial">
   <div class="container">
     <div class="section-label">Get Started</div>
     <h2 class="section-title">Request your free 14-day trial</h2>
@@ -487,7 +524,7 @@
 <!-- ============================================================
      ABOUT
      ============================================================ -->
-<section class="about" id="about">
+<section class="about reveal" id="about">
   <div class="container">
     <div class="section-label">About</div>
     <h2 class="section-title">Built by a restaurant-tech founder in India</h2>
@@ -505,7 +542,7 @@
 <!-- ============================================================
      CTA BANNER
      ============================================================ -->
-<section class="cta-banner">
+<section class="cta-banner reveal">
   <h2>Ready to go digital?</h2>
   <p>Set up your restaurant's QR menu in minutes. Start with a free 14-day trial — no credit card, no commitment.</p>
   <a href="#request-trial" class="btn-primary">Get Your Free Trial</a>
@@ -540,7 +577,7 @@
         <h4>Contact</h4>
         <a href="mailto:support@kodspot.com">support@kodspot.com</a>
         <a href="https://wa.me/917676699291" target="_blank" rel="noopener">WhatsApp Support</a>
-        <a>Belagavi, Karnataka, India</a>
+        <span>Belagavi, Karnataka, India</span>
       </div>
     </div>
     <div class="footer-bottom">
@@ -614,9 +651,36 @@ async function submitTrialRequest(){
     {"@type": "Question", "name": "What happens after the 14-day free trial?", "acceptedAnswer": {"@type": "Answer", "text": "You choose a plan that fits your restaurant. No automatic charges — you pay only when you choose to."}},
     {"@type": "Question", "name": "Will my printed QR codes keep working if I update my menu?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. Your QR code and menu URL are permanent. The same printed QR code always shows your latest menu."}},
     {"@type": "Question", "name": "Is there a long-term contract?", "acceptedAnswer": {"@type": "Answer", "text": "No. All plans are month-to-month. You can upgrade, downgrade, or cancel at any time."}},
+    {"@type": "Question", "name": "How do I make payments?", "acceptedAnswer": {"@type": "Answer", "text": "We accept payments via UPI, bank transfer, and secure online payment links. You will receive a reminder before your subscription is due."}},
+    {"@type": "Question", "name": "What is your refund policy?", "acceptedAnswer": {"@type": "Answer", "text": "We offer a full refund within 7 days of your first paid subscription. After that, cancel anytime and your menu stays active until the end of your billing cycle."}},
     {"@type": "Question", "name": "Is my restaurant data safe?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. We use HTTPS encryption, hashed PINs, and our data practices are aligned with India's DPDPA."}}
   ]
 }
+</script>
+
+<!-- Scroll Reveal & Navbar Effects -->
+<script>
+(function(){
+  // Scroll reveal with IntersectionObserver
+  var reveals=document.querySelectorAll('.reveal');
+  if('IntersectionObserver' in window){
+    var io=new IntersectionObserver(function(entries){
+      entries.forEach(function(e){
+        if(e.isIntersecting){e.target.classList.add('visible');io.unobserve(e.target);}
+      });
+    },{threshold:0.12,rootMargin:'0px 0px -40px 0px'});
+    reveals.forEach(function(el){io.observe(el);});
+  }else{
+    reveals.forEach(function(el){el.classList.add('visible');});
+  }
+  // Navbar scroll shadow
+  var nav=document.querySelector('.navbar');
+  if(nav){
+    window.addEventListener('scroll',function(){
+      if(window.scrollY>10){nav.classList.add('scrolled');}else{nav.classList.remove('scrolled');}
+    },{passive:true});
+  }
+})();
 </script>
 
 </body>
