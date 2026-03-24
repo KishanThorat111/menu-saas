@@ -1194,6 +1194,63 @@ function registerRoutes() {
     return reply.sendFile('menu.html');
   });
 
+  // ==================== TRIAL REQUEST (PUBLIC) ====================
+  fastify.post('/auth/request-trial', {
+    config: {
+      rateLimit: {
+        max: 5,
+        timeWindow: 3600000,
+        keyGenerator: (req) => `trial-req:${req.ip}`
+      }
+    }
+  }, async (request, reply) => {
+    const schema = z.object({
+      name: z.string().min(1).max(200).transform(v => v.trim()),
+      city: z.string().min(1).max(100).transform(v => v.trim()),
+      phone: z.string().min(10).max(15).regex(/^\d{10,15}$/, 'Invalid phone number'),
+      email: z.string().email().max(200).optional().or(z.literal(''))
+    });
+
+    const data = schema.parse(request.body);
+
+    // Deduplicate: reject if same phone already has a pending request
+    const existing = await prisma.trialRequest.findFirst({
+      where: { phone: data.phone, status: 'pending' }
+    });
+    if (existing) {
+      return { success: true, message: 'Your request is already being processed. We will contact you shortly via WhatsApp.' };
+    }
+
+    await prisma.trialRequest.create({
+      data: {
+        name: data.name,
+        city: data.city,
+        phone: data.phone,
+        email: data.email || null
+      }
+    });
+
+    // Best-effort email notification to admin
+    try {
+      const transporter = getSesTransporter();
+      if (transporter) {
+        await transporter.sendMail({
+          from: `KodSpot <${SES_FROM}>`,
+          to: process.env.ADMIN_NOTIFICATION_EMAIL || SES_FROM,
+          subject: `New Trial Request — ${data.name} (${data.city})`,
+          text: `New trial request:\n\nRestaurant: ${data.name}\nCity: ${data.city}\nPhone: ${data.phone}\nEmail: ${data.email || 'Not provided'}\n\nLogin to superadmin to review.`
+        });
+      }
+    } catch (emailErr) {
+      fastify.log.error(`Trial request notification email failed: ${emailErr.message}`);
+    }
+
+    return {
+      success: true,
+      message: 'Thank you! We will set up your account and contact you via WhatsApp within a few hours.'
+    };
+  });
+
   // Hotel Owner Login — 6-char base32 code + 8-digit PIN
   fastify.post('/auth/login', {
     config: { rateLimit: loginSlugRateLimit }
@@ -2805,6 +2862,47 @@ function registerRoutes() {
         revenueByPlan: revByPlan,
         paymentMethods: methods
       };
+    });
+
+    // ==================== SUPERADMIN: Trial Requests ====================
+    app.get('/admin/trial-requests', async (request, reply) => {
+      const { status } = z.object({
+        status: z.enum(['pending', 'approved', 'rejected']).optional()
+      }).parse(request.query);
+
+      const where = {};
+      if (status) where.status = status;
+
+      const requests = await prisma.trialRequest.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        take: 100
+      });
+
+      return { requests };
+    });
+
+    app.patch('/admin/trial-requests/:id', async (request, reply) => {
+      const { id } = z.object({ id: z.string().uuid() }).parse(request.params);
+      const schema = z.object({
+        status: z.enum(['approved', 'rejected']),
+        notes: z.string().max(500).optional(),
+        hotelId: z.string().uuid().optional()
+      });
+      const data = schema.parse(request.body);
+
+      const existing = await prisma.trialRequest.findUnique({ where: { id } });
+      if (!existing) return reply.code(404).send({ error: 'Trial request not found' });
+
+      const updated = await prisma.trialRequest.update({
+        where: { id },
+        data: {
+          status: data.status,
+          notes: data.notes || null,
+          hotelId: data.hotelId || null
+        }
+      });
+      return updated;
     });
 
     // [6-DIGIT PIN CHANGE] UPDATED: Include pinResetCount in select

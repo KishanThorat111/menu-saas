@@ -3062,6 +3062,18 @@
         <div class="revenue-breakdown" id="revenueBreakdown"></div>
       </div>
       
+      <!-- Trial Requests Section -->
+      <div class="create-section" id="trialRequestsSection">
+        <div class="section-header active" id="trialRequestsToggle" onclick="document.getElementById('trialRequestsContent').classList.toggle('hidden');this.classList.toggle('active');document.getElementById('trialRequestsToggleIcon').textContent=this.classList.contains('active')?'▾':'▸'">
+          <span style="font-size:1.25rem;">📋</span>
+          <h2>Trial Requests <span id="trialRequestsBadge" style="background:#f59e0b;color:#fff;font-size:12px;padding:2px 8px;border-radius:999px;margin-left:8px;font-weight:700;display:none;">0</span></h2>
+          <div id="trialRequestsToggleIcon" class="section-toggle">▾</div>
+        </div>
+        <div id="trialRequestsContent" style="padding:1rem 1.5rem;">
+          <div id="trialRequestsList" style="font-size:14px;color:#64748b;">Loading...</div>
+        </div>
+      </div>
+
       <!-- Create Hotel Section -->
       <div class="create-section">
         <div class="section-header active" id="createSectionToggle">
