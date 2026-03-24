@@ -55,22 +55,21 @@
     .nav-toggle svg{width:28px;height:28px;color:#1e293b}
 
     /* ── Hero ──────────────────────────────────────────────── */
-    .hero{padding:80px 0 60px;background:linear-gradient(180deg,#fffbf5 0%,#ffffff 100%)}
-    .hero .container{display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:center}
-    .hero-content{text-align:left}
+    .hero{padding:80px 0 0;background:linear-gradient(180deg,#fffbf5 0%,#ffffff 100%)}
+    .hero .container{display:flex;flex-direction:column;align-items:center;text-align:center}
+    .hero-content{max-width:720px}
     .hero-badge{display:inline-flex;align-items:center;gap:6px;background:#fef3c7;color:#92400e;font-size:13px;font-weight:600;padding:6px 16px;border-radius:999px;margin-bottom:24px}
-    .hero h1{font-size:clamp(32px,4vw,48px);font-weight:800;line-height:1.12;letter-spacing:-0.03em;color:#0f172a;margin-bottom:20px}
+    .hero h1{font-size:clamp(32px,5vw,52px);font-weight:800;line-height:1.1;letter-spacing:-0.03em;color:#0f172a;margin-bottom:20px}
     .hero h1 span{color:#c68b52}
-    .hero p.hero-sub{font-size:clamp(15px,1.8vw,18px);color:#64748b;max-width:520px;margin-bottom:28px;line-height:1.65}
-    .hero-actions{display:flex;gap:12px;flex-wrap:wrap}
-    .hero-visual{display:flex;justify-content:center;align-items:center}
-    .hero-visual img{max-width:100%;height:auto;border-radius:12px;filter:drop-shadow(0 20px 40px rgba(0,0,0,0.10))}
+    .hero p.hero-sub{font-size:clamp(15px,1.8vw,18px);color:#64748b;max-width:560px;margin:0 auto 28px;line-height:1.65}
+    .hero-actions{display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
+    .hero-note{margin-top:20px;font-size:13px;color:#94a3b8}
+    .hero-visual{margin-top:56px;width:100%;max-width:900px}
+    .hero-visual img{width:100%;height:auto;border-radius:16px 16px 0 0;box-shadow:0 -4px 40px rgba(0,0,0,0.08),0 -1px 0 rgba(0,0,0,0.04)}
     .btn-primary{background:#c68b52;color:#fff;padding:14px 32px;border-radius:10px;font-weight:700;font-size:16px;border:none;cursor:pointer;transition:background .2s,transform .1s}
     .btn-primary:hover{background:#b07440;transform:translateY(-1px)}
     .btn-secondary{background:#f8fafc;color:#1e293b;padding:14px 32px;border-radius:10px;font-weight:600;font-size:16px;border:1.5px solid #e2e8f0;cursor:pointer;transition:all .2s}
     .btn-secondary:hover{border-color:#c68b52;color:#c68b52}
-    .hero-note{margin-top:20px;font-size:13px;color:#94a3b8}
-
     /* ── Trust Strip ──────────────────────────────────────── */
     .trust-strip{padding:32px 0;border-top:1px solid #f1f5f9;border-bottom:1px solid #f1f5f9;background:#fafafa}
     .trust-strip .container{display:flex;justify-content:center;gap:36px;flex-wrap:wrap}
@@ -181,18 +180,17 @@
 
     /* ── Responsive ────────────────────────────────────── */
     @media(max-width:900px){
-      .hero .container{grid-template-columns:1fr;text-align:center}
-      .hero-content{text-align:center}
-      .hero p.hero-sub{margin-left:auto;margin-right:auto}
-      .hero-actions{justify-content:center}
-      .hero-visual{order:-1;max-width:480px;margin:0 auto}
+      .hero{padding:60px 0 0}
+      .hero-visual{margin-top:40px}
       .steps,.features-grid,.pricing-grid{grid-template-columns:1fr}
       .footer-grid{grid-template-columns:1fr 1fr}
       .trial-form .form-row{grid-template-columns:1fr}
     }
     @media(max-width:640px){
       section{padding:56px 0}
-      .hero{padding:48px 0 40px}
+      .hero{padding:40px 0 0}
+      .hero h1{font-size:28px}
+      .hero-visual{margin-top:32px}
       .navbar .nav-links{display:none;position:absolute;top:64px;left:0;right:0;flex-direction:column;background:#fff;border-bottom:1px solid #e2e8f0;padding:16px 24px;gap:16px;box-shadow:0 8px 24px rgba(0,0,0,0.08)}
       .navbar .nav-links.open{display:flex}
       .nav-toggle{display:block}
@@ -238,11 +236,11 @@
         <a href="#request-trial" class="btn-primary">Get Your Free Trial</a>
         <a href="#how-it-works" class="btn-secondary">See How It Works</a>
       </div>
-      <p class="hero-sub" style="font-size:15px;color:#64748b;margin-top:12px;margin-bottom:0;">We'll set up your menu and WhatsApp you the login &mdash; usually within a few hours.</p>
+      <p class="hero-sub" style="font-size:14px;color:#64748b;margin-top:14px;margin-bottom:0;">We'll set up your menu and WhatsApp you the login &mdash; usually within a few hours.</p>
       <p class="hero-note">14-day free trial &bull; No credit card required &bull; Cancel anytime &bull; <a href="/m/33OONR" target="_blank" style="color:#c68b52;text-decoration:underline">View a live demo menu &rarr;</a></p>
     </div>
     <div class="hero-visual">
-      <img src="/og-image.png" alt="KodSpot digital QR menu platform showing restaurant menu on a smartphone with QR code" width="560" height="294" loading="eager">
+      <img src="/og-image.png" alt="KodSpot digital QR menu platform showing restaurant menu on a smartphone with QR code" width="1200" height="630" loading="eager">
     </div>
   </div>
 </section>
