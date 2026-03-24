@@ -14,9 +14,13 @@
   <meta property="og:url" content="https://kodspot.com/">
   <meta property="og:type" content="website">
   <meta property="og:locale" content="en_IN">
-  <meta name="twitter:card" content="summary">
+  <meta property="og:image" content="https://pub-ee32ad45508049beb4f451f5b6f33d47.r2.dev/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="KodSpot — Digital QR Menu for Indian Restaurants">
   <meta name="twitter:description" content="Create a professional digital menu with QR codes. No app needed. Built for Indian restaurants, cafes, and hotels.">
+  <meta name="twitter:image" content="https://pub-ee32ad45508049beb4f451f5b6f33d47.r2.dev/og-image.png">
   <link rel="icon" href="/favicon.ico" sizes="any">
   <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
   <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
@@ -142,10 +146,40 @@
     .footer-bottom a{color:#94a3b8;transition:color .2s}
     .footer-bottom a:hover{color:#fff}
 
-    /* ── Responsive ────────────────────────────────────────── */
+    /* ── Request Trial ─────────────────────────────────── */
+    .request-trial{background:#fffbf5}
+    .trial-form{max-width:540px;margin:0 auto;background:#fff;padding:40px;border-radius:16px;border:1px solid #f1f5f9;box-shadow:0 4px 24px rgba(0,0,0,0.04)}
+    .trial-form .form-row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+    .trial-form .form-group{margin-bottom:18px}
+    .trial-form label{display:block;font-size:14px;font-weight:600;color:#1e293b;margin-bottom:6px}
+    .trial-form input{width:100%;padding:12px 14px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:15px;font-family:inherit;transition:border-color .2s;outline:none}
+    .trial-form input:focus{border-color:#c68b52}
+    .trial-form .btn-primary{width:100%;padding:14px;font-size:16px;margin-top:8px}
+    .trial-form .form-note{text-align:center;margin-top:14px;font-size:13px;color:#94a3b8}
+    .trial-success{display:none;text-align:center;padding:20px 0}
+    .trial-success .success-icon{font-size:48px;margin-bottom:16px}
+    .trial-success h3{font-size:20px;font-weight:700;color:#0f172a;margin-bottom:8px}
+    .trial-success p{font-size:15px;color:#64748b;line-height:1.6}
+
+    /* ── About ─────────────────────────────────────────── */
+    .about{background:#fff}
+    .about-content{max-width:680px;margin:0 auto;text-align:center}
+    .about-content .founder-info{margin-top:32px;padding:28px;background:#fafafa;border-radius:14px;border:1px solid #f1f5f9}
+    .about-content .founder-info h3{font-size:18px;font-weight:700;color:#0f172a;margin-bottom:4px}
+    .about-content .founder-info .role{font-size:14px;color:#c68b52;font-weight:600;margin-bottom:12px}
+    .about-content .founder-info p{font-size:14px;color:#64748b;line-height:1.65}
+    .about-content .mission{font-size:16px;color:#475569;line-height:1.7;margin-top:24px}
+
+    /* ── WhatsApp Button ───────────────────────────────── */
+    .whatsapp-float{position:fixed;bottom:24px;right:24px;z-index:90;width:56px;height:56px;border-radius:50%;background:#25d366;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(37,211,102,0.4);transition:transform .2s;cursor:pointer;text-decoration:none}
+    .whatsapp-float:hover{transform:scale(1.1)}
+    .whatsapp-float svg{width:28px;height:28px;fill:#fff}
+
+    /* ── Responsive ────────────────────────────────────── */
     @media(max-width:900px){
       .steps,.features-grid,.pricing-grid{grid-template-columns:1fr}
       .footer-grid{grid-template-columns:1fr 1fr}
+      .trial-form .form-row{grid-template-columns:1fr}
     }
     @media(max-width:640px){
       section{padding:56px 0}
@@ -176,8 +210,8 @@
       <a href="#features">Features</a>
       <a href="#pricing">Pricing</a>
       <a href="#faq">FAQ</a>
-      <a href="mailto:support@kodspot.com">Contact</a>
-      <a href="/admin" class="nav-cta">Hotel Login</a>
+      <a href="#about">About</a>
+      <a href="#request-trial" class="nav-cta">Get Free Trial</a>
     </div>
   </div>
 </nav>
@@ -191,10 +225,11 @@
     <h1>Stop reprinting menus.<br>Go digital with <span>one QR code.</span></h1>
     <p class="hero-sub">Create a professional digital menu in minutes. Place one QR code on every table — customers scan and browse your full menu from their phone. No app download, no waiting.</p>
     <div class="hero-actions">
-      <a href="mailto:support@kodspot.com?subject=Start%20my%20free%20trial" class="btn-primary">Start Your Free Trial</a>
+      <a href="#request-trial" class="btn-primary">Get Your Free Trial</a>
       <a href="#how-it-works" class="btn-secondary">See How It Works</a>
     </div>
-    <p class="hero-note">14-day free trial &bull; No credit card required &bull; Cancel anytime</p>
+    <p class="hero-sub" style="font-size:15px;color:#64748b;margin-top:12px;">We'll set up your menu and WhatsApp you the login &mdash; usually within a few hours.</p>
+    <p class="hero-note">14-day free trial &bull; No credit card required &bull; Cancel anytime &bull; <a href="/m/33OONR" target="_blank" style="color:#c68b52;text-decoration:underline">View a live demo menu &rarr;</a></p>
   </div>
 </section>
 
@@ -205,7 +240,7 @@
   <div class="container">
     <div class="trust-pill"><span class="tp-icon">&#x1F512;</span> HTTPS Encrypted</div>
     <div class="trust-pill"><span class="tp-icon">&#x1F4F1;</span> Works on All Phones</div>
-    <div class="trust-pill"><span class="tp-icon">&#x26A1;</span> Setup in Minutes</div>
+    <div class="trust-pill"><span class="tp-icon">&#x1F4CD;</span> Serving Belagavi Restaurants</div>
     <div class="trust-pill"><span class="tp-icon">&#x1F1EE;&#x1F1F3;</span> Made in India</div>
     <div class="trust-pill"><span class="tp-icon">&#x1F6E1;&#xFE0F;</span> DPDPA Aligned</div>
   </div>
@@ -308,7 +343,7 @@
           <li>150 unique visitors/day</li>
           <li>Today&rsquo;s analytics</li>
         </ul>
-        <a href="mailto:support@kodspot.com?subject=Starter%20Plan%20%E2%80%94%20Free%20Trial%20Request" class="price-btn price-btn-outline">Start Free Trial</a>
+        <a href="#request-trial" class="price-btn price-btn-outline">Get 14-Day Free Trial</a>
       </div>
 
       <!-- Standard -->
@@ -325,7 +360,7 @@
           <li>7-day analytics trend</li>
           <li>Priority email support</li>
         </ul>
-        <a href="mailto:support@kodspot.com?subject=Standard%20Plan%20%E2%80%94%20Free%20Trial%20Request" class="price-btn price-btn-primary">Start Free Trial</a>
+        <a href="#request-trial" class="price-btn price-btn-primary">Get 14-Day Free Trial</a>
       </div>
 
       <!-- Pro -->
@@ -341,7 +376,7 @@
           <li>Full 30-day analytics</li>
           <li>No &ldquo;Powered by KodSpot&rdquo; branding</li>
         </ul>
-        <a href="mailto:support@kodspot.com?subject=Pro%20Plan%20%E2%80%94%20Enquiry" class="price-btn price-btn-outline">Talk to Us</a>
+        <a href="#request-trial" class="price-btn price-btn-outline">Get 14-Day Free Trial</a>
       </div>
 
     </div>
@@ -368,7 +403,7 @@
       </div>
       <div class="faq-item">
         <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">What happens after the 14-day free trial?</div>
-        <div class="faq-a">You choose a plan that fits your restaurant. If you decide not to subscribe, your menu enters a grace period before it expires. There are no automatic charges — you pay only when you choose to.</div>
+        <div class="faq-a">After you submit the trial request, we personally set up your restaurant's menu and send you login details via WhatsApp. Your 14-day free trial starts from the day you receive your credentials. After the trial, you choose a plan that fits your restaurant. If you decide not to subscribe, your menu enters a grace period before it expires. There are no automatic charges — you pay only when you choose to.</div>
       </div>
       <div class="faq-item">
         <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">Will my printed QR codes keep working if I update my menu?</div>
@@ -395,12 +430,73 @@
 </section>
 
 <!-- ============================================================
+     REQUEST TRIAL FORM
+     ============================================================ -->
+<section class="request-trial" id="request-trial">
+  <div class="container">
+    <div class="section-label">Get Started</div>
+    <h2 class="section-title">Request your free 14-day trial</h2>
+    <p class="section-sub">Tell us about your restaurant. We'll set up your account and send your login details via WhatsApp.</p>
+    <div class="trial-form" id="trialForm">
+      <div class="form-row">
+        <div class="form-group">
+          <label for="trialName">Restaurant Name *</label>
+          <input type="text" id="trialName" placeholder="Hotel Sunny" maxlength="200" required>
+        </div>
+        <div class="form-group">
+          <label for="trialCity">City *</label>
+          <input type="text" id="trialCity" placeholder="Belagavi" maxlength="100" required>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="trialPhone">WhatsApp / Phone Number *</label>
+          <input type="tel" id="trialPhone" placeholder="9876543210" maxlength="15" required>
+        </div>
+        <div class="form-group">
+          <label for="trialEmail">Email <span style="font-weight:400;color:#94a3b8;">(optional)</span></label>
+          <input type="email" id="trialEmail" placeholder="info@restaurant.com" maxlength="200">
+        </div>
+      </div>
+      <button class="btn-primary" id="trialSubmitBtn" onclick="submitTrialRequest()">
+        Request Free Trial
+      </button>
+      <p class="form-note">We'll WhatsApp you on your number within a few hours. No payment required.</p>
+    </div>
+    <div class="trial-success" id="trialSuccess">
+      <div class="success-icon">&#x2705;</div>
+      <h3>Request Received!</h3>
+      <p>We're setting up your restaurant's digital menu. You'll receive your login details on WhatsApp (from +91 76766 99291) &mdash; usually within a few hours.</p>
+      <p style="margin-top:12px;"><a href="/m/33OONR" target="_blank" style="color:#c68b52;text-decoration:underline;font-weight:500;">See a live demo menu &rarr;</a> to preview what your menu will look like.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     ABOUT
+     ============================================================ -->
+<section class="about" id="about">
+  <div class="container">
+    <div class="section-label">About</div>
+    <h2 class="section-title">Built by a restaurant-tech founder in India</h2>
+    <div class="about-content">
+      <p class="mission">KodSpot was created to solve a simple problem: Indian restaurant owners spend money reprinting paper menus every time prices or dishes change. With KodSpot, one QR code on each table gives customers an always-updated digital menu &mdash; no app download, no waiting. We're building the simplest, most reliable digital menu platform for India's 7.5 million+ restaurants, cafes, and hotels.</p>
+      <div class="founder-info">
+        <h3>Kishan Thorat</h3>
+        <p class="role">Founder &amp; Developer</p>
+        <p>Based in Belagavi, Karnataka. Building KodSpot as a purpose-built SaaS platform for the Indian restaurant industry &mdash; focused on simplicity, reliability, and real-world usability.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
      CTA BANNER
      ============================================================ -->
 <section class="cta-banner">
   <h2>Ready to go digital?</h2>
   <p>Set up your restaurant's QR menu in minutes. Start with a free 14-day trial — no credit card, no commitment.</p>
-  <a href="mailto:support@kodspot.com?subject=Start%20my%20free%20trial" class="btn-primary">Start Your Free Trial</a>
+  <a href="#request-trial" class="btn-primary">Get Your Free Trial</a>
   <p class="cta-note">You can cancel anytime during or after the trial.</p>
 </section>
 
@@ -419,6 +515,7 @@
         <a href="#features">Features</a>
         <a href="#pricing">Pricing</a>
         <a href="#faq">FAQ</a>
+        <a href="#about">About</a>
         <a href="/admin">Hotel Login</a>
       </div>
       <div class="footer-col">
@@ -430,6 +527,7 @@
       <div class="footer-col">
         <h4>Contact</h4>
         <a href="mailto:support@kodspot.com">support@kodspot.com</a>
+        <a href="https://wa.me/917676699291" target="_blank" rel="noopener">WhatsApp Support</a>
         <a>Belagavi, Karnataka, India</a>
       </div>
     </div>
@@ -441,6 +539,73 @@
     </div>
   </div>
 </footer>
+
+<!-- WhatsApp Floating Button -->
+<a href="https://wa.me/917676699291?text=Hi%2C%20I%27m%20interested%20in%20KodSpot%20for%20my%20restaurant" class="whatsapp-float" target="_blank" rel="noopener" aria-label="Chat on WhatsApp">
+  <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+</a>
+
+<!-- Trial Request Form Handler -->
+<script>
+async function submitTrialRequest(){
+  var btn=document.getElementById('trialSubmitBtn');
+  var name=document.getElementById('trialName').value.trim();
+  var city=document.getElementById('trialCity').value.trim();
+  var phone=document.getElementById('trialPhone').value.trim();
+  var email=document.getElementById('trialEmail').value.trim();
+  if(!name||!city||!phone){alert('Please fill in restaurant name, city, and phone number.');return;}
+  if(!/^\d{10,15}$/.test(phone)){alert('Please enter a valid phone number (10-15 digits).');return;}
+  btn.disabled=true;btn.textContent='Submitting...';
+  try{
+    var res=await fetch('/auth/request-trial',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:name,city:city,phone:phone,email:email||undefined})});
+    var data=await res.json();
+    if(!res.ok)throw new Error(data.error||'Request failed');
+    document.getElementById('trialForm').style.display='none';
+    document.getElementById('trialSuccess').style.display='block';
+  }catch(e){alert(e.message||'Something went wrong. Please try again or contact us on WhatsApp.');}
+  finally{btn.disabled=false;btn.textContent='Request Free Trial';}
+}
+</script>
+
+<!-- Structured Data: Organization + FAQ -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  "name": "KodSpot",
+  "url": "https://kodspot.com",
+  "description": "Digital QR menu platform for restaurants, cafes, and hotels in India.",
+  "founder": {
+    "@type": "Person",
+    "name": "Kishan Thorat"
+  },
+  "address": {
+    "@type": "PostalAddress",
+    "addressLocality": "Belagavi",
+    "addressRegion": "Karnataka",
+    "addressCountry": "IN"
+  },
+  "contactPoint": {
+    "@type": "ContactPoint",
+    "email": "support@kodspot.com",
+    "contactType": "customer service"
+  }
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {"@type": "Question", "name": "Do my customers need to install an app?", "acceptedAnswer": {"@type": "Answer", "text": "No. Customers scan the QR code with their phone camera. The menu opens directly in their browser."}},
+    {"@type": "Question", "name": "Can I update my menu after setting it up?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. Log in to your dashboard anytime to add, edit, or remove items, change prices, upload photos, or switch themes. Changes go live instantly."}},
+    {"@type": "Question", "name": "What happens after the 14-day free trial?", "acceptedAnswer": {"@type": "Answer", "text": "You choose a plan that fits your restaurant. No automatic charges — you pay only when you choose to."}},
+    {"@type": "Question", "name": "Will my printed QR codes keep working if I update my menu?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. Your QR code and menu URL are permanent. The same printed QR code always shows your latest menu."}},
+    {"@type": "Question", "name": "Is there a long-term contract?", "acceptedAnswer": {"@type": "Answer", "text": "No. All plans are month-to-month. You can upgrade, downgrade, or cancel at any time."}},
+    {"@type": "Question", "name": "Is my restaurant data safe?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. We use HTTPS encryption, hashed PINs, and our data practices are aligned with India's DPDPA."}}
+  ]
+}
+</script>
 
 </body>
 </html>

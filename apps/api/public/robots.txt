@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+Disallow: /superadmin
+Disallow: /superadmin.html
+Disallow: /superadmin.js
+Disallow: /admin.html
+Disallow: /admin.js
+Disallow: /admin-sw.js
+
+Sitemap: https://kodspot.com/sitemap.xml

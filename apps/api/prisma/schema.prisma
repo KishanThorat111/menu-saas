@@ -210,6 +210,23 @@ model DailyScanVisitor {
   @@index([date])
 }
 
+model TrialRequest {
+  id      String   @id @default(uuid())
+  name    String   // Restaurant name
+  city    String
+  phone   String
+  email   String?
+  status  String   @default("pending") // pending | approved | rejected
+  notes   String?  // Internal notes (superadmin)
+  hotelId String?  // Linked hotel after approval
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+  @@index([createdAt])
+}
+
 model PinResetOtp {
   id      String @id @default(uuid())
   hotelId String

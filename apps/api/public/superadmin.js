@@ -174,6 +174,7 @@ async function login() {
     
     await fetchHotels();
     await fetchGlobalStats();
+    fetchTrialRequests();
     await updateSessionInfo();
   } catch (e) {
     errorEl.textContent = e.message;
@@ -327,6 +328,81 @@ function updateStatsDisplay() {
   document.getElementById('statTrial').textContent = globalStats.trial;
   document.getElementById('statActive').textContent = globalStats.active;
   document.getElementById('statViews').textContent = globalStats.views.toLocaleString('en-IN');
+}
+
+// ==================== TRIAL REQUESTS ====================
+async function fetchTrialRequests() {
+  try {
+    const data = await fetchAPI('/admin/trial-requests?status=pending');
+    const requests = data.requests || [];
+    const badge = document.getElementById('trialRequestsBadge');
+    const list = document.getElementById('trialRequestsList');
+
+    if (badge) {
+      badge.textContent = requests.length;
+      badge.style.display = requests.length > 0 ? 'inline' : 'none';
+    }
+
+    if (requests.length === 0) {
+      list.innerHTML = '<p style="color:#94a3b8;padding:12px 0;">No pending trial requests.</p>';
+      return;
+    }
+
+    list.innerHTML = requests.map(function(r) {
+      var time = new Date(r.createdAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' });
+      return '<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid #f1f5f9;flex-wrap:wrap;gap:8px;">'
+        + '<div>'
+        + '<strong style="color:#0f172a;">' + escapeHtml(r.name) + '</strong>'
+        + ' <span style="color:#94a3b8;">&mdash; ' + escapeHtml(r.city) + '</span><br>'
+        + '<span style="font-size:13px;">📞 ' + escapeHtml(r.phone) + (r.email ? ' &bull; ✉️ ' + escapeHtml(r.email) : '') + '</span><br>'
+        + '<span style="font-size:12px;color:#94a3b8;">' + time + '</span>'
+        + '</div>'
+        + '<div style="display:flex;gap:6px;">'
+        + '<button class="btn btn-primary btn-sm" onclick="prefillFromRequest(\'' + escapeHtml(r.id) + '\',\'' + escapeHtml(r.name) + '\',\'' + escapeHtml(r.city) + '\',\'' + escapeHtml(r.phone) + '\',\'' + escapeHtml(r.email || '') + '\')">Create Hotel</button>'
+        + '<button class="btn btn-secondary btn-sm" onclick="markRequestHandled(\'' + escapeHtml(r.id) + '\',\'rejected\')">Dismiss</button>'
+        + '</div>'
+        + '</div>';
+    }).join('');
+  } catch (e) {
+    var list = document.getElementById('trialRequestsList');
+    if (list) list.innerHTML = '<p style="color:#ef4444;">Failed to load trial requests.</p>';
+  }
+}
+
+function prefillFromRequest(requestId, name, city, phone, email) {
+  // Expand create hotel section if collapsed
+  var content = document.getElementById('createFormContent');
+  var toggle = document.getElementById('createSectionToggle');
+  if (content && content.classList.contains('hidden')) {
+    content.classList.remove('hidden');
+    if (toggle) toggle.classList.add('active');
+  }
+
+  // Pre-fill form fields
+  document.getElementById('hName').value = name;
+  document.getElementById('hCity').value = city;
+  document.getElementById('hPhone').value = phone;
+  document.getElementById('hEmail').value = email;
+
+  // Store request ID for linking after creation
+  window._pendingTrialRequestId = requestId;
+
+  // Scroll to create section
+  document.getElementById('hName').scrollIntoView({ behavior: 'smooth', block: 'center' });
+  showToast('Form pre-filled from trial request. Generate PIN and create the hotel.', 'info', 4000);
+}
+
+async function markRequestHandled(requestId, status) {
+  try {
+    await fetchAPI('/admin/trial-requests/' + requestId, {
+      method: 'PATCH',
+      body: JSON.stringify({ status: status })
+    });
+    showToast('Request ' + status, 'success');
+    await fetchTrialRequests();
+  } catch (e) {
+    showToast('Failed to update request', 'error');
+  }
 }
 
 async function fetchHotels() {
@@ -952,6 +1028,18 @@ async function createHotel() {
     
     // Show menu code + PIN + short URL
     showToast(`Hotel created! Code: ${result.slug} | PIN: ${result.pin} | URL: ${result.menuUrl}`, 'success', 8000);
+    
+    // If created from a trial request, mark it as approved
+    if (window._pendingTrialRequestId) {
+      try {
+        await fetchAPI('/admin/trial-requests/' + window._pendingTrialRequestId, {
+          method: 'PATCH',
+          body: JSON.stringify({ status: 'approved', hotelId: result.id })
+        });
+      } catch (e) { /* non-critical */ }
+      window._pendingTrialRequestId = null;
+      fetchTrialRequests();
+    }
     
     // Clear form
     ['hName', 'hCity', 'hPhone', 'hEmail', 'hPin'].forEach(id => {
