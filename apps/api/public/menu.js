@@ -212,7 +212,7 @@
       return;
     }
 
-    // ── Search + Filter Toolbar ──
+    // ── Search + Filter Toolbar example ──
     html += buildToolbarHTML();
 
     // ── Nav sentinel (for shadow detection) ──
