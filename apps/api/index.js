@@ -1119,6 +1119,48 @@ function registerRoutes() {
     return svg;
   });
 
+  // ==================== REVIEW QR CODE (SVG) ==========================
+  // Generates QR SVG for a hotel's review URL (Google, Zomato, etc.)
+  // Used by admin & superadmin panels for the back-side card generation.
+  fastify.get('/api/qr/review/:hotelId', {
+    config: {
+      rateLimit: {
+        max: 60,
+        timeWindow: '1 minute'
+      }
+    }
+  }, async (request, reply) => {
+    const { hotelId } = request.params;
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(hotelId)) {
+      return reply.code(400).send({ error: 'Invalid hotel ID' });
+    }
+
+    const hotel = await prisma.hotel.findUnique({
+      where: { id: hotelId },
+      select: { reviewUrl: true, status: true }
+    });
+
+    if (!hotel || !hotel.reviewUrl || hotel.status === 'DELETED') {
+      return reply.code(404).send({ error: 'No review URL configured' });
+    }
+
+    const svg = await QRCode.toString(hotel.reviewUrl, {
+      type: 'svg',
+      errorCorrectionLevel: 'H',
+      margin: 2,
+      width: 512,
+      color: {
+        dark: '#92400e',  // Amber-800 — differentiates from menu QR
+        light: '#ffffff'
+      }
+    });
+
+    reply.header('Content-Type', 'image/svg+xml');
+    reply.header('Cache-Control', 'no-cache');
+    reply.header('Content-Disposition', `inline; filename="review-qr.svg"`);
+    return svg;
+  });
+
   // ==================== LOGO PROXY (same-origin for Canvas) ====================
   // Proxies logo image from R2 through the app origin so Canvas drawImage()
   // works without crossOrigin / CORS headers (R2 pub-*.r2.dev doesn't send them).
@@ -1668,7 +1710,7 @@ function registerRoutes() {
         where: { id: request.hotelId },
         select: {
           id: true, name: true, slug: true, city: true, phone: true,
-          plan: true, status: true, theme: true, logoUrl: true, views: true,
+          plan: true, status: true, theme: true, logoUrl: true, reviewUrl: true, views: true,
           trialEnds: true, paidUntil: true, createdAt: true, updatedAt: true,
           categories: {
             orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
@@ -2029,6 +2071,38 @@ function registerRoutes() {
       try { await purgeMenuCacheForHotel(request.hotelId); } catch (e) { fastify.log.warn('purge error', e.message || e); }
 
       return { success: true, theme: updated.theme };
+    });
+
+    // ==================== REVIEW URL (HOTEL OWNER) ====================
+    app.patch('/settings/review-url', async (request, reply) => {
+      const schema = z.object({
+        reviewUrl: z.string().url().max(500).or(z.literal(''))
+      });
+      let data;
+      try {
+        data = schema.parse(request.body);
+      } catch (err) {
+        if (err.name === 'ZodError') return reply.code(400).send({ error: 'Please enter a valid URL (e.g. https://g.page/r/...)' });
+        throw err;
+      }
+
+      const updated = await prisma.hotel.update({
+        where: { id: request.hotelId },
+        data: { reviewUrl: data.reviewUrl || null }
+      });
+
+      await prisma.auditLog.create({
+        data: {
+          hotelId: request.hotelId,
+          actorType: 'owner',
+          action: 'review_url_changed',
+          entityType: 'Hotel',
+          entityId: request.hotelId,
+          newValue: { reviewUrl: data.reviewUrl || null }
+        }
+      });
+
+      return { success: true, reviewUrl: updated.reviewUrl || '' };
     });
 
     // ==================== LOGO UPLOAD (HOTEL OWNER) ====================
@@ -2604,6 +2678,46 @@ function registerRoutes() {
       return updated;
     });
 
+    // ==================== SUPERADMIN: SET REVIEW URL FOR ANY HOTEL ====================
+    app.patch('/admin/hotels/:id/review-url', async (request, reply) => {
+      const { id } = request.params;
+      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
+        return reply.code(400).send({ error: 'Invalid hotel ID format' });
+      }
+      const schema = z.object({
+        reviewUrl: z.string().url().max(500).or(z.literal(''))
+      });
+      let data;
+      try {
+        data = schema.parse(request.body);
+      } catch (err) {
+        if (err.name === 'ZodError') return reply.code(400).send({ error: 'Please enter a valid URL' });
+        throw err;
+      }
+
+      const hotel = await prisma.hotel.findUnique({ where: { id }, select: { id: true, reviewUrl: true } });
+      if (!hotel) return reply.code(404).send({ error: 'Hotel not found' });
+
+      const updated = await prisma.hotel.update({
+        where: { id },
+        data: { reviewUrl: data.reviewUrl || null }
+      });
+
+      await prisma.auditLog.create({
+        data: {
+          hotelId: id,
+          actorType: 'admin',
+          action: 'review_url_changed',
+          entityType: 'Hotel',
+          entityId: id,
+          oldValue: { reviewUrl: hotel.reviewUrl || null },
+          newValue: { reviewUrl: data.reviewUrl || null }
+        }
+      });
+
+      return { success: true, reviewUrl: updated.reviewUrl || '' };
+    });
+
     // ==================== SUPERADMIN: LOGO UPLOAD FOR ANY HOTEL ====================
     app.post('/admin/hotels/:id/logo', async (request, reply) => {
       const { id } = request.params;
@@ -2930,7 +3044,7 @@ function registerRoutes() {
           select: {
             id: true, name: true, slug: true, city: true, phone: true,
             status: true, plan: true, trialEnds: true, paidUntil: true,
-            views: true, createdAt: true, theme: true, logoUrl: true,
+            views: true, createdAt: true, theme: true, logoUrl: true, reviewUrl: true,
             pinResetCount: true, // [6-DIGIT PIN CHANGE] ADDED: Include reset count
             lastPinResetAt: true,  // [6-DIGIT PIN CHANGE] ADDED: Include last reset
             deletedAt: true, purgeAfter: true // Soft delete fields
@@ -3031,7 +3145,7 @@ function registerRoutes() {
         where: { id },
         select: {
           id: true, name: true, slug: true, city: true, phone: true,
-          plan: true, status: true, theme: true, logoUrl: true, views: true,
+          plan: true, status: true, theme: true, logoUrl: true, reviewUrl: true, views: true,
           trialEnds: true, paidUntil: true, createdAt: true, updatedAt: true,
           paymentMode: true, lastPaymentDate: true, lastPaymentAmount: true,
           pinResetCount: true, lastPinResetAt: true, lastPinResetBy: true,
