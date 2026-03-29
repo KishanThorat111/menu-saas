@@ -2370,7 +2370,7 @@ async function saveReviewUrl() {
   try {
     status.className = 'review-url-status';
     status.textContent = 'Saving...';
-    var data = await fetchAPI('/settings/review-url', {
+    var data = await apiFetch('/settings/review-url', {
       method: 'PATCH',
       body: JSON.stringify({ reviewUrl: url })
     });
@@ -2392,7 +2392,7 @@ async function clearReviewUrl() {
   try {
     status.className = 'review-url-status';
     status.textContent = 'Removing...';
-    await fetchAPI('/settings/review-url', {
+    await apiFetch('/settings/review-url', {
       method: 'PATCH',
       body: JSON.stringify({ reviewUrl: '' })
     });
