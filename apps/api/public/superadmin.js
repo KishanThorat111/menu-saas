@@ -504,6 +504,7 @@ function renderTable(hotels) {
             data-city="${escapeHtml(hotel.city || '')}"
             data-logourl="${escapeHtml(hotel.logoUrl || '')}"
             data-plan="${escapeHtml(hotel.plan || 'STARTER')}"
+            data-reviewurl="${escapeHtml(hotel.reviewUrl || '')}"
             title="View & download QR code">
             📱 QR Code
           </button>
@@ -709,7 +710,7 @@ function renderTable(hotels) {
   // Attach QR code button listeners
   tbody.querySelectorAll('.qr-hotel-btn').forEach(btn => {
     btn.addEventListener('click', function() {
-      openQrModal(this.dataset.id, this.dataset.name, this.dataset.slug, this.dataset.city, this.dataset.logourl, this.dataset.plan);
+      openQrModal(this.dataset.id, this.dataset.name, this.dataset.slug, this.dataset.city, this.dataset.logourl, this.dataset.plan, this.dataset.reviewurl);
     });
   });
 }
@@ -1181,6 +1182,8 @@ function setupEventListeners() {
   document.getElementById('qrDownloadPrintReadyBtn').addEventListener('click', downloadSaQrPrintReady);
   document.getElementById('qrDownloadSvgBtn').addEventListener('click', downloadSaQrSvg);
   document.getElementById('qrShareBtn').addEventListener('click', shareSaQr);
+  document.getElementById('saReviewUrlSaveBtn').addEventListener('click', saveSaReviewUrl);
+  document.getElementById('saReviewUrlClearBtn').addEventListener('click', clearSaReviewUrl);
 
   // Escape key to close modals
   document.addEventListener('keydown', function(e) {
@@ -1322,6 +1325,8 @@ let qrModalState = {
   city: '',
   logoUrl: '',
   plan: 'STARTER',
+  reviewUrl: '',
+  reviewQrSvg: null,
   svgCache: null
 };
 
@@ -1438,8 +1443,8 @@ async function saRemoveLogo() {
   }
 }
 
-function openQrModal(hotelId, hotelName, slug, city, logoUrl, plan) {
-  qrModalState = { id: hotelId, slug, name: hotelName, city: city || '', logoUrl: logoUrl || '', plan: plan || 'STARTER', svgCache: null };
+function openQrModal(hotelId, hotelName, slug, city, logoUrl, plan, reviewUrl) {
+  qrModalState = { id: hotelId, slug, name: hotelName, city: city || '', logoUrl: logoUrl || '', plan: plan || 'STARTER', reviewUrl: reviewUrl || '', reviewQrSvg: null, svgCache: null };
 
   document.getElementById('qrHotelName').textContent = hotelName;
   document.getElementById('qrModalCode').textContent = slug;
@@ -1485,18 +1490,29 @@ function openQrModal(hotelId, hotelName, slug, city, logoUrl, plan) {
     .catch(() => {
       document.getElementById('qrModalPreview').innerHTML = '<div class="qr-modal-loading"><span style="color:var(--red-500);">Failed to load QR code</span></div>';
     });
+
+  // Init review URL UI
+  initSaReviewUrlUI();
+
+  // Fetch review QR SVG if reviewUrl exists
+  if (reviewUrl) {
+    fetch('/api/qr/review/' + hotelId, { credentials: 'include' })
+      .then(r => r.ok ? r.text() : null)
+      .then(svg => { qrModalState.reviewQrSvg = svg; })
+      .catch(() => {});
+  }
 }
 
 function closeQrModal() {
   document.getElementById('qrModal').classList.remove('active');
-  qrModalState = { id: '', slug: '', name: '', city: '', logoUrl: '', plan: 'STARTER', svgCache: null };
+  qrModalState = { id: '', slug: '', name: '', city: '', logoUrl: '', plan: 'STARTER', reviewUrl: '', reviewQrSvg: null, svgCache: null };
 }
 
 // ── QR Card Generation (delegates to shared qr-card.js module) ──────────
 
 function getSaQrCardConfig() {
   if (!qrModalState.svgCache || !qrModalState.slug) return null;
-  return {
+  var cfg = {
     name: qrModalState.name,
     city: qrModalState.city,
     slug: qrModalState.slug,
@@ -1505,6 +1521,11 @@ function getSaQrCardConfig() {
     qrSvg: qrModalState.svgCache,
     plan: qrModalState.plan || 'STARTER'
   };
+  if (qrModalState.reviewUrl && qrModalState.reviewQrSvg) {
+    cfg.reviewUrl = qrModalState.reviewUrl;
+    cfg.reviewQrSvg = qrModalState.reviewQrSvg;
+  }
+  return cfg;
 }
 
 async function downloadSaQrPng() {
@@ -1592,6 +1613,84 @@ async function shareSaQr() {
       console.error('Share error:', e);
       showToast('Sharing failed. Try downloading instead.', 'error');
     }
+  }
+}
+
+// ==================== REVIEW URL (SUPERADMIN) ====================
+function initSaReviewUrlUI() {
+  var input = document.getElementById('saReviewUrlInput');
+  var clearBtn = document.getElementById('saReviewUrlClearBtn');
+  var status = document.getElementById('saReviewUrlStatus');
+  if (!input) return;
+
+  if (qrModalState.reviewUrl) {
+    input.value = qrModalState.reviewUrl;
+    clearBtn.style.display = '';
+    status.style.color = '#059669';
+    status.textContent = '✓ Review link active — back side shows review QR';
+  } else {
+    input.value = '';
+    clearBtn.style.display = 'none';
+    status.style.color = '';
+    status.textContent = '';
+  }
+}
+
+async function saveSaReviewUrl() {
+  var input = document.getElementById('saReviewUrlInput');
+  var status = document.getElementById('saReviewUrlStatus');
+  var url = (input.value || '').trim();
+
+  if (!url) { status.style.color = '#dc2626'; status.textContent = 'Enter a review link'; return; }
+  try { new URL(url); } catch (e) { status.style.color = '#dc2626'; status.textContent = 'Invalid URL'; return; }
+  if (!qrModalState.id) return;
+
+  try {
+    status.style.color = ''; status.textContent = 'Saving...';
+    await fetchAPI('/admin/hotels/' + qrModalState.id + '/review-url', {
+      method: 'PATCH',
+      body: JSON.stringify({ reviewUrl: url })
+    });
+    qrModalState.reviewUrl = url;
+    // Update source button data attribute
+    var srcBtn = document.querySelector('.qr-hotel-btn[data-id="' + qrModalState.id + '"]');
+    if (srcBtn) srcBtn.dataset.reviewurl = url;
+    document.getElementById('saReviewUrlClearBtn').style.display = '';
+    status.style.color = '#059669';
+    status.textContent = '✓ Saved — back side will show review QR';
+    showToast('Review link saved!', 'success');
+    // Fetch review QR SVG
+    fetch('/api/qr/review/' + qrModalState.id, { credentials: 'include' })
+      .then(function(r) { return r.ok ? r.text() : null; })
+      .then(function(svg) { qrModalState.reviewQrSvg = svg; })
+      .catch(function() {});
+  } catch (e) {
+    status.style.color = '#dc2626';
+    status.textContent = e.message || 'Failed to save';
+  }
+}
+
+async function clearSaReviewUrl() {
+  var status = document.getElementById('saReviewUrlStatus');
+  if (!qrModalState.id) return;
+
+  try {
+    status.style.color = ''; status.textContent = 'Removing...';
+    await fetchAPI('/admin/hotels/' + qrModalState.id + '/review-url', {
+      method: 'PATCH',
+      body: JSON.stringify({ reviewUrl: '' })
+    });
+    qrModalState.reviewUrl = '';
+    qrModalState.reviewQrSvg = null;
+    var srcBtn = document.querySelector('.qr-hotel-btn[data-id="' + qrModalState.id + '"]');
+    if (srcBtn) srcBtn.dataset.reviewurl = '';
+    document.getElementById('saReviewUrlInput').value = '';
+    document.getElementById('saReviewUrlClearBtn').style.display = 'none';
+    status.style.color = ''; status.textContent = '';
+    showToast('Review link removed', 'success');
+  } catch (e) {
+    status.style.color = '#dc2626';
+    status.textContent = e.message || 'Failed to remove';
   }
 }
 

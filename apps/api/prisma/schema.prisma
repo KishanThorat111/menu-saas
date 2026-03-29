@@ -45,6 +45,9 @@ model Hotel {
   theme   String  @default("classic")
   logoUrl String?
 
+  // Review QR — optional link to Google/Zomato/etc review page
+  reviewUrl String?
+
   categories    Category[]
   auditLogs     AuditLog[]
   pinResetOtps  PinResetOtp[]

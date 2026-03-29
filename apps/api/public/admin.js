@@ -64,7 +64,7 @@ function switchTab(tab, el) {
   document.getElementById('tab-qr').classList.toggle('hidden', tab !== 'qr');
   if (tab === 'menu') renderMenu();
   if (tab === 'billing') loadBilling();
-  if (tab === 'qr') loadQrCode();
+  if (tab === 'qr') { loadQrCode(); initReviewUrlUI(); }
 }
 
 async function apiFetch(endpoint, options = {}) {
@@ -2198,7 +2198,7 @@ function copyMenuCode() {
 // ── QR Card generation — delegates to shared qr-card.js module ──────────
 function getQrCardConfig() {
   if (!hotel || !qrSvgCache) return null;
-  return {
+  var cfg = {
     name: hotel.name,
     city: hotel.city,
     slug: hotel.slug,
@@ -2207,6 +2207,11 @@ function getQrCardConfig() {
     qrSvg: qrSvgCache,
     plan: (billingData && billingData.plan) || hotel.plan || 'STARTER'
   };
+  if (hotel.reviewUrl && reviewQrSvgCache) {
+    cfg.reviewUrl = hotel.reviewUrl;
+    cfg.reviewQrSvg = reviewQrSvgCache;
+  }
+  return cfg;
 }
 
 async function downloadQrPng() {
@@ -2301,5 +2306,105 @@ async function shareQr() {
       console.error('Share error:', e);
       showToast('Sharing failed. Try downloading instead.', 'error');
     }
+  }
+}
+
+// ==================== REVIEW URL MANAGEMENT ====================
+var reviewQrSvgCache = null;
+
+function initReviewUrlUI() {
+  if (!hotel) return;
+  var input = document.getElementById('reviewUrlInput');
+  var clearBtn = document.getElementById('clearReviewUrlBtn');
+  var status = document.getElementById('reviewUrlStatus');
+  if (!input) return;
+
+  if (hotel.reviewUrl) {
+    input.value = hotel.reviewUrl;
+    clearBtn.style.display = '';
+    status.className = 'review-url-status success';
+    status.textContent = '✓ Review link active — back side will show review QR';
+    // Pre-fetch review QR SVG
+    fetchReviewQrSvg();
+  } else {
+    input.value = '';
+    clearBtn.style.display = 'none';
+    status.className = 'review-url-status';
+    status.textContent = '';
+    reviewQrSvgCache = null;
+  }
+}
+
+async function fetchReviewQrSvg() {
+  if (!hotel || !hotel.reviewUrl) { reviewQrSvgCache = null; return; }
+  try {
+    var resp = await fetch('/api/qr/review/' + hotel.id, { credentials: 'include' });
+    if (resp.ok) {
+      reviewQrSvgCache = await resp.text();
+    } else {
+      reviewQrSvgCache = null;
+    }
+  } catch (e) {
+    reviewQrSvgCache = null;
+  }
+}
+
+async function saveReviewUrl() {
+  var input = document.getElementById('reviewUrlInput');
+  var status = document.getElementById('reviewUrlStatus');
+  var url = (input.value || '').trim();
+
+  if (!url) {
+    status.className = 'review-url-status error';
+    status.textContent = 'Please enter a review link';
+    return;
+  }
+
+  // Basic URL validation
+  try { new URL(url); } catch (e) {
+    status.className = 'review-url-status error';
+    status.textContent = 'Invalid URL. Must start with https://';
+    return;
+  }
+
+  try {
+    status.className = 'review-url-status';
+    status.textContent = 'Saving...';
+    var data = await fetchAPI('/settings/review-url', {
+      method: 'PATCH',
+      body: JSON.stringify({ reviewUrl: url })
+    });
+    hotel.reviewUrl = data.reviewUrl || url;
+    document.getElementById('clearReviewUrlBtn').style.display = '';
+    status.className = 'review-url-status success';
+    status.textContent = '✓ Review link saved — back side will now show review QR';
+    showToast('Review link saved!');
+    // Fetch the review QR SVG for card generation
+    await fetchReviewQrSvg();
+  } catch (e) {
+    status.className = 'review-url-status error';
+    status.textContent = e.message || 'Failed to save';
+  }
+}
+
+async function clearReviewUrl() {
+  var status = document.getElementById('reviewUrlStatus');
+  try {
+    status.className = 'review-url-status';
+    status.textContent = 'Removing...';
+    await fetchAPI('/settings/review-url', {
+      method: 'PATCH',
+      body: JSON.stringify({ reviewUrl: '' })
+    });
+    hotel.reviewUrl = null;
+    document.getElementById('reviewUrlInput').value = '';
+    document.getElementById('clearReviewUrlBtn').style.display = 'none';
+    reviewQrSvgCache = null;
+    status.className = 'review-url-status';
+    status.textContent = '';
+    showToast('Review link removed. Back side will now show menu QR.');
+  } catch (e) {
+    status.className = 'review-url-status error';
+    status.textContent = e.message || 'Failed to remove';
   }
 }
