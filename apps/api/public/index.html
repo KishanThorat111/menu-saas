@@ -168,6 +168,10 @@
     .trial-form input:focus{border-color:#c68b52;background:#fff;box-shadow:0 0 0 3px rgba(198,139,82,0.1)}
     .trial-form .btn-primary{width:100%;padding:15px;font-size:16px;margin-top:8px}
     .trial-form .form-note{text-align:center;margin-top:16px;font-size:13px;color:#94a3b8}
+    .trial-form .consent-row{margin:4px 0 20px;display:flex;align-items:flex-start;gap:10px}
+    .trial-form .consent-row input[type=checkbox]{margin-top:3px;width:18px;height:18px;accent-color:#c68b52;flex-shrink:0;cursor:pointer}
+    .trial-form .consent-row label{font-size:13px;color:#64748b;line-height:1.5;cursor:pointer}
+    .trial-form .consent-row a{color:#c68b52;text-decoration:underline}
     .trial-success{display:none;text-align:center;padding:20px 0}
     .trial-success .success-icon{font-size:48px;margin-bottom:16px}
     .trial-success h3{font-size:20px;font-weight:700;color:#0f172a;margin-bottom:8px}
@@ -510,6 +514,10 @@
           <input type="email" id="trialEmail" placeholder="info@restaurant.com" maxlength="200">
         </div>
       </div>
+      <div class="consent-row">
+        <input type="checkbox" id="trialConsent">
+        <label for="trialConsent">I agree to KodSpot's <a href="/privacy.html" target="_blank">Privacy Policy</a> and <a href="/terms.html" target="_blank">Terms of Service</a></label>
+      </div>
       <button class="btn-primary" id="trialSubmitBtn" onclick="submitTrialRequest()">
         Request Free Trial
       </button>
@@ -608,6 +616,7 @@ async function submitTrialRequest(){
   var email=document.getElementById('trialEmail').value.trim();
   if(!name||!city||!phone){alert('Please fill in restaurant name, city, and phone number.');return;}
   if(!/^\d{10,15}$/.test(phone)){alert('Please enter a valid phone number (10-15 digits).');return;}
+  if(!document.getElementById('trialConsent').checked){alert('Please agree to the Privacy Policy and Terms of Service.');return;}
   btn.disabled=true;btn.textContent='Submitting...';
   try{
     var res=await fetch('/auth/request-trial',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:name,city:city,phone:phone,email:email||undefined})});
