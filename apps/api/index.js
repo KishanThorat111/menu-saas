@@ -1104,7 +1104,7 @@ function registerRoutes() {
     const menuUrl = `https://kodspot.com/m/${code}`;
     const svg = await QRCode.toString(menuUrl, {
       type: 'svg',
-      errorCorrectionLevel: 'M', // 15% error correction — good balance of size vs resilience
+      errorCorrectionLevel: 'H', // 30% error correction — survives scratches, smudges on printed cards
       margin: 2,
       width: 512,
       color: {

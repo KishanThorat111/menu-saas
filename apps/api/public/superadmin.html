@@ -3474,9 +3474,16 @@
           </div>
         </div>
         <div class="qr-modal-actions">
-          <button id="qrDownloadPngBtn" class="btn btn-sm btn-primary">📥 Download PNG</button>
+          <button id="qrDownloadPngBtn" class="btn btn-sm btn-primary">📥 Download Front (PNG)</button>
+          <button id="qrDownloadBackPngBtn" class="btn btn-sm btn-primary">📥 Download Back (PNG)</button>
+          <button id="qrDownloadPrintReadyBtn" class="btn btn-sm btn-primary">📄 Download Print-Ready</button>
           <button id="qrDownloadSvgBtn" class="btn btn-sm btn-secondary">🖨️ Download SVG</button>
           <button id="qrShareBtn" class="btn btn-sm btn-success">📤 Share</button>
+        </div>
+        <div class="qr-print-guide" style="margin-top:0.75rem;padding:0.75rem;background:var(--slate-50,#f8fafc);border-radius:8px;font-size:0.78rem;color:var(--text-secondary);line-height:1.5;">
+          <strong>🖨️ Print Guide (A6 Double-Sided):</strong><br>
+          Paper: 300gsm art card • Size: A6 (105×148mm) • Finish: Matte lamination • Print: Double-sided<br>
+          Use "Print-Ready" file for print shops — front + back on single image with cut marks.
         </div>
       </div>
     </div>
@@ -3501,6 +3508,7 @@
     </div>
   </div>
 
+  <script src="qr-card.js"></script>
   <script src="superadmin.js"></script>
 </body>
 </html>
