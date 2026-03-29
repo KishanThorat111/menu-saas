@@ -3348,7 +3348,13 @@
           </div>
           <div class="qr-actions">
             <button class="btn btn-download-png" onclick="downloadQrPng()">
-              📥 Download PNG
+              📥 Download Front (PNG)
+            </button>
+            <button class="btn btn-download-png" onclick="downloadQrBackPng()" style="background:#f9fafb;color:#374151;border:1.5px solid #e5e7eb;">
+              📥 Download Back (PNG)
+            </button>
+            <button class="btn btn-download-svg" onclick="downloadQrPrintReady()">
+              📄 Download Print-Ready
             </button>
             <button class="btn btn-download-svg" onclick="downloadQrSvg()">
               🖨️ Download SVG
@@ -3359,12 +3365,13 @@
           </div>
         </div>
         <div class="qr-tips">
-          <h4>💡 Tips for Best Results</h4>
+          <h4>🖨️ Print Guide (A6 Double-Sided)</h4>
           <ul>
-            <li><strong>PNG format</strong> — Perfect for WhatsApp, Instagram, and social media sharing</li>
-            <li><strong>SVG format</strong> — Best for printing stickers, table cards, and standees (infinitely scalable)</li>
-            <li><strong>Share button</strong> — Quick share to any app on your phone</li>
-            <li>Print size: Minimum 3cm × 3cm for easy scanning</li>
+            <li><strong>Print-Ready file</strong> — Contains both sides, take directly to print shop</li>
+            <li><strong>Paper:</strong> 300 GSM art card (glossy or matte)</li>
+            <li><strong>Size:</strong> A6 (105 × 148 mm)</li>
+            <li><strong>Print:</strong> Double-sided</li>
+            <li><strong>Finish:</strong> Glossy lamination recommended for durability</li>
             <li>Always test scan after printing to ensure it works</li>
           </ul>
         </div>
@@ -3458,6 +3465,7 @@
     </div>
   </div>
   <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+  <script src="qr-card.js"></script>
   <script src="admin.js"></script>
   <script>
   if ('serviceWorker' in navigator) {

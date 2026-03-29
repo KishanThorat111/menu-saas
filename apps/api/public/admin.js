@@ -2195,284 +2195,65 @@ function copyMenuCode() {
   });
 }
 
-// Generate branded QR card on Canvas and return as Blob
-async function generateQrCardBlob() {
-  if (!hotel || !qrSvgCache) {
-    showToast('QR code not loaded yet. Please wait.', 'error');
-    return null;
-  }
-
-  const hasLogo = !!hotel.logoUrl;
-  const canvas = document.createElement('canvas');
-  const W = 1200;
-  const H = hasLogo ? 1700 : 1600;
-  canvas.width = W;
-  canvas.height = H;
-  const ctx = canvas.getContext('2d');
-
-  // Card layout constants
-  const cardM = 50, cardR = 28;
-  const cardX = cardM, cardY = cardM;
-  const cardW = W - cardM * 2, cardH = H - cardM * 2;
-  const cx = W / 2;
-
-  // === Warm cream outer background ===
-  ctx.fillStyle = '#faf6f1';
-  ctx.fillRect(0, 0, W, H);
-
-  // === White card with shadow ===
-  ctx.save();
-  ctx.shadowColor = 'rgba(0, 0, 0, 0.08)';
-  ctx.shadowBlur = 30;
-  ctx.shadowOffsetX = 0;
-  ctx.shadowOffsetY = 8;
-  ctx.fillStyle = '#ffffff';
-  ctx.beginPath();
-  roundRect(ctx, cardX, cardY, cardW, cardH, cardR);
-  ctx.fill();
-  ctx.restore();
-
-  ctx.strokeStyle = '#e8e2d9';
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  roundRect(ctx, cardX, cardY, cardW, cardH, cardR);
-  ctx.stroke();
-
-  // === Restaurant name ===
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillStyle = '#1e293b';
-  ctx.font = '700 54px Inter, -apple-system, sans-serif';
-
-  const hotelName = hotel.name || 'Restaurant';
-  let displayName = hotelName;
-  while (ctx.measureText(displayName).width > cardW - 120 && displayName.length > 10) {
-    displayName = displayName.slice(0, -1);
-  }
-  if (displayName !== hotelName) displayName += '\u2026';
-  ctx.fillText(displayName, cx, cardY + 90);
-
-  let contentY = cardY + 140;
-
-  // City
-  if (hotel.city) {
-    ctx.fillStyle = '#64748b';
-    ctx.font = '400 28px Inter, -apple-system, sans-serif';
-    ctx.fillText('\ud83d\udccd ' + hotel.city, cx, contentY);
-    contentY += 55;
-  } else {
-    contentY += 20;
-  }
-
-  // === Logo (if available) ===
-  if (hasLogo) {
-    const logoImg = new Image();
-    // Load via same-origin proxy — avoids R2 CORS issue that taints canvas
-    const logoLoaded = await new Promise((resolve) => {
-      logoImg.onload = () => resolve(true);
-      logoImg.onerror = () => resolve(false);
-      logoImg.src = '/api/logo/' + hotel.id + '?v=' + Date.now();
-    });
-    if (logoLoaded) {
-      // Contain-fit: scale to fit within bounding box, preserve aspect ratio
-      const maxLW = 240, maxLH = 140;
-      const scale = Math.min(maxLW / logoImg.naturalWidth, maxLH / logoImg.naturalHeight, 1);
-      const lw = Math.round(logoImg.naturalWidth * scale);
-      const lh = Math.round(logoImg.naturalHeight * scale);
-      const lx = (W - lw) / 2;
-      const ly = contentY;
-      const lr = Math.min(16, lw / 4, lh / 4);
-
-      // White background with border
-      ctx.fillStyle = '#ffffff';
-      ctx.beginPath();
-      roundRect(ctx, lx - 6, ly - 6, lw + 12, lh + 12, lr + 2);
-      ctx.fill();
-      ctx.strokeStyle = '#e2e8f0';
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      roundRect(ctx, lx - 6, ly - 6, lw + 12, lh + 12, lr + 2);
-      ctx.stroke();
-
-      // Draw logo with rounded clip
-      ctx.save();
-      ctx.beginPath();
-      roundRect(ctx, lx, ly, lw, lh, lr);
-      ctx.clip();
-      ctx.drawImage(logoImg, lx, ly, lw, lh);
-      ctx.restore();
-
-      contentY += lh + 30;
-    } else {
-      console.warn('QR card: Logo failed to load (CORS or network issue). Generating card without logo.');
-    }
-  }
-
-  // === QR Code with corner brackets ===
-  const qrSize = 660;
-  const qrPad = 30;
-  const bracketGap = 28;
-  const bracketLen = 55;
-  const bracketThick = 3.5;
-  const qrBgSize = qrSize + qrPad * 2;
-  const totalZone = qrBgSize + bracketGap * 2;
-  const zoneX = (W - totalZone) / 2;
-  const zoneY = contentY + 10;
-
-  // Load QR SVG
-  const svgDataUrl = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(qrSvgCache);
-  const qrImg = new Image();
-  await new Promise((resolve, reject) => {
-    qrImg.onload = resolve;
-    qrImg.onerror = reject;
-    qrImg.src = svgDataUrl;
-  });
-
-  // QR background box with subtle shadow
-  ctx.save();
-  ctx.shadowColor = 'rgba(0, 0, 0, 0.06)';
-  ctx.shadowBlur = 20;
-  ctx.shadowOffsetY = 4;
-  ctx.fillStyle = '#ffffff';
-  ctx.beginPath();
-  roundRect(ctx, zoneX + bracketGap, zoneY + bracketGap, qrBgSize, qrBgSize, 20);
-  ctx.fill();
-  ctx.restore();
-
-  ctx.strokeStyle = '#e8e2d9';
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  roundRect(ctx, zoneX + bracketGap, zoneY + bracketGap, qrBgSize, qrBgSize, 20);
-  ctx.stroke();
-
-  // Draw QR code
-  ctx.drawImage(qrImg, zoneX + bracketGap + qrPad, zoneY + bracketGap + qrPad, qrSize, qrSize);
-
-  // Saffron corner brackets
-  ctx.strokeStyle = '#c68b52';
-  ctx.lineWidth = bracketThick;
-  ctx.lineCap = 'round';
-
-  ctx.beginPath();
-  ctx.moveTo(zoneX, zoneY + bracketLen);
-  ctx.lineTo(zoneX, zoneY);
-  ctx.lineTo(zoneX + bracketLen, zoneY);
-  ctx.stroke();
-
-  ctx.beginPath();
-  ctx.moveTo(zoneX + totalZone - bracketLen, zoneY);
-  ctx.lineTo(zoneX + totalZone, zoneY);
-  ctx.lineTo(zoneX + totalZone, zoneY + bracketLen);
-  ctx.stroke();
-
-  ctx.beginPath();
-  ctx.moveTo(zoneX, zoneY + totalZone - bracketLen);
-  ctx.lineTo(zoneX, zoneY + totalZone);
-  ctx.lineTo(zoneX + bracketLen, zoneY + totalZone);
-  ctx.stroke();
-
-  ctx.beginPath();
-  ctx.moveTo(zoneX + totalZone - bracketLen, zoneY + totalZone);
-  ctx.lineTo(zoneX + totalZone, zoneY + totalZone);
-  ctx.lineTo(zoneX + totalZone, zoneY + totalZone - bracketLen);
-  ctx.stroke();
-
-  ctx.lineCap = 'butt';
-  contentY = zoneY + totalZone + 40;
-
-  // === Scan CTA ===
-  ctx.fillStyle = '#1e293b';
-  ctx.font = '600 34px Inter, -apple-system, sans-serif';
-  ctx.textAlign = 'center';
-  ctx.fillText('\ud83d\udcf1 Scan to view the menu', cx, contentY);
-
-  ctx.fillStyle = '#64748b';
-  ctx.font = '400 26px Inter, -apple-system, sans-serif';
-  ctx.fillText('No app required \u2022 Opens in your browser', cx, contentY + 42);
-
-  // === Separator ===
-  contentY += 95;
-  ctx.strokeStyle = '#e8e2d9';
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.moveTo(cardX + 80, contentY);
-  ctx.lineTo(cardX + cardW - 80, contentY);
-  ctx.stroke();
-
-  // === Manual code ===
-  contentY += 50;
-  ctx.font = '400 28px Inter, -apple-system, sans-serif';
-  const labelW = ctx.measureText('Manual code:  ').width;
-  ctx.font = '700 30px "JetBrains Mono", "Courier New", monospace';
-  const slugW = ctx.measureText(hotel.slug).width;
-  const mcX = (W - labelW - slugW) / 2;
-
-  ctx.textAlign = 'left';
-  ctx.fillStyle = '#94a3b8';
-  ctx.font = '400 28px Inter, -apple-system, sans-serif';
-  ctx.fillText('Manual code:  ', mcX, contentY);
-  ctx.fillStyle = '#1e293b';
-  ctx.font = '700 30px "JetBrains Mono", "Courier New", monospace';
-  ctx.fillText(hotel.slug, mcX + labelW, contentY);
-  ctx.textAlign = 'center';
-
-  // === Footer separator ===
-  contentY += 52;
-  ctx.strokeStyle = '#e8e2d9';
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.moveTo(cardX + 80, contentY);
-  ctx.lineTo(cardX + cardW - 80, contentY);
-  ctx.stroke();
-
-  // === Footer ===
-  contentY += 55;
-  ctx.fillStyle = '#c68b52';
-  ctx.font = '600 28px Inter, -apple-system, sans-serif';
-  ctx.fillText('kodspot.com', cx, contentY);
-
-  ctx.fillStyle = '#cbd5e1';
-  ctx.font = '400 21px Inter, -apple-system, sans-serif';
-  ctx.fillText('\u2022 Powered by KodSpot \u2014 Digital Menu Management \u2022', cx, contentY + 42);
-
-  // Convert canvas to blob
-  return new Promise(resolve => {
-    canvas.toBlob(resolve, 'image/png', 1.0);
-  });
-}
-
-// Helper: draw rounded rectangle
-function roundRect(ctx, x, y, w, h, r) {
-  ctx.moveTo(x + r, y);
-  ctx.lineTo(x + w - r, y);
-  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
-  ctx.lineTo(x + w, y + h - r);
-  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-  ctx.lineTo(x + r, y + h);
-  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
-  ctx.lineTo(x, y + r);
-  ctx.quadraticCurveTo(x, y, x + r, y);
-  ctx.closePath();
+// ── QR Card generation — delegates to shared qr-card.js module ──────────
+function getQrCardConfig() {
+  if (!hotel || !qrSvgCache) return null;
+  return {
+    name: hotel.name,
+    city: hotel.city,
+    slug: hotel.slug,
+    logoUrl: hotel.logoUrl,
+    hotelId: hotel.id,
+    qrSvg: qrSvgCache,
+    plan: (billingData && billingData.plan) || hotel.plan || 'STARTER'
+  };
 }
 
 async function downloadQrPng() {
   if (!hotel) return;
-  showToast('Generating branded QR card...');
+  var cfg = getQrCardConfig();
+  if (!cfg) { showToast('QR code not loaded yet. Please wait.', 'error'); return; }
+  showToast('Generating high-res QR card (600 DPI)...');
   try {
-    const blob = await generateQrCardBlob();
+    var blob = await KodSpotQR.generateFront(cfg);
     if (!blob) return;
-    const safeName = (hotel.name || 'menu').replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '_').substring(0, 40);
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = `${safeName}_QR_Menu.png`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    setTimeout(() => URL.revokeObjectURL(a.href), 5000);
-    showToast('PNG downloaded! Ready for WhatsApp & social media sharing.');
+    KodSpotQR.downloadBlob(blob, KodSpotQR.safeName(hotel.name) + '_QR_Front.png');
+    showToast('Front side downloaded! 600 DPI — ready for print shop.');
   } catch (e) {
     console.error('PNG download error:', e);
     showToast('Failed to generate PNG. Please try again.', 'error');
+  }
+}
+
+async function downloadQrBackPng() {
+  if (!hotel) return;
+  var cfg = getQrCardConfig();
+  if (!cfg) { showToast('QR code not loaded yet. Please wait.', 'error'); return; }
+  showToast('Generating back side...');
+  try {
+    var blob = await KodSpotQR.generateBack(cfg);
+    if (!blob) return;
+    KodSpotQR.downloadBlob(blob, KodSpotQR.safeName(hotel.name) + '_QR_Back.png');
+    showToast('Back side downloaded!');
+  } catch (e) {
+    console.error('PNG download error:', e);
+    showToast('Failed to generate PNG. Please try again.', 'error');
+  }
+}
+
+async function downloadQrPrintReady() {
+  if (!hotel) return;
+  var cfg = getQrCardConfig();
+  if (!cfg) { showToast('QR code not loaded yet. Please wait.', 'error'); return; }
+  showToast('Generating print-ready file (both sides)...');
+  try {
+    var blob = await KodSpotQR.generatePrintReady(cfg);
+    if (!blob) return;
+    KodSpotQR.downloadBlob(blob, KodSpotQR.safeName(hotel.name) + '_QR_PrintReady.png');
+    showToast('Print-ready file downloaded! Take this to your print shop.');
+  } catch (e) {
+    console.error('Print-ready download error:', e);
+    showToast('Failed to generate. Please try again.', 'error');
   }
 }
 
@@ -2481,44 +2262,38 @@ async function downloadQrSvg() {
     showToast('QR code not loaded yet. Please switch to QR tab first.', 'error');
     return;
   }
-  const safeName = (hotel.name || 'menu').replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '_').substring(0, 40);
-  const blob = new Blob([qrSvgCache], { type: 'image/svg+xml' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = `${safeName}_QR_Menu.svg`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+  var sn = KodSpotQR.safeName(hotel.name);
+  var blob = new Blob([qrSvgCache], { type: 'image/svg+xml' });
+  KodSpotQR.downloadBlob(blob, sn + '_QR_Menu.svg');
   showToast('SVG downloaded! Best for printing stickers & standees.');
 }
 
 async function shareQr() {
   if (!hotel) return;
   try {
-    const blob = await generateQrCardBlob();
+    var cfg = getQrCardConfig();
+    if (!cfg) { showToast('QR code not loaded yet.', 'error'); return; }
+    var blob = await KodSpotQR.generateFront(cfg);
     if (!blob) return;
-    const safeName = (hotel.name || 'menu').replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '_').substring(0, 40);
-    const file = new File([blob], `${safeName}_QR_Menu.png`, { type: 'image/png' });
-    const menuUrl = `${window.location.origin}/m/${hotel.slug}`;
+    var sn = KodSpotQR.safeName(hotel.name);
+    var file = new File([blob], sn + '_QR_Menu.png', { type: 'image/png' });
+    var menuUrl = window.location.origin + '/m/' + hotel.slug;
 
     if (navigator.share && navigator.canShare({ files: [file] })) {
       await navigator.share({
-        title: `${hotel.name} - Digital Menu`,
-        text: `Scan QR code or visit: ${menuUrl}`,
+        title: hotel.name + ' - Digital Menu',
+        text: 'Scan QR code or visit: ' + menuUrl,
         files: [file]
       });
       showToast('Shared successfully!');
     } else if (navigator.share) {
-      // Share URL only (no file support)
       await navigator.share({
-        title: `${hotel.name} - Digital Menu`,
-        text: `View our menu: ${menuUrl}`,
+        title: hotel.name + ' - Digital Menu',
+        text: 'View our menu: ' + menuUrl,
         url: menuUrl
       });
       showToast('Link shared!');
     } else {
-      // Fallback: download the PNG
       downloadQrPng();
     }
   } catch (e) {
