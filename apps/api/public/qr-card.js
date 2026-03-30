@@ -351,7 +351,7 @@ var KodSpotQR = (function () {
    * ══════════════════════════════════════════════════════════════════════ */
   async function drawBranding(ctx, cfg) {
     var cx = W / 2;
-    var y = 170;
+    var y = 200;
 
     // --- Hotel logo (square, from API) or fallback K badge ---
     var logoSz = 160;
@@ -423,7 +423,7 @@ var KodSpotQR = (function () {
    * ══════════════════════════════════════════════════════════════════════ */
   function drawTitle(ctx, text, startY) {
     var cx = W / 2;
-    var y = startY + 10;
+    var y = startY + 130;
 
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
@@ -461,10 +461,10 @@ var KodSpotQR = (function () {
    * ══════════════════════════════════════════════════════════════════════ */
   async function drawQR(ctx, qrSvg, startY) {
     var cx = W / 2;
-    var qrSize = 1900;
-    var pad = 35;
+    var qrSize = 2050;
+    var pad = 30;
     var boxSz = qrSize + pad * 2;
-    var framePad = 22;
+    var framePad = 18;
     var frameSz = boxSz + framePad * 2;
     var fx = (W - frameSz) / 2;
     var fy = startY;
