@@ -84,9 +84,9 @@ const isProduction = process.env.NODE_ENV === 'production';
 
 //==================== PLAN CONFIGURATION ====================
 const PLANS = {
-  STARTER:  { price: 49900, dailyUniqueVisitors: 150,  label: '\u20b9499/mo \u2014 150 unique visitors/day',  themes: 4,  analyticsDays: 1,  hideBranding: false },
-  STANDARD: { price: 99900, dailyUniqueVisitors: 500,  label: '\u20b9999/mo \u2014 500 unique visitors/day',  themes: 8,  analyticsDays: 7,  hideBranding: false },
-  PRO:      { price: 149900, dailyUniqueVisitors: -1,  label: '\u20b91,499/mo \u2014 Unlimited + All Themes', themes: 15, analyticsDays: 30, hideBranding: true },
+  STARTER:  { price: 49900, dailyUniqueVisitors: 150,  label: '\u20b9499/mo \u2014 150 unique visitors/day',  themes: 4,  analyticsDays: 1,  hideBranding: false, upiPay: false },
+  STANDARD: { price: 99900, dailyUniqueVisitors: 500,  label: '\u20b9999/mo \u2014 500 unique visitors/day',  themes: 8,  analyticsDays: 7,  hideBranding: false, upiPay: true },
+  PRO:      { price: 149900, dailyUniqueVisitors: -1,  label: '\u20b91,499/mo \u2014 Unlimited + All Themes', themes: 15, analyticsDays: 30, hideBranding: true, upiPay: true },
 };
 
 const PLAN_TIER = { STARTER: 1, STANDARD: 2, PRO: 3 };
@@ -1045,6 +1045,13 @@ function registerRoutes() {
       categories: hotel.categories
     };
 
+    // Include UPI pay data only for STANDARD+ plans with feature enabled and UPI ID set
+    const ePlan = effectivePlan(hotel.plan, hotel.status);
+    const planCfg = PLANS[ePlan] || PLANS.STARTER;
+    if (planCfg.upiPay && hotel.upiPayEnabled && hotel.upiId) {
+      menuData.upiId = hotel.upiId;
+    }
+
     // Cache the result
     setCachedMenu(code, menuData, hotel.id, effectivePlan(hotel.plan, hotel.status));
 
@@ -1158,6 +1165,57 @@ function registerRoutes() {
     reply.header('Content-Type', 'image/svg+xml');
     reply.header('Cache-Control', 'no-cache');
     reply.header('Content-Disposition', `inline; filename="review-qr.svg"`);
+    return svg;
+  });
+
+  // ==================== UPI QR CODE (SVG) ==========================
+  // Generates QR SVG encoding a upi:// deeplink for the hotel's UPI ID.
+  // Used by admin & superadmin for the QR card, and by menu.js for desktop fallback.
+  fastify.get('/api/qr/upi/:hotelId', {
+    config: {
+      rateLimit: {
+        max: 60,
+        timeWindow: '1 minute'
+      }
+    }
+  }, async (request, reply) => {
+    const { hotelId } = request.params;
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(hotelId)) {
+      return reply.code(400).send({ error: 'Invalid hotel ID' });
+    }
+
+    const hotel = await prisma.hotel.findUnique({
+      where: { id: hotelId },
+      select: { name: true, upiId: true, upiPayEnabled: true, plan: true, status: true }
+    });
+
+    if (!hotel || !hotel.upiId || !hotel.upiPayEnabled || hotel.status === 'DELETED') {
+      return reply.code(404).send({ error: 'UPI Pay not configured' });
+    }
+
+    // Plan-gate: only STANDARD+ can have UPI QR
+    const ePlan = effectivePlan(hotel.plan, hotel.status);
+    const planCfg = PLANS[ePlan] || PLANS.STARTER;
+    if (!planCfg.upiPay) {
+      return reply.code(403).send({ error: 'UPI Pay requires Standard or Pro plan' });
+    }
+
+    const upiUri = `upi://pay?pa=${encodeURIComponent(hotel.upiId)}&pn=${encodeURIComponent(hotel.name)}&cu=INR`;
+
+    const svg = await QRCode.toString(upiUri, {
+      type: 'svg',
+      errorCorrectionLevel: 'H',
+      margin: 2,
+      width: 512,
+      color: {
+        dark: '#059669',  // Emerald-600 — differentiates from menu (slate) and review (amber) QR
+        light: '#ffffff'
+      }
+    });
+
+    reply.header('Content-Type', 'image/svg+xml');
+    reply.header('Cache-Control', 'no-cache');
+    reply.header('Content-Disposition', `inline; filename="upi-qr.svg"`);
     return svg;
   });
 
@@ -1711,6 +1769,7 @@ function registerRoutes() {
         select: {
           id: true, name: true, slug: true, city: true, phone: true,
           plan: true, status: true, theme: true, logoUrl: true, reviewUrl: true, views: true,
+          upiId: true, upiPayEnabled: true,
           trialEnds: true, paidUntil: true, createdAt: true, updatedAt: true,
           categories: {
             orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
@@ -2103,6 +2162,78 @@ function registerRoutes() {
       });
 
       return { success: true, reviewUrl: updated.reviewUrl || '' };
+    });
+
+    // ==================== UPI PAY SETTINGS (HOTEL OWNER) ====================
+    const UPI_ID_REGEX = /^[a-zA-Z0-9._-]+@[a-zA-Z][a-zA-Z0-9]*$/;
+
+    app.patch('/settings/upi', async (request, reply) => {
+      // Plan-gate: only STANDARD and PRO
+      const hotel = await prisma.hotel.findUnique({
+        where: { id: request.hotelId },
+        select: { plan: true, status: true, upiId: true, upiPayEnabled: true }
+      });
+      if (!hotel) return reply.code(404).send({ error: 'Hotel not found' });
+
+      const ePlan = effectivePlan(hotel.plan, hotel.status);
+      const planCfg = PLANS[ePlan] || PLANS.STARTER;
+      if (!planCfg.upiPay) {
+        return reply.code(403).send({ error: 'UPI Pay is available on Standard and Pro plans. Please upgrade.' });
+      }
+
+      const schema = z.object({
+        upiId: z.string().max(100).regex(UPI_ID_REGEX, 'Invalid UPI ID format (e.g. name@upi)').or(z.literal('')).optional(),
+        upiPayEnabled: z.boolean().optional()
+      });
+      let data;
+      try {
+        data = schema.parse(request.body);
+      } catch (err) {
+        if (err.name === 'ZodError') {
+          const msg = err.errors?.[0]?.message || 'Invalid UPI ID format. Example: yourname@ybl';
+          return reply.code(400).send({ error: msg });
+        }
+        throw err;
+      }
+
+      const updateData = {};
+      if (data.upiId !== undefined) {
+        updateData.upiId = data.upiId || null;
+        // If UPI ID is being cleared, also disable the feature
+        if (!data.upiId) updateData.upiPayEnabled = false;
+      }
+      if (data.upiPayEnabled !== undefined) {
+        // Can only enable if a UPI ID exists (either being set now or already saved)
+        const willHaveUpiId = data.upiId !== undefined ? !!data.upiId : !!hotel.upiId;
+        updateData.upiPayEnabled = data.upiPayEnabled && willHaveUpiId;
+      }
+
+      if (Object.keys(updateData).length === 0) {
+        return reply.code(400).send({ error: 'No changes provided' });
+      }
+
+      const updated = await prisma.hotel.update({
+        where: { id: request.hotelId },
+        data: updateData,
+        select: { upiId: true, upiPayEnabled: true }
+      });
+
+      await prisma.auditLog.create({
+        data: {
+          hotelId: request.hotelId,
+          actorType: 'owner',
+          action: 'upi_settings_changed',
+          entityType: 'Hotel',
+          entityId: request.hotelId,
+          oldValue: { upiId: hotel.upiId || null, upiPayEnabled: hotel.upiPayEnabled },
+          newValue: { upiId: updated.upiId || null, upiPayEnabled: updated.upiPayEnabled }
+        }
+      });
+
+      // Invalidate menu cache so public menu reflects change immediately
+      try { await purgeMenuCacheForHotel(request.hotelId); } catch (e) { fastify.log.warn('purge error', e.message || e); }
+
+      return { success: true, upiId: updated.upiId || '', upiPayEnabled: updated.upiPayEnabled };
     });
 
     // ==================== LOGO UPLOAD (HOTEL OWNER) ====================
@@ -3045,6 +3176,7 @@ function registerRoutes() {
             id: true, name: true, slug: true, city: true, phone: true,
             status: true, plan: true, trialEnds: true, paidUntil: true,
             views: true, createdAt: true, theme: true, logoUrl: true, reviewUrl: true,
+            upiId: true, upiPayEnabled: true,
             pinResetCount: true, // [6-DIGIT PIN CHANGE] ADDED: Include reset count
             lastPinResetAt: true,  // [6-DIGIT PIN CHANGE] ADDED: Include last reset
             deletedAt: true, purgeAfter: true // Soft delete fields
@@ -3146,6 +3278,7 @@ function registerRoutes() {
         select: {
           id: true, name: true, slug: true, city: true, phone: true,
           plan: true, status: true, theme: true, logoUrl: true, reviewUrl: true, views: true,
+          upiId: true, upiPayEnabled: true,
           trialEnds: true, paidUntil: true, createdAt: true, updatedAt: true,
           paymentMode: true, lastPaymentDate: true, lastPaymentAmount: true,
           pinResetCount: true, lastPinResetAt: true, lastPinResetBy: true,

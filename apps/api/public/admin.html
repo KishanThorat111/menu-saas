@@ -3456,6 +3456,40 @@
             </details>
           </div>
         </div>
+        <!-- UPI Pay Section -->
+        <div class="review-qr-section" id="upiPaySection">
+          <h3 class="review-qr-title">💰 UPI Pay (Pay Now Button)</h3>
+          <p class="review-qr-desc">Let customers pay you directly from the menu. A "Pay Now" button will appear on your digital menu — no physical QR needed at the table.</p>
+          <div id="upiPlanGate" style="display:none;">
+            <div style="background:#fef3c7;border:1px solid #fbbf24;border-radius:8px;padding:12px 16px;margin-bottom:12px;font-size:0.85rem;color:#92400e;">
+              🔒 UPI Pay is available on <strong>Standard</strong> and <strong>Pro</strong> plans.
+              <a href="#" onclick="switchTab('billing',document.querySelector('[data-tab=billing]'));return false;" style="color:#b45309;text-decoration:underline;margin-left:4px;">Upgrade now</a>
+            </div>
+          </div>
+          <div id="upiControls">
+            <div class="review-url-input-wrap">
+              <input id="upiIdInput" type="text" class="review-url-input" placeholder="Enter UPI ID (e.g. yourname@ybl, 9876543210@paytm)" autocomplete="off" spellcheck="false" style="font-family:monospace;">
+              <button id="saveUpiBtn" class="btn btn-primary btn-sm" onclick="saveUpiSettings()">Save</button>
+              <button id="clearUpiBtn" class="btn btn-secondary btn-sm" onclick="clearUpiId()" style="display:none;">Remove</button>
+            </div>
+            <div id="upiStatus" class="review-url-status"></div>
+            <div id="upiToggleWrap" style="display:none;margin-top:10px;">
+              <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:0.9rem;">
+                <input type="checkbox" id="upiToggle" onchange="toggleUpiPay()" style="width:18px;height:18px;accent-color:#059669;cursor:pointer;">
+                <span>Show <strong>"Pay Now"</strong> button on public menu</span>
+              </label>
+            </div>
+            <div class="review-url-help" style="margin-top:8px;">
+              <details>
+                <summary>What is a UPI ID?</summary>
+                <p style="margin-top:0.5rem;font-size:0.85rem;">Your UPI ID is the address linked to your bank account used for receiving payments via UPI apps (PhonePe, Google Pay, Paytm, etc.).</p>
+                <p style="margin-top:0.5rem;font-size:0.85rem;">It looks like: <code style="background:#f3f4f6;padding:0.1rem 0.35rem;border-radius:4px;font-size:0.8rem;">yourname@ybl</code> or <code style="background:#f3f4f6;padding:0.1rem 0.35rem;border-radius:4px;font-size:0.8rem;">9876543210@paytm</code></p>
+                <p style="margin-top:0.5rem;font-size:0.75rem;color:var(--text-secondary);">You can find your UPI ID in any UPI app → Profile / Settings.</p>
+                <p style="margin-top:0.5rem;font-size:0.75rem;color:var(--text-secondary);">⚠️ Payments go directly to your bank account. KodSpot does not process or verify any transactions.</p>
+              </details>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
