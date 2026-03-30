@@ -804,8 +804,6 @@
   }
 
   // ── UPI Pay Now ────────────────────────────────────────────────────────
-  // Rupee symbol SVG — recognizable by every Indian user
-  var UPI_ICON = '<svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M8.5 5h2.6l1.5 5.5L15.7 5h2.6l-4.1 14h-2.6l1.5-5.1L11.1 5H8.5z" opacity="0.9"/><path d="M3 5h2.6l3 14H6L3 5z"/></svg>';
   // Lock icon for trust badge
   var LOCK_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>';
 
@@ -832,7 +830,7 @@
     var pill = document.createElement('button');
     pill.className = 'pay-pill';
     pill.id = 'payNowPill';
-    pill.innerHTML = UPI_ICON + ' <span>\u20B9 Pay Now</span>';
+    pill.textContent = '\u20B9 Pay Now';
     pill.setAttribute('aria-label', 'Pay ' + data.name + ' via UPI');
     document.body.appendChild(pill);
 
@@ -869,9 +867,15 @@
     s += '<div class="pay-sheet-hint">Pay your bill via UPI</div>';
 
     if (isMobile()) {
-      s += '<a href="' + esc(upiUri) + '" class="pay-sheet-action" style="text-decoration:none;">' + UPI_ICON + ' Open UPI App</a>';
+      s += '<a href="' + esc(upiUri) + '" class="pay-sheet-action" style="text-decoration:none;">Open UPI App</a>';
     } else {
-      s += '<div class="pay-sheet-qr" id="payQrArea"><div style="color:var(--c3);font-size:0.85rem;">Loading QR...</div></div>';
+      // Desktop: show copy-able UPI ID (no QR since we don't have hotelId on public page)
+      s += '<div class="pay-sheet-desktop-upi" id="payDesktopUpi">';
+      s += '<div style="font-size:0.75rem;color:var(--c2,#6b6259);text-align:center;margin-bottom:10px;">Send payment using this UPI ID</div>';
+      s += '<div style="display:flex;align-items:center;gap:8px;background:var(--bg-card,#f9fafb);border:1px solid var(--accent-border,#e5e7eb);border-radius:10px;padding:10px 14px;">';
+      s += '<span style="flex:1;font-family:monospace;font-size:0.9375rem;color:var(--c1,#1c1814);user-select:all;word-break:break-all;" id="payUpiText">' + esc(data.upiId) + '</span>';
+      s += '<button id="payUpiCopyBtn" style="flex-shrink:0;background:#059669;color:#fff;border:none;border-radius:8px;padding:7px 14px;font-size:0.8125rem;font-weight:600;font-family:var(--f-body);cursor:pointer;">Copy</button>';
+      s += '</div></div>';
     }
 
     // Trust badge
@@ -887,20 +891,31 @@
       overlay.setAttribute('aria-hidden', 'false');
       document.body.style.overflow = 'hidden';
       trapFocus(sheet);
-
-      // Desktop: show UPI ID for manual copy
-      if (!isMobile()) {
-        var qrArea = $('payQrArea');
-        if (qrArea && !qrArea.querySelector('.pay-qr-loaded')) {
-          qrArea.innerHTML = '<div class="pay-sheet-qr-label" style="margin-bottom:8px;">Scan with any UPI app</div>'
-            + '<div class="pay-qr-loaded" style="background:#f0fdf4;border:2px dashed #059669;border-radius:12px;padding:14px 20px;text-align:center;">'
-            + '<div style="font-size:0.6875rem;color:#059669;font-weight:600;margin-bottom:3px;letter-spacing:0.03em;">UPI ID</div>'
-            + '<div style="font-size:1rem;font-family:monospace;color:#1c1814;user-select:all;">' + esc(data.upiId) + '</div>'
-            + '</div>'
-            + '<div class="pay-sheet-qr-label" style="margin-top:8px;">Copy this UPI ID to your payment app</div>';
-        }
-      }
     });
+
+    // Desktop: wire copy button
+    var copyBtn = $('payUpiCopyBtn');
+    if (copyBtn) {
+      copyBtn.addEventListener('click', function () {
+        var text = data.upiId;
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(function () {
+            copyBtn.textContent = 'Copied!';
+            copyBtn.style.background = '#047857';
+            setTimeout(function () { copyBtn.textContent = 'Copy'; copyBtn.style.background = '#059669'; }, 2000);
+          }).catch(function () { fallbackCopy(text); });
+        } else {
+          fallbackCopy(text);
+        }
+        function fallbackCopy(t) {
+          var ta = document.createElement('textarea');
+          ta.value = t; ta.style.cssText = 'position:fixed;opacity:0;';
+          document.body.appendChild(ta); ta.select();
+          try { document.execCommand('copy'); copyBtn.textContent = 'Copied!'; copyBtn.style.background = '#047857'; setTimeout(function () { copyBtn.textContent = 'Copy'; copyBtn.style.background = '#059669'; }, 2000); } catch (e) {}
+          document.body.removeChild(ta);
+        }
+      });
+    }
 
     // ── Close sheet ──
     function closeSheet() {
