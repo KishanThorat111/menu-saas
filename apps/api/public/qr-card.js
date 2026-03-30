@@ -1,46 +1,35 @@
 /**
- * KODSPOT — Premium QR Card Generator v3.0
- * 600 DPI A6 · Dark walnut + gold luxury design
+ * KODSPOT — Premium QR Card Generator v4.0
+ * 600 DPI A6 · Dark walnut + gold Victorian luxury
  * Used by both admin.js and superadmin.js
- *
- * Usage:
- *   const blob = await KodSpotQR.generateFront({ name, city, slug, logoUrl, hotelId, qrSvg, plan });
- *   const blob = await KodSpotQR.generateBack({ name, city, slug, logoUrl, hotelId, qrSvg, plan, reviewUrl?, reviewQrSvg?, upiId?, upiQrSvg? });
- *   const blob = await KodSpotQR.generatePrintReady({ ... });
  */
 var KodSpotQR = (function () {
   'use strict';
 
-  // ── Constants: 600 DPI A6 ──────────────────────────────────────────────
-  var W = 2480;      // 105mm at 600 DPI
-  var H = 3508;      // 148mm at 600 DPI
+  /* ══════════════════════════════════════════════════════════════════════
+   *  CONSTANTS
+   * ══════════════════════════════════════════════════════════════════════ */
+  var W = 2480;
+  var H = 3508;
 
-  // ── Premium Color Palette ──────────────────────────────────────────────
   var C = {
-    bgDark:       '#2C1810',   // Deep walnut
-    bgMid:        '#3B2314',   // Medium walnut
-    bgLight:      '#4A2E1C',   // Lighter center (radial)
-    gold:         '#C5A55A',   // Primary gold
-    goldLight:    '#D4B96E',   // Highlight gold
-    goldDark:     '#A08840',   // Shadow gold
-    goldPill:     '#B8960F',   // URL pill fill
-    goldPillText: '#3B2314',   // URL pill text
-    cream:        '#F5E6C8',   // Cream text
-    creamSoft:    '#E8D5B0',   // Softer cream
-    white:        '#FFFFFF',
-    qrBg:         '#FFFFFF',
-    qrFrame:      '#C5A55A',
-    kBadgeBg:     '#D4900A',   // Orange KodSpot badge
-    kBadgeText:   '#FFFFFF',
-    reviewStar:   '#D4900A',
-    reviewText:   '#F5E6C8',
-    upiGreen:     '#4ADE80',
-    upiText:      '#F5E6C8',
-    footerText:   '#8B7355'
+    bgDark:    '#2A1508',
+    bgMid:     '#3B2314',
+    bgLight:   '#4D301A',
+    gold:      '#C5A55A',
+    goldHi:    '#E0CC88',
+    goldLo:    '#96782E',
+    cream:     '#F5E6C8',
+    creamSoft: '#D9C6A0',
+    white:     '#FFFFFF',
+    kBadge:    '#D4900A',
+    footerTxt: '#8B7355'
   };
 
-  // ── Helpers ────────────────────────────────────────────────────────────
-  function roundRect(ctx, x, y, w, h, r) {
+  /* ══════════════════════════════════════════════════════════════════════
+   *  UTILITIES
+   * ══════════════════════════════════════════════════════════════════════ */
+  function rr(ctx, x, y, w, h, r) {
     ctx.beginPath();
     ctx.moveTo(x + r, y);
     ctx.lineTo(x + w - r, y);
@@ -54,427 +43,537 @@ var KodSpotQR = (function () {
     ctx.closePath();
   }
 
-  function loadImageAsync(src) {
-    return new Promise(function (resolve) {
-      var img = new Image();
-      img.onload = function () { resolve(img); };
-      img.onerror = function () { resolve(null); };
-      img.src = src;
+  function loadImg(src) {
+    return new Promise(function (ok) {
+      var i = new Image();
+      i.onload = function () { ok(i); };
+      i.onerror = function () { ok(null); };
+      i.src = src;
     });
   }
 
-  function truncateName(ctx, name, maxWidth) {
-    var display = name;
-    while (ctx.measureText(display).width > maxWidth && display.length > 10) {
-      display = display.slice(0, -1);
-    }
-    if (display !== name) display += '\u2026';
-    return display;
+  function loadQrImage(svg) {
+    return loadImg('data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg));
   }
 
-  function safeName(name) {
-    return (name || 'menu').replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '_').substring(0, 40);
+  function truncName(ctx, name, maxW) {
+    var d = name;
+    while (ctx.measureText(d).width > maxW && d.length > 10) d = d.slice(0, -1);
+    if (d !== name) d += '\u2026';
+    return d;
   }
 
-  function loadQrImage(qrSvg) {
-    var url = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(qrSvg);
-    return loadImageAsync(url);
+  function safeName(n) {
+    return (n || 'menu').replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '_').substring(0, 40);
   }
 
-  // ── Create gold gradient ──────────────────────────────────────────────
-  function goldGrad(ctx, x1, y1, x2, y2) {
+  function gGrad(ctx, x1, y1, x2, y2) {
     var g = ctx.createLinearGradient(x1, y1, x2, y2);
-    g.addColorStop(0, C.goldDark);
-    g.addColorStop(0.3, C.goldLight);
+    g.addColorStop(0, C.goldLo);
+    g.addColorStop(0.25, C.goldHi);
     g.addColorStop(0.5, C.gold);
-    g.addColorStop(0.7, C.goldLight);
-    g.addColorStop(1, C.goldDark);
+    g.addColorStop(0.75, C.goldHi);
+    g.addColorStop(1, C.goldLo);
     return g;
   }
 
-  // ── Render premium background ─────────────────────────────────────────
-  function renderBackground(ctx) {
-    // Base dark fill
+  /* ══════════════════════════════════════════════════════════════════════
+   *  BACKGROUND — dark walnut with subtle leather texture
+   * ══════════════════════════════════════════════════════════════════════ */
+  function drawBg(ctx) {
     ctx.fillStyle = C.bgDark;
     ctx.fillRect(0, 0, W, H);
 
-    // Radial gradient — lighter center for depth
-    var grad = ctx.createRadialGradient(W / 2, H * 0.4, 100, W / 2, H * 0.4, W * 0.9);
-    grad.addColorStop(0, C.bgLight);
-    grad.addColorStop(0.5, C.bgMid);
-    grad.addColorStop(1, C.bgDark);
-    ctx.fillStyle = grad;
+    var g = ctx.createRadialGradient(W / 2, H * 0.38, 80, W / 2, H * 0.38, W);
+    g.addColorStop(0, C.bgLight);
+    g.addColorStop(0.45, C.bgMid);
+    g.addColorStop(1, C.bgDark);
+    ctx.fillStyle = g;
     ctx.fillRect(0, 0, W, H);
 
-    // Subtle texture — fine noise using semi-transparent dots
-    ctx.globalAlpha = 0.03;
-    for (var i = 0; i < 15000; i++) {
-      var nx = Math.random() * W;
-      var ny = Math.random() * H;
-      var nr = Math.random() * 3 + 1;
-      ctx.fillStyle = Math.random() > 0.5 ? '#000000' : '#FFFFFF';
-      ctx.beginPath();
-      ctx.arc(nx, ny, nr, 0, Math.PI * 2);
-      ctx.fill();
+    // Leather grain noise
+    ctx.globalAlpha = 0.035;
+    for (var i = 0; i < 20000; i++) {
+      ctx.fillStyle = Math.random() > 0.5 ? '#000' : '#FFF';
+      ctx.fillRect(
+        Math.random() * W | 0,
+        Math.random() * H | 0,
+        Math.random() * 4 + 1,
+        Math.random() * 4 + 1
+      );
     }
-    ctx.globalAlpha = 1.0;
+    ctx.globalAlpha = 1;
   }
 
-  // ── Render gold borders ───────────────────────────────────────────────
-  function renderBorders(ctx) {
-    var m = 60;  // outer margin
-
-    // Outer gold border (thick)
-    ctx.strokeStyle = goldGrad(ctx, m, m, W - m, H - m);
-    ctx.lineWidth = 8;
-    roundRect(ctx, m, m, W - m * 2, H - m * 2, 20);
+  /* ══════════════════════════════════════════════════════════════════════
+   *  DOUBLE GOLD BORDER
+   * ══════════════════════════════════════════════════════════════════════ */
+  function drawBorders(ctx) {
+    // Outer thick gold border
+    var m1 = 48;
+    ctx.strokeStyle = gGrad(ctx, m1, m1, W - m1, H - m1);
+    ctx.lineWidth = 12;
+    rr(ctx, m1, m1, W - m1 * 2, H - m1 * 2, 18);
     ctx.stroke();
 
-    // Inner decorative border (thin, with gap)
-    var m2 = 100;
+    // Inner thin gold border
+    var m2 = 80;
     ctx.strokeStyle = C.gold;
-    ctx.lineWidth = 3;
-    roundRect(ctx, m2, m2, W - m2 * 2, H - m2 * 2, 16);
+    ctx.lineWidth = 5;
+    rr(ctx, m2, m2, W - m2 * 2, H - m2 * 2, 14);
     ctx.stroke();
-
-    // Inner dotted accent border
-    var m3 = 116;
-    ctx.strokeStyle = C.goldDark;
-    ctx.lineWidth = 2;
-    ctx.setLineDash([8, 12]);
-    roundRect(ctx, m3, m3, W - m3 * 2, H - m3 * 2, 14);
-    ctx.stroke();
-    ctx.setLineDash([]);
   }
 
-  // ── Render corner ornaments ───────────────────────────────────────────
-  // Elegant geometric L-corners with decorative dots and small flourishes
-  function renderCorners(ctx) {
-    var positions = [
-      { x: 68, y: 68, sx: 1, sy: 1 },        // Top-left
-      { x: W - 68, y: 68, sx: -1, sy: 1 },    // Top-right
-      { x: 68, y: H - 68, sx: 1, sy: -1 },    // Bottom-left
-      { x: W - 68, y: H - 68, sx: -1, sy: -1 } // Bottom-right
-    ];
+  /* ══════════════════════════════════════════════════════════════════════
+   *  ORNATE VICTORIAN CORNER PIECES — large, elaborate filigree
+   *  Each corner spans ~320px × 320px with scrollwork, curves & details
+   * ══════════════════════════════════════════════════════════════════════ */
+  function drawCornerPiece(ctx) {
+    // This draws ONE corner at origin (top-left orientation).
+    // Caller mirrors via scale for the other three corners.
+    var gold = gGrad(ctx, 0, 0, 320, 320);
+    ctx.strokeStyle = gold;
+    ctx.fillStyle = gold;
 
+    // ── Main L-arms (thick) ──
+    ctx.lineWidth = 10;
+    ctx.beginPath();
+    ctx.moveTo(0, 280);
+    ctx.lineTo(0, 28);
+    ctx.quadraticCurveTo(0, 0, 28, 0);
+    ctx.lineTo(280, 0);
+    ctx.stroke();
+
+    // ── Inner L-arms (thin, offset) ──
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.moveTo(18, 260);
+    ctx.lineTo(18, 36);
+    ctx.quadraticCurveTo(18, 18, 36, 18);
+    ctx.lineTo(260, 18);
+    ctx.stroke();
+
+    // ── Large scroll on vertical arm ──
+    ctx.lineWidth = 7;
+    ctx.beginPath();
+    ctx.moveTo(0, 240);
+    ctx.bezierCurveTo(30, 235, 50, 210, 50, 180);
+    ctx.bezierCurveTo(50, 155, 35, 140, 14, 140);
+    ctx.stroke();
+
+    // Inner spiral of vertical scroll
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.moveTo(14, 140);
+    ctx.bezierCurveTo(28, 140, 38, 155, 38, 170);
+    ctx.bezierCurveTo(38, 185, 28, 192, 20, 188);
+    ctx.stroke();
+
+    // ── Large scroll on horizontal arm ──
+    ctx.lineWidth = 7;
+    ctx.beginPath();
+    ctx.moveTo(240, 0);
+    ctx.bezierCurveTo(235, 30, 210, 50, 180, 50);
+    ctx.bezierCurveTo(155, 50, 140, 35, 140, 14);
+    ctx.stroke();
+
+    // Inner spiral of horizontal scroll
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.moveTo(140, 14);
+    ctx.bezierCurveTo(140, 28, 155, 38, 170, 38);
+    ctx.bezierCurveTo(185, 38, 192, 28, 188, 20);
+    ctx.stroke();
+
+    // ── Corner fan / shell motif ──
+    ctx.lineWidth = 5;
+    // Fan curve 1
+    ctx.beginPath();
+    ctx.moveTo(40, 10);
+    ctx.bezierCurveTo(60, 30, 70, 60, 60, 90);
+    ctx.stroke();
+    // Fan curve 2
+    ctx.beginPath();
+    ctx.moveTo(10, 40);
+    ctx.bezierCurveTo(30, 60, 60, 70, 90, 60);
+    ctx.stroke();
+    // Fan curve 3 (inner)
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(34, 22);
+    ctx.bezierCurveTo(50, 40, 56, 56, 48, 72);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(22, 34);
+    ctx.bezierCurveTo(40, 50, 56, 56, 72, 48);
+    ctx.stroke();
+
+    // ── Corner diamond accent ──
+    ctx.beginPath();
+    ctx.moveTo(48, 6);
+    ctx.lineTo(58, -4);
+    ctx.lineTo(68, 6);
+    ctx.lineTo(58, 16);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.moveTo(6, 48);
+    ctx.lineTo(-4, 58);
+    ctx.lineTo(6, 68);
+    ctx.lineTo(16, 58);
+    ctx.closePath();
+    ctx.fill();
+
+    // ── Teardrop / leaf accents along arms ──
+    // Vertical arm leaves
+    [180, 210, 240].forEach(function (yy) {
+      ctx.beginPath();
+      ctx.ellipse(8, yy, 4, 9, 0, 0, Math.PI * 2);
+      ctx.fill();
+    });
+    // Horizontal arm leaves
+    [180, 210, 240].forEach(function (xx) {
+      ctx.beginPath();
+      ctx.ellipse(xx, 8, 9, 4, 0, 0, Math.PI * 2);
+      ctx.fill();
+    });
+
+    // ── Decorative dots near tips ──
+    [265, 275, 285].forEach(function (xx) {
+      ctx.beginPath();
+      ctx.arc(xx, 5, 4, 0, Math.PI * 2);
+      ctx.fill();
+    });
+    [265, 275, 285].forEach(function (yy) {
+      ctx.beginPath();
+      ctx.arc(5, yy, 4, 0, Math.PI * 2);
+      ctx.fill();
+    });
+
+    // ── Small fleur-de-lis center accent ──
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.moveTo(80, 80);
+    ctx.bezierCurveTo(100, 60, 110, 40, 95, 25);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(80, 80);
+    ctx.bezierCurveTo(60, 100, 40, 110, 25, 95);
+    ctx.stroke();
+    // Center dot
+    ctx.beginPath();
+    ctx.arc(80, 80, 6, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  function drawCorners(ctx) {
+    var m = 56;
+    var positions = [
+      { x: m,     y: m,     sx: 1,  sy: 1 },
+      { x: W - m, y: m,     sx: -1, sy: 1 },
+      { x: m,     y: H - m, sx: 1,  sy: -1 },
+      { x: W - m, y: H - m, sx: -1, sy: -1 }
+    ];
     positions.forEach(function (p) {
       ctx.save();
       ctx.translate(p.x, p.y);
       ctx.scale(p.sx, p.sy);
-
-      var g = goldGrad(ctx, 0, 0, 180, 180);
-      ctx.strokeStyle = g;
-      ctx.fillStyle = g;
-
-      // L-shape arms
-      ctx.lineWidth = 6;
-      ctx.beginPath();
-      ctx.moveTo(0, 120);
-      ctx.lineTo(0, 20);
-      ctx.quadraticCurveTo(0, 0, 20, 0);
-      ctx.lineTo(120, 0);
-      ctx.stroke();
-
-      // Small scroll on vertical arm
-      ctx.lineWidth = 4;
-      ctx.beginPath();
-      ctx.moveTo(8, 100);
-      ctx.quadraticCurveTo(20, 95, 22, 80);
-      ctx.stroke();
-
-      // Small scroll on horizontal arm
-      ctx.beginPath();
-      ctx.moveTo(100, 8);
-      ctx.quadraticCurveTo(95, 20, 80, 22);
-      ctx.stroke();
-
-      // Corner diamond
-      ctx.beginPath();
-      ctx.moveTo(24, 12);
-      ctx.lineTo(32, 4);
-      ctx.lineTo(40, 12);
-      ctx.lineTo(32, 20);
-      ctx.closePath();
-      ctx.fill();
-
-      // Decorative dots
-      [{ cx: 55, cy: 6 }, { cx: 75, cy: 6 }, { cx: 95, cy: 6 },
-       { cx: 6, cy: 55 }, { cx: 6, cy: 75 }, { cx: 6, cy: 95 }].forEach(function (d) {
-        ctx.beginPath();
-        ctx.arc(d.cx, d.cy, 3.5, 0, Math.PI * 2);
-        ctx.fill();
-      });
-
+      drawCornerPiece(ctx);
       ctx.restore();
     });
   }
 
-  // ── Render KodSpot branding + hotel name ──────────────────────────────
-  function renderBranding(ctx, cfg) {
-    var y = 200;
-    var leftX = 180;
+  /* ══════════════════════════════════════════════════════════════════════
+   *  BRANDING ROW — K badge + "KodSpot" + Hotel Name + City
+   * ══════════════════════════════════════════════════════════════════════ */
+  function drawBranding(ctx, cfg) {
+    var lx = 160;
+    var y = 210;
 
-    // Orange "K" badge
-    var badgeSize = 80;
-    var badgeR = 16;
-    ctx.fillStyle = C.kBadgeBg;
-    roundRect(ctx, leftX, y - badgeSize + 12, badgeSize, badgeSize, badgeR);
+    // --- Orange K badge (larger) ---
+    var bs = 110;
+    var br = 20;
+    ctx.fillStyle = C.kBadge;
+    rr(ctx, lx, y - bs + 15, bs, bs, br);
     ctx.fill();
-
-    ctx.fillStyle = C.kBadgeText;
-    ctx.font = 'bold 56px Georgia, "Times New Roman", serif';
+    ctx.fillStyle = C.white;
+    ctx.font = 'bold 76px Georgia, "Times New Roman", serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText('K', leftX + badgeSize / 2, y - badgeSize / 2 + 14);
+    ctx.fillText('K', lx + bs / 2, y - bs / 2 + 17);
 
-    // "KodSpot" text
+    // --- "KodSpot" in gold ---
     ctx.textAlign = 'left';
     ctx.textBaseline = 'alphabetic';
-    ctx.fillStyle = C.goldLight;
-    ctx.font = 'bold 60px Georgia, "Times New Roman", serif';
-    ctx.fillText('KodSpot', leftX + badgeSize + 20, y);
+    ctx.fillStyle = C.goldHi;
+    ctx.font = 'bold 74px Georgia, "Times New Roman", serif';
+    var ksX = lx + bs + 24;
+    ctx.fillText('KodSpot', ksX, y);
 
-    // Hotel name — cream, same line continuation
-    var ksWidth = ctx.measureText('KodSpot').width;
+    // --- Hotel name in cream ---
+    var ksW = ctx.measureText('KodSpot').width;
     ctx.fillStyle = C.cream;
-    ctx.font = '400 52px Georgia, "Times New Roman", serif';
-    var nameX = leftX + badgeSize + 20 + ksWidth + 20;
-    var maxNameW = W - nameX - 200;
-    var displayName = truncateName(ctx, cfg.name || 'Restaurant', maxNameW);
-    ctx.fillText(displayName, nameX, y);
+    ctx.font = '400 64px Georgia, "Times New Roman", serif';
+    var nameX = ksX + ksW + 24;
+    var maxNW = W - nameX - 180;
+    ctx.fillText(truncName(ctx, cfg.name || 'Restaurant', maxNW), nameX, y);
 
-    // City below
-    y += 60;
+    // --- City ---
+    y += 70;
     if (cfg.city) {
       ctx.fillStyle = C.creamSoft;
-      ctx.font = '400 44px Georgia, "Times New Roman", serif';
-      ctx.fillText('\uD83D\uDCCD ' + cfg.city, leftX + badgeSize + 20, y);
+      ctx.font = '400 52px Georgia, "Times New Roman", serif';
+      ctx.fillText('\uD83D\uDCCD ' + cfg.city, ksX, y);
       y += 80;
     } else {
-      y += 40;
+      y += 30;
     }
-
     return y;
   }
 
-  // ── Render "MENU" title (or custom title) ─────────────────────────────
-  function renderTitle(ctx, text, startY) {
+  /* ══════════════════════════════════════════════════════════════════════
+   *  TITLE — large gold serif "MENU" / "REVIEW" / "PAY"
+   * ══════════════════════════════════════════════════════════════════════ */
+  function drawTitle(ctx, text, startY) {
     var cx = W / 2;
-    var y = startY + 20;
+    var y = startY + 30;
 
-    // Gold gradient text
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.font = 'bold 140px Georgia, "Times New Roman", serif';
-
-    // Measure for underline
+    ctx.font = 'bold 180px Georgia, "Times New Roman", serif';
     var tw = ctx.measureText(text).width;
 
-    // Text with gold gradient
-    ctx.fillStyle = goldGrad(ctx, cx - tw / 2, y, cx + tw / 2, y);
+    // Gold gradient fill
+    ctx.fillStyle = gGrad(ctx, cx - tw / 2, y - 80, cx + tw / 2, y + 80);
     ctx.fillText(text, cx, y);
 
-    // Small decorative line under title
-    y += 80;
-    var lineW = Math.min(tw + 40, 600);
+    // Underline with diamond
+    y += 104;
+    var lw = Math.min(tw + 60, 700);
     ctx.strokeStyle = C.gold;
-    ctx.lineWidth = 3;
+    ctx.lineWidth = 4;
     ctx.beginPath();
-    ctx.moveTo(cx - lineW / 2, y);
-    ctx.lineTo(cx + lineW / 2, y);
+    ctx.moveTo(cx - lw / 2, y);
+    ctx.lineTo(cx + lw / 2, y);
     ctx.stroke();
 
-    // Small diamond at center of line
     ctx.fillStyle = C.gold;
     ctx.beginPath();
-    ctx.moveTo(cx, y - 8);
-    ctx.lineTo(cx + 8, y);
-    ctx.lineTo(cx, y + 8);
-    ctx.lineTo(cx - 8, y);
+    ctx.moveTo(cx, y - 10);
+    ctx.lineTo(cx + 10, y);
+    ctx.lineTo(cx, y + 10);
+    ctx.lineTo(cx - 10, y);
     ctx.closePath();
     ctx.fill();
 
-    return y + 50;
+    return y + 40;
   }
 
-  // ── Render QR code in gold-framed white box ───────────────────────────
-  async function renderQR(ctx, qrSvg, startY) {
+  /* ══════════════════════════════════════════════════════════════════════
+   *  QR CODE — in white box with ornate gold frame
+   * ══════════════════════════════════════════════════════════════════════ */
+  async function drawQR(ctx, qrSvg, startY) {
     var cx = W / 2;
-    var qrSize = 1550;
-    var pad = 70;       // Padding inside white box
-    var framePad = 20;  // Gap between white box and gold frame
-    var boxSize = qrSize + pad * 2;
-    var frameSize = boxSize + framePad * 2;
-    var frameX = (W - frameSize) / 2;
-    var frameY = startY;
-    var boxX = frameX + framePad;
-    var boxY = frameY + framePad;
+    var qrSize = 1500;
+    var pad = 80;
+    var boxSz = qrSize + pad * 2;
+    var framePad = 28;
+    var frameSz = boxSz + framePad * 2;
+    var fx = (W - frameSz) / 2;
+    var fy = startY;
+    var bx = fx + framePad;
+    var by = fy + framePad;
 
-    // Gold outer frame with subtle glow
+    // --- Outer gold frame (thick, with glow) ---
     ctx.save();
-    ctx.shadowColor = 'rgba(197, 165, 90, 0.3)';
-    ctx.shadowBlur = 30;
-    ctx.strokeStyle = goldGrad(ctx, frameX, frameY, frameX + frameSize, frameY + frameSize);
-    ctx.lineWidth = 8;
-    roundRect(ctx, frameX, frameY, frameSize, frameSize, 28);
+    ctx.shadowColor = 'rgba(197,165,90,0.35)';
+    ctx.shadowBlur = 40;
+    ctx.strokeStyle = gGrad(ctx, fx, fy, fx + frameSz, fy + frameSz);
+    ctx.lineWidth = 14;
+    rr(ctx, fx, fy, frameSz, frameSz, 24);
     ctx.stroke();
     ctx.restore();
 
-    // White QR background
-    ctx.fillStyle = C.qrBg;
-    roundRect(ctx, boxX, boxY, boxSize, boxSize, 20);
-    ctx.fill();
-
-    // Inner gold accent line
-    var innerM = 12;
+    // --- Inner decorative gold line ---
     ctx.strokeStyle = C.gold;
-    ctx.lineWidth = 3;
-    roundRect(ctx, boxX + innerM, boxY + innerM, boxSize - innerM * 2, boxSize - innerM * 2, 14);
+    ctx.lineWidth = 4;
+    rr(ctx, fx + 20, fy + 20, frameSz - 40, frameSz - 40, 18);
     ctx.stroke();
 
-    // Draw QR code
+    // --- Small corner accents on the QR frame ---
+    var cornerLen = 60;
+    var cm = 10; // offset from outer frame edge
+    var corners = [
+      [fx + cm, fy + cm],
+      [fx + frameSz - cm, fy + cm],
+      [fx + cm, fy + frameSz - cm],
+      [fx + frameSz - cm, fy + frameSz - cm]
+    ];
+    ctx.strokeStyle = C.goldHi;
+    ctx.lineWidth = 5;
+    corners.forEach(function (c, i) {
+      var sx = (i % 2 === 0) ? 1 : -1;
+      var sy = (i < 2) ? 1 : -1;
+      ctx.beginPath();
+      ctx.moveTo(c[0], c[1] + sy * cornerLen);
+      ctx.lineTo(c[0], c[1]);
+      ctx.lineTo(c[0] + sx * cornerLen, c[1]);
+      ctx.stroke();
+      // Tiny diamond
+      ctx.fillStyle = C.goldHi;
+      ctx.beginPath();
+      ctx.moveTo(c[0], c[1] + sy * 8);
+      ctx.lineTo(c[0] + sx * 8, c[1]);
+      ctx.lineTo(c[0], c[1] - sy * 8);
+      ctx.lineTo(c[0] - sx * 8, c[1]);
+      ctx.closePath();
+      ctx.fill();
+    });
+
+    // --- White background ---
+    ctx.fillStyle = C.white;
+    rr(ctx, bx, by, boxSz, boxSz, 16);
+    ctx.fill();
+
+    // --- QR image ---
     var qrImg = await loadQrImage(qrSvg);
     if (qrImg) {
-      ctx.drawImage(qrImg, boxX + pad, boxY + pad, qrSize, qrSize);
+      ctx.drawImage(qrImg, bx + pad, by + pad, qrSize, qrSize);
     }
 
-    return frameY + frameSize + 50;
+    return fy + frameSz + 40;
   }
 
-  // ── Render CTA — Menu side ────────────────────────────────────────────
-  function renderMenuCTA(ctx, startY) {
+  /* ══════════════════════════════════════════════════════════════════════
+   *  CTA SECTIONS
+   * ══════════════════════════════════════════════════════════════════════ */
+  function drawMenuCTA(ctx, y) {
     var cx = W / 2;
-    var y = startY + 10;
-
     ctx.textAlign = 'center';
     ctx.fillStyle = C.cream;
-    ctx.font = '600 64px Georgia, "Times New Roman", serif';
+    ctx.font = '600 76px Georgia, "Times New Roman", serif';
     ctx.fillText('Scan  \u2192  Tap  \u2192  View Menu', cx, y);
-
-    y += 72;
+    y += 78;
     ctx.fillStyle = C.creamSoft;
-    ctx.font = 'italic 44px Georgia, "Times New Roman", serif';
+    ctx.font = 'italic 50px Georgia, "Times New Roman", serif';
     ctx.fillText('Open Menu:', cx, y);
-
-    return y + 50;
+    return y + 44;
   }
 
-  // ── Render CTA — Review side ──────────────────────────────────────────
-  function renderReviewCTA(ctx, startY) {
+  function drawReviewCTA(ctx, y) {
     var cx = W / 2;
-    var y = startY + 10;
-
     ctx.textAlign = 'center';
-    ctx.fillStyle = C.reviewText;
-    ctx.font = '600 64px Georgia, "Times New Roman", serif';
+    ctx.fillStyle = C.cream;
+    ctx.font = '600 76px Georgia, "Times New Roman", serif';
     ctx.fillText('\u2B50 Enjoyed your meal?', cx, y);
-
-    y += 72;
+    y += 78;
     ctx.fillStyle = C.creamSoft;
-    ctx.font = 'italic 44px Georgia, "Times New Roman", serif';
+    ctx.font = 'italic 50px Georgia, "Times New Roman", serif';
     ctx.fillText('Tap to leave us a review!', cx, y);
-
-    return y + 50;
+    return y + 44;
   }
 
-  // ── Render CTA — UPI Pay side ─────────────────────────────────────────
-  function renderUpiCTA(ctx, startY) {
+  function drawUpiCTA(ctx, y) {
     var cx = W / 2;
-    var y = startY + 10;
-
     ctx.textAlign = 'center';
-    ctx.fillStyle = C.upiText;
-    ctx.font = '600 64px Georgia, "Times New Roman", serif';
+    ctx.fillStyle = C.cream;
+    ctx.font = '600 76px Georgia, "Times New Roman", serif';
     ctx.fillText('\uD83D\uDCB0 Scan to Pay', cx, y);
-
-    y += 72;
+    y += 78;
     ctx.fillStyle = C.creamSoft;
-    ctx.font = 'italic 44px Georgia, "Times New Roman", serif';
+    ctx.font = 'italic 50px Georgia, "Times New Roman", serif';
     ctx.fillText('Pay via UPI \u2022 PhonePe, GPay, Paytm', cx, y);
-
-    return y + 50;
+    return y + 44;
   }
 
-  // ── Render URL pill (gold metallic) ───────────────────────────────────
-  function renderURL(ctx, slug, startY) {
+  /* ══════════════════════════════════════════════════════════════════════
+   *  URL PILL — gold metallic
+   * ══════════════════════════════════════════════════════════════════════ */
+  function drawURL(ctx, slug, y) {
     var cx = W / 2;
-    var y = startY;
+    var txt = 'kodspot.com/m/' + slug;
+    ctx.font = '600 52px Georgia, "Times New Roman", serif';
+    var tw = ctx.measureText(txt).width;
+    var pw = tw + 110;
+    var ph = 84;
+    var px = (W - pw) / 2;
+    var py = y - ph / 2;
 
-    var urlText = 'kodspot.com/m/' + slug;
-    ctx.font = '600 48px Georgia, "Times New Roman", serif';
-    var tw = ctx.measureText(urlText).width;
-    var pillW = tw + 100;
-    var pillH = 76;
-    var pillX = (W - pillW) / 2;
-    var pillY = y - pillH / 2;
-
-    // Gold pill background with gradient
-    ctx.fillStyle = goldGrad(ctx, pillX, pillY, pillX + pillW, pillY + pillH);
-    roundRect(ctx, pillX, pillY, pillW, pillH, pillH / 2);
+    ctx.fillStyle = gGrad(ctx, px, py, px + pw, py + ph);
+    rr(ctx, px, py, pw, ph, ph / 2);
     ctx.fill();
 
-    // Subtle inner highlight
-    ctx.strokeStyle = C.goldLight;
+    // Highlight border
+    ctx.strokeStyle = C.goldHi;
     ctx.lineWidth = 2;
-    roundRect(ctx, pillX + 3, pillY + 3, pillW - 6, pillH - 6, (pillH - 6) / 2);
+    rr(ctx, px + 3, py + 3, pw - 6, ph - 6, (ph - 6) / 2);
     ctx.stroke();
 
-    // URL text (dark on gold)
-    ctx.fillStyle = C.goldPillText;
+    ctx.fillStyle = C.bgDark;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(urlText, cx, y + 2);
+    ctx.fillText(txt, cx, y + 2);
     ctx.textBaseline = 'alphabetic';
 
-    return y + pillH / 2 + 40;
+    return y + ph / 2 + 30;
   }
 
-  // ── Render "Flip for menu" hint (back side) ───────────────────────────
-  function renderFlipHint(ctx, slug, startY) {
+  /* ══════════════════════════════════════════════════════════════════════
+   *  FLIP HINT (back side)
+   * ══════════════════════════════════════════════════════════════════════ */
+  function drawFlipHint(ctx, y) {
     var cx = W / 2;
-    var y = startY;
-
     ctx.fillStyle = C.creamSoft;
-    ctx.font = '400 40px Georgia, "Times New Roman", serif';
+    ctx.font = '400 44px Georgia, "Times New Roman", serif';
     ctx.textAlign = 'center';
-    ctx.globalAlpha = 0.7;
+    ctx.globalAlpha = 0.65;
     ctx.fillText('\uD83D\uDCF1 For menu, flip this card', cx, y);
-    ctx.globalAlpha = 1.0;
-
+    ctx.globalAlpha = 1;
     return y + 50;
   }
 
-  // ── Render footer ─────────────────────────────────────────────────────
-  function renderFooter(ctx, plan) {
+  /* ══════════════════════════════════════════════════════════════════════
+   *  FOOTER — "kodspot.com" + optional powered-by
+   * ══════════════════════════════════════════════════════════════════════ */
+  function drawFooter(ctx, plan) {
     var cx = W / 2;
-    var y = H - 440;
+    var y = H - 200;
 
-    // Thin gold separator
-    var sepW = 300;
+    // Gold separator
     ctx.strokeStyle = C.gold;
     ctx.lineWidth = 2;
     ctx.globalAlpha = 0.4;
     ctx.beginPath();
-    ctx.moveTo(cx - sepW / 2, y);
-    ctx.lineTo(cx + sepW / 2, y);
+    ctx.moveTo(cx - 160, y - 50);
+    ctx.lineTo(cx + 160, y - 50);
     ctx.stroke();
-    ctx.globalAlpha = 1.0;
+    ctx.globalAlpha = 1;
 
-    y += 50;
     ctx.textAlign = 'center';
     ctx.fillStyle = C.gold;
-    ctx.font = '600 44px Georgia, "Times New Roman", serif';
+    ctx.font = '600 50px Georgia, "Times New Roman", serif';
     ctx.fillText('kodspot.com', cx, y);
 
     if (plan !== 'PRO') {
-      y += 48;
-      ctx.fillStyle = C.footerText;
-      ctx.font = '400 32px Georgia, "Times New Roman", serif';
-      ctx.fillText('Powered by KodSpot', cx, y);
+      ctx.fillStyle = C.footerTxt;
+      ctx.font = '400 34px Georgia, "Times New Roman", serif';
+      ctx.fillText('Powered by KodSpot', cx, y + 50);
     }
   }
 
-  // ── GENERATE FRONT SIDE ────────────────────────────────────────────────
+  /* ══════════════════════════════════════════════════════════════════════
+   *  SHARED CARD SCAFFOLD — all the premium framing
+   * ══════════════════════════════════════════════════════════════════════ */
+  function drawFrame(ctx) {
+    drawBg(ctx);
+    drawBorders(ctx);
+    drawCorners(ctx);
+  }
+
+  /* ══════════════════════════════════════════════════════════════════════
+   *  GENERATE FRONT SIDE
+   * ══════════════════════════════════════════════════════════════════════ */
   async function generateFront(cfg) {
     if (!cfg.qrSvg || !cfg.slug) return null;
 
@@ -483,46 +582,27 @@ var KodSpotQR = (function () {
     canvas.height = H;
     var ctx = canvas.getContext('2d');
 
-    // Premium background
-    renderBackground(ctx);
-    renderBorders(ctx);
-    renderCorners(ctx);
+    drawFrame(ctx);
+    var y = drawBranding(ctx, cfg);
+    y = drawTitle(ctx, 'MENU', y);
+    y = await drawQR(ctx, cfg.qrSvg, y);
+    y = drawMenuCTA(ctx, y);
+    y = drawURL(ctx, cfg.slug, y);
+    drawFooter(ctx, cfg.plan);
 
-    // Branding + hotel name
-    var y = renderBranding(ctx, cfg);
-
-    // "MENU" title
-    y = renderTitle(ctx, 'MENU', y);
-
-    // QR Code in gold frame
-    y = await renderQR(ctx, cfg.qrSvg, y);
-
-    // CTA
-    y = renderMenuCTA(ctx, y);
-
-    // URL pill
-    y = renderURL(ctx, cfg.slug, y);
-
-    // Footer
-    renderFooter(ctx, cfg.plan);
-
-    return new Promise(function (resolve) {
-      canvas.toBlob(resolve, 'image/png', 1.0);
-    });
+    return new Promise(function (ok) { canvas.toBlob(ok, 'image/png', 1.0); });
   }
 
-  // ── GENERATE BACK SIDE ─────────────────────────────────────────────────
+  /* ══════════════════════════════════════════════════════════════════════
+   *  GENERATE BACK SIDE
+   * ══════════════════════════════════════════════════════════════════════ */
   async function generateBack(cfg) {
     var hasReview = !!(cfg.reviewUrl && cfg.reviewQrSvg);
     var hasUpi = !!(cfg.upiId && cfg.upiQrSvg);
-
-    if (!hasReview && !hasUpi) {
-      return generateFront(cfg);
-    }
+    if (!hasReview && !hasUpi) return generateFront(cfg);
 
     var useReview = hasReview;
     var useUpi = !hasReview && hasUpi;
-
     if (!cfg.slug) return null;
 
     var canvas = document.createElement('canvas');
@@ -530,71 +610,55 @@ var KodSpotQR = (function () {
     canvas.height = H;
     var ctx = canvas.getContext('2d');
 
-    // Premium background
-    renderBackground(ctx);
-    renderBorders(ctx);
-    renderCorners(ctx);
+    drawFrame(ctx);
+    var y = drawBranding(ctx, cfg);
 
-    // Branding + hotel name
-    var y = renderBranding(ctx, cfg);
-
-    // Title — contextual
     if (useReview) {
-      y = renderTitle(ctx, 'REVIEW', y);
+      y = drawTitle(ctx, 'REVIEW', y);
     } else {
-      y = renderTitle(ctx, 'PAY', y);
+      y = drawTitle(ctx, 'PAY', y);
     }
 
-    // QR Code
-    if (useReview && cfg.reviewQrSvg) {
-      y = await renderQR(ctx, cfg.reviewQrSvg, y);
-    } else if (useUpi && cfg.upiQrSvg) {
-      y = await renderQR(ctx, cfg.upiQrSvg, y);
-    } else {
-      y = await renderQR(ctx, cfg.qrSvg, y);
-    }
-
-    // CTA
     if (useReview) {
-      y = renderReviewCTA(ctx, y);
+      y = await drawQR(ctx, cfg.reviewQrSvg, y);
+      y = drawReviewCTA(ctx, y);
     } else if (useUpi) {
-      y = renderUpiCTA(ctx, y);
+      y = await drawQR(ctx, cfg.upiQrSvg, y);
+      y = drawUpiCTA(ctx, y);
+    } else {
+      y = await drawQR(ctx, cfg.qrSvg, y);
     }
 
-    // Flip hint
-    y = renderFlipHint(ctx, cfg.slug, y);
+    y = drawFlipHint(ctx, y);
+    drawFooter(ctx, cfg.plan);
 
-    // Footer
-    renderFooter(ctx, cfg.plan);
-
-    return new Promise(function (resolve) {
-      canvas.toBlob(resolve, 'image/png', 1.0);
-    });
+    return new Promise(function (ok) { canvas.toBlob(ok, 'image/png', 1.0); });
   }
 
-  // ── GENERATE PRINT-READY (both sides stacked) ─────────────────────────
+  /* ══════════════════════════════════════════════════════════════════════
+   *  GENERATE PRINT-READY (both sides stacked)
+   * ══════════════════════════════════════════════════════════════════════ */
   async function generatePrintReady(cfg) {
-    var frontBlob = await generateFront(cfg);
-    var backBlob = await generateBack(cfg);
-    if (!frontBlob || !backBlob) return null;
+    var fb = await generateFront(cfg);
+    var bb = await generateBack(cfg);
+    if (!fb || !bb) return null;
 
-    var frontUrl = URL.createObjectURL(frontBlob);
-    var backUrl = URL.createObjectURL(backBlob);
-    var frontImg = await loadImageAsync(frontUrl);
-    var backImg = await loadImageAsync(backUrl);
-    URL.revokeObjectURL(frontUrl);
-    URL.revokeObjectURL(backUrl);
-    if (!frontImg || !backImg) return null;
+    var fu = URL.createObjectURL(fb);
+    var bu = URL.createObjectURL(bb);
+    var fi = await loadImg(fu);
+    var bi = await loadImg(bu);
+    URL.revokeObjectURL(fu);
+    URL.revokeObjectURL(bu);
+    if (!fi || !bi) return null;
 
     var gap = 120;
-    var labelH = 80;
-    var totalH = H + gap + labelH + H + gap + labelH;
+    var lh = 80;
+    var totalH = H + gap + lh + H + gap + lh;
     var canvas = document.createElement('canvas');
     canvas.width = W;
     canvas.height = totalH;
     var ctx = canvas.getContext('2d');
 
-    // Background
     ctx.fillStyle = '#1a1a1a';
     ctx.fillRect(0, 0, W, totalH);
 
@@ -603,47 +667,33 @@ var KodSpotQR = (function () {
     ctx.font = '600 48px Georgia, "Times New Roman", serif';
     ctx.textAlign = 'center';
     ctx.fillText('\u2702 FRONT SIDE \u2014 Cut along dotted line', W / 2, 56);
-
     ctx.strokeStyle = C.gold;
     ctx.lineWidth = 3;
     ctx.globalAlpha = 0.4;
     ctx.setLineDash([20, 12]);
-    ctx.beginPath();
-    ctx.moveTo(40, labelH);
-    ctx.lineTo(W - 40, labelH);
-    ctx.stroke();
-    ctx.setLineDash([]);
-    ctx.globalAlpha = 1.0;
+    ctx.beginPath(); ctx.moveTo(40, lh); ctx.lineTo(W - 40, lh); ctx.stroke();
+    ctx.setLineDash([]); ctx.globalAlpha = 1;
+    ctx.drawImage(fi, 0, lh);
 
-    // Front image
-    ctx.drawImage(frontImg, 0, labelH);
-
-    // Middle separator
-    var midY = labelH + H + gap / 2;
+    // Back label
+    var midY = lh + H + gap / 2;
     ctx.fillStyle = C.gold;
     ctx.font = '600 48px Georgia, "Times New Roman", serif';
     ctx.fillText('\u2702 BACK SIDE \u2014 Cut along dotted line', W / 2, midY + 24);
-
     ctx.strokeStyle = C.gold;
     ctx.lineWidth = 3;
     ctx.globalAlpha = 0.4;
     ctx.setLineDash([20, 12]);
-    ctx.beginPath();
-    ctx.moveTo(40, midY + gap / 2);
-    ctx.lineTo(W - 40, midY + gap / 2);
-    ctx.stroke();
-    ctx.setLineDash([]);
-    ctx.globalAlpha = 1.0;
+    ctx.beginPath(); ctx.moveTo(40, midY + gap / 2); ctx.lineTo(W - 40, midY + gap / 2); ctx.stroke();
+    ctx.setLineDash([]); ctx.globalAlpha = 1;
+    ctx.drawImage(bi, 0, lh + H + gap + lh);
 
-    // Back image
-    ctx.drawImage(backImg, 0, labelH + H + gap + labelH);
-
-    return new Promise(function (resolve) {
-      canvas.toBlob(resolve, 'image/png', 1.0);
-    });
+    return new Promise(function (ok) { canvas.toBlob(ok, 'image/png', 1.0); });
   }
 
-  // ── Download helpers ───────────────────────────────────────────────────
+  /* ══════════════════════════════════════════════════════════════════════
+   *  DOWNLOAD HELPER
+   * ══════════════════════════════════════════════════════════════════════ */
   function downloadBlob(blob, filename) {
     var a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
@@ -654,7 +704,9 @@ var KodSpotQR = (function () {
     setTimeout(function () { URL.revokeObjectURL(a.href); }, 5000);
   }
 
-  // ── Public API ─────────────────────────────────────────────────────────
+  /* ══════════════════════════════════════════════════════════════════════
+   *  PUBLIC API
+   * ══════════════════════════════════════════════════════════════════════ */
   return {
     generateFront: generateFront,
     generateBack: generateBack,
