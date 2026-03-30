@@ -804,7 +804,10 @@
   }
 
   // ── UPI Pay Now ────────────────────────────────────────────────────────
-  var UPI_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>';
+  // Rupee symbol SVG — recognizable by every Indian user
+  var UPI_ICON = '<svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M8.5 5h2.6l1.5 5.5L15.7 5h2.6l-4.1 14h-2.6l1.5-5.1L11.1 5H8.5z" opacity="0.9"/><path d="M3 5h2.6l3 14H6L3 5z"/></svg>';
+  // Lock icon for trust badge
+  var LOCK_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>';
 
   function isMobile() {
     return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
@@ -825,18 +828,18 @@
     var shell = $('shell');
     if (!shell) return;
 
-    document.body.classList.add('has-pay-bar');
-
-    // Sticky footer bar
-    var footer = document.createElement('div');
-    footer.className = 'pay-footer';
-    footer.innerHTML = '<button class="pay-btn" id="payNowBtn">' + UPI_ICON + ' Pay ' + esc(data.name) + '</button>';
-    document.body.appendChild(footer);
+    // ── Floating pill button (bottom-right) ──
+    var pill = document.createElement('button');
+    pill.className = 'pay-pill';
+    pill.id = 'payNowPill';
+    pill.innerHTML = UPI_ICON + ' <span>\u20B9 Pay Now</span>';
+    pill.setAttribute('aria-label', 'Pay ' + data.name + ' via UPI');
+    document.body.appendChild(pill);
 
     // Build UPI URI
     var upiUri = 'upi://pay?pa=' + encodeURIComponent(data.upiId) + '&pn=' + encodeURIComponent(data.name) + '&cu=INR';
 
-    // Bottom sheet overlay
+    // ── Bottom sheet overlay ──
     var overlay = document.createElement('div');
     overlay.className = 'pay-overlay';
     overlay.setAttribute('aria-hidden', 'true');
@@ -847,67 +850,80 @@
     sheet.setAttribute('aria-modal', 'true');
     sheet.setAttribute('aria-label', 'Pay ' + data.name);
 
-    var sheetHTML = '<div class="pay-sheet-handle"></div>';
-    sheetHTML += '<div class="pay-sheet-title">Pay ' + esc(data.name) + '</div>';
-    sheetHTML += '<div class="pay-sheet-upi">' + esc(maskUpi(data.upiId)) + '</div>';
+    // Build sheet contents — compact, branded, trustworthy
+    var s = '<div class="pay-sheet-handle"></div>';
+
+    // Identity row: logo + name + masked UPI
+    s += '<div class="pay-sheet-identity">';
+    if (data.logoUrl) {
+      s += '<img class="pay-sheet-logo" src="' + esc(data.logoUrl) + '" alt="" loading="lazy">';
+    } else {
+      s += '<div class="pay-sheet-logo-placeholder">' + esc(data.name.charAt(0)) + '</div>';
+    }
+    s += '<div class="pay-sheet-payee">';
+    s += '<div class="pay-sheet-name">' + esc(data.name) + '</div>';
+    s += '<div class="pay-sheet-upi-id">' + esc(maskUpi(data.upiId)) + '</div>';
+    s += '</div></div>';
+
+    // Hint
+    s += '<div class="pay-sheet-hint">Pay your bill via UPI</div>';
 
     if (isMobile()) {
-      // Mobile: deeplink button
-      sheetHTML += '<a href="' + esc(upiUri) + '" class="pay-sheet-action" style="text-decoration:none;">' + UPI_ICON + ' Open UPI App</a>';
+      s += '<a href="' + esc(upiUri) + '" class="pay-sheet-action" style="text-decoration:none;">' + UPI_ICON + ' Open UPI App</a>';
     } else {
-      // Desktop: show QR code
-      sheetHTML += '<div class="pay-sheet-qr" id="payQrArea"><div style="color:var(--c3);font-size:0.85rem;">Loading QR...</div></div>';
+      s += '<div class="pay-sheet-qr" id="payQrArea"><div style="color:var(--c3);font-size:0.85rem;">Loading QR...</div></div>';
     }
 
-    sheetHTML += '<div class="pay-sheet-disclaimer">Payment goes directly to the restaurant via UPI.<br>KodSpot does not process or verify transactions.</div>';
-    sheetHTML += '<button class="pay-sheet-close" id="paySheetClose">Close</button>';
+    // Trust badge
+    s += '<div class="pay-sheet-trust">' + LOCK_ICON + '<span>Payment goes directly to the restaurant via UPI. KodSpot does not process transactions.</span></div>';
 
-    sheet.innerHTML = sheetHTML;
+    sheet.innerHTML = s;
     overlay.appendChild(sheet);
     document.body.appendChild(overlay);
 
-    // Open sheet
-    var payBtn = $('payNowBtn');
-    payBtn.addEventListener('click', function () {
+    // ── Open sheet ──
+    pill.addEventListener('click', function () {
       overlay.classList.add('open');
       overlay.setAttribute('aria-hidden', 'false');
       document.body.style.overflow = 'hidden';
       trapFocus(sheet);
 
-      // Desktop: load UPI QR on open
+      // Desktop: show UPI ID for manual copy
       if (!isMobile()) {
         var qrArea = $('payQrArea');
-        if (qrArea && !qrArea.querySelector('svg')) {
-          // Fetch QR from API — we don't have hotelId on public page, so build inline
-          // Use a data URI approach: fetch the SVG from the server
-          var qrImg = document.createElement('img');
-          qrImg.alt = 'UPI QR Code';
-          qrImg.style.cssText = 'width:200px;height:200px;';
-          // Build a simple text representation
-          qrArea.innerHTML = '<div class="pay-sheet-qr-label" style="margin-bottom:8px;">Scan with any UPI app</div>';
-          // We'll use a simple approach — show the UPI ID prominently for desktop
-          qrArea.innerHTML += '<div style="background:#f0fdf4;border:2px dashed #059669;border-radius:12px;padding:16px 24px;text-align:center;">'
-            + '<div style="font-size:0.75rem;color:#059669;font-weight:600;margin-bottom:4px;">UPI ID</div>'
-            + '<div style="font-size:1.125rem;font-family:monospace;color:#1c1814;user-select:all;">' + esc(data.upiId) + '</div>'
-            + '</div>';
-          qrArea.innerHTML += '<div class="pay-sheet-qr-label" style="margin-top:8px;">Copy this UPI ID to your payment app</div>';
+        if (qrArea && !qrArea.querySelector('.pay-qr-loaded')) {
+          qrArea.innerHTML = '<div class="pay-sheet-qr-label" style="margin-bottom:8px;">Scan with any UPI app</div>'
+            + '<div class="pay-qr-loaded" style="background:#f0fdf4;border:2px dashed #059669;border-radius:12px;padding:14px 20px;text-align:center;">'
+            + '<div style="font-size:0.6875rem;color:#059669;font-weight:600;margin-bottom:3px;letter-spacing:0.03em;">UPI ID</div>'
+            + '<div style="font-size:1rem;font-family:monospace;color:#1c1814;user-select:all;">' + esc(data.upiId) + '</div>'
+            + '</div>'
+            + '<div class="pay-sheet-qr-label" style="margin-top:8px;">Copy this UPI ID to your payment app</div>';
         }
       }
     });
 
-    // Close sheet
+    // ── Close sheet ──
     function closeSheet() {
       overlay.classList.remove('open');
       overlay.setAttribute('aria-hidden', 'true');
       document.body.style.overflow = '';
     }
 
-    var closeBtn = $('paySheetClose');
-    if (closeBtn) closeBtn.addEventListener('click', closeSheet);
+    // Tap overlay backdrop
     overlay.addEventListener('click', function (e) { if (e.target === overlay) closeSheet(); });
+    // Escape key
     document.addEventListener('keydown', function (e) {
       if (e.key === 'Escape' && overlay.classList.contains('open')) closeSheet();
     });
+    // Swipe-down on handle area
+    var startY = 0;
+    sheet.addEventListener('touchstart', function (e) {
+      startY = e.touches[0].clientY;
+    }, { passive: true });
+    sheet.addEventListener('touchend', function (e) {
+      var diff = e.changedTouches[0].clientY - startY;
+      if (diff > 60) closeSheet();  // swipe down > 60px
+    }, { passive: true });
   }
 
   // ── Fetch & Boot ───────────────────────────────────────────────────────
