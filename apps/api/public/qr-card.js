@@ -112,163 +112,225 @@ var KodSpotQR = (function () {
     // Outer thick gold border
     var m1 = 48;
     ctx.strokeStyle = gGrad(ctx, m1, m1, W - m1, H - m1);
-    ctx.lineWidth = 12;
+    ctx.lineWidth = 16;
     rr(ctx, m1, m1, W - m1 * 2, H - m1 * 2, 18);
     ctx.stroke();
 
     // Inner thin gold border
-    var m2 = 80;
+    var m2 = 86;
     ctx.strokeStyle = C.gold;
-    ctx.lineWidth = 5;
+    ctx.lineWidth = 6;
     rr(ctx, m2, m2, W - m2 * 2, H - m2 * 2, 14);
     ctx.stroke();
   }
 
   /* ══════════════════════════════════════════════════════════════════════
-   *  ORNATE VICTORIAN CORNER PIECES — large, elaborate filigree
-   *  Each corner spans ~320px × 320px with scrollwork, curves & details
+   *  ORNATE VICTORIAN CORNERS — 500px span, elaborate scrollwork
    * ══════════════════════════════════════════════════════════════════════ */
   function drawCornerPiece(ctx) {
-    // This draws ONE corner at origin (top-left orientation).
-    // Caller mirrors via scale for the other three corners.
-    var gold = gGrad(ctx, 0, 0, 320, 320);
-    ctx.strokeStyle = gold;
-    ctx.fillStyle = gold;
+    // Draws top-left corner. Caller mirrors for other 3.
+    // Total span: 500px on each arm.
+    var g = gGrad(ctx, 0, 0, 500, 500);
+    ctx.strokeStyle = g;
+    ctx.fillStyle = g;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
 
-    // ── Main L-arms (thick) ──
+    // ═══ STRUCTURAL L-FRAME ═══
+    ctx.lineWidth = 18;
+    ctx.beginPath();
+    ctx.moveTo(0, 480);
+    ctx.lineTo(0, 32);
+    ctx.quadraticCurveTo(0, 0, 32, 0);
+    ctx.lineTo(480, 0);
+    ctx.stroke();
+
+    // Inner parallel L-arm
+    ctx.lineWidth = 6;
+    ctx.beginPath();
+    ctx.moveTo(32, 440);
+    ctx.lineTo(32, 48);
+    ctx.quadraticCurveTo(32, 32, 48, 32);
+    ctx.lineTo(440, 32);
+    ctx.stroke();
+
+    // ═══ MAIN VERTICAL SCROLL (y 160-400) ═══
+    // Primary bold C-scroll — outward then curling back
+    ctx.lineWidth = 16;
+    ctx.beginPath();
+    ctx.moveTo(8, 400);
+    ctx.bezierCurveTo(90, 388, 135, 325, 120, 265);
+    ctx.bezierCurveTo(108, 208, 55, 172, 16, 184);
+    ctx.stroke();
+
+    // Inner scroll spiral
     ctx.lineWidth = 10;
     ctx.beginPath();
-    ctx.moveTo(0, 280);
-    ctx.lineTo(0, 28);
-    ctx.quadraticCurveTo(0, 0, 28, 0);
-    ctx.lineTo(280, 0);
+    ctx.moveTo(16, 184);
+    ctx.bezierCurveTo(52, 178, 82, 210, 88, 252);
+    ctx.bezierCurveTo(94, 288, 70, 310, 48, 298);
     ctx.stroke();
 
-    // ── Inner L-arms (thin, offset) ──
-    ctx.lineWidth = 4;
+    // Innermost curl tip
+    ctx.lineWidth = 6;
     ctx.beginPath();
-    ctx.moveTo(18, 260);
-    ctx.lineTo(18, 36);
-    ctx.quadraticCurveTo(18, 18, 36, 18);
-    ctx.lineTo(260, 18);
+    ctx.moveTo(48, 298);
+    ctx.bezierCurveTo(60, 292, 72, 270, 68, 254);
     ctx.stroke();
 
-    // ── Large scroll on vertical arm ──
+    // Filled teardrop at scroll start
+    ctx.beginPath();
+    ctx.ellipse(8, 414, 7, 18, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // ═══ MAIN HORIZONTAL SCROLL (x 160-400) ═══
+    ctx.lineWidth = 16;
+    ctx.beginPath();
+    ctx.moveTo(400, 8);
+    ctx.bezierCurveTo(388, 90, 325, 135, 265, 120);
+    ctx.bezierCurveTo(208, 108, 172, 55, 184, 16);
+    ctx.stroke();
+
+    ctx.lineWidth = 10;
+    ctx.beginPath();
+    ctx.moveTo(184, 16);
+    ctx.bezierCurveTo(178, 52, 210, 82, 252, 88);
+    ctx.bezierCurveTo(288, 94, 310, 70, 298, 48);
+    ctx.stroke();
+
+    ctx.lineWidth = 6;
+    ctx.beginPath();
+    ctx.moveTo(298, 48);
+    ctx.bezierCurveTo(292, 60, 270, 72, 254, 68);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.ellipse(414, 8, 18, 7, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // ═══ CORNER FAN MOTIF (0-160) ═══
+    // Bold radiating fan curves
+    ctx.lineWidth = 10;
+    ctx.beginPath();
+    ctx.moveTo(48, 22);
+    ctx.bezierCurveTo(105, 58, 140, 110, 120, 175);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(22, 48);
+    ctx.bezierCurveTo(58, 105, 110, 140, 175, 120);
+    ctx.stroke();
+
+    // Medium fan curves
     ctx.lineWidth = 7;
     ctx.beginPath();
-    ctx.moveTo(0, 240);
-    ctx.bezierCurveTo(30, 235, 50, 210, 50, 180);
-    ctx.bezierCurveTo(50, 155, 35, 140, 14, 140);
+    ctx.moveTo(54, 30);
+    ctx.bezierCurveTo(92, 62, 112, 100, 96, 145);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(30, 54);
+    ctx.bezierCurveTo(62, 92, 100, 112, 145, 96);
     ctx.stroke();
 
-    // Inner spiral of vertical scroll
+    // Thin inner fan curves
     ctx.lineWidth = 4;
     ctx.beginPath();
-    ctx.moveTo(14, 140);
-    ctx.bezierCurveTo(28, 140, 38, 155, 38, 170);
-    ctx.bezierCurveTo(38, 185, 28, 192, 20, 188);
+    ctx.moveTo(58, 40);
+    ctx.bezierCurveTo(84, 64, 96, 86, 84, 120);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(40, 58);
+    ctx.bezierCurveTo(64, 84, 86, 96, 120, 84);
     ctx.stroke();
 
-    // ── Large scroll on horizontal arm ──
-    ctx.lineWidth = 7;
+    // Diagonal accent curves
+    ctx.lineWidth = 6;
     ctx.beginPath();
-    ctx.moveTo(240, 0);
-    ctx.bezierCurveTo(235, 30, 210, 50, 180, 50);
-    ctx.bezierCurveTo(155, 50, 140, 35, 140, 14);
+    ctx.moveTo(52, 52);
+    ctx.bezierCurveTo(88, 88, 118, 120, 105, 160);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(52, 52);
+    ctx.bezierCurveTo(88, 88, 118, 120, 160, 105);
     ctx.stroke();
 
-    // Inner spiral of horizontal scroll
-    ctx.lineWidth = 4;
+    // ═══ CENTRAL ROSETTE ═══
     ctx.beginPath();
-    ctx.moveTo(140, 14);
-    ctx.bezierCurveTo(140, 28, 155, 38, 170, 38);
-    ctx.bezierCurveTo(185, 38, 192, 28, 188, 20);
-    ctx.stroke();
-
-    // ── Corner fan / shell motif ──
-    ctx.lineWidth = 5;
-    // Fan curve 1
-    ctx.beginPath();
-    ctx.moveTo(40, 10);
-    ctx.bezierCurveTo(60, 30, 70, 60, 60, 90);
-    ctx.stroke();
-    // Fan curve 2
-    ctx.beginPath();
-    ctx.moveTo(10, 40);
-    ctx.bezierCurveTo(30, 60, 60, 70, 90, 60);
-    ctx.stroke();
-    // Fan curve 3 (inner)
+    ctx.arc(50, 50, 14, 0, Math.PI * 2);
+    ctx.fill();
     ctx.lineWidth = 3;
     ctx.beginPath();
-    ctx.moveTo(34, 22);
-    ctx.bezierCurveTo(50, 40, 56, 56, 48, 72);
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(22, 34);
-    ctx.bezierCurveTo(40, 50, 56, 56, 72, 48);
+    ctx.arc(50, 50, 24, 0, Math.PI * 2);
     ctx.stroke();
 
-    // ── Corner diamond accent ──
+    // ═══ DIAMOND ACCENTS ═══
+    function diamond(x, y, s) {
+      ctx.beginPath();
+      ctx.moveTo(x, y - s); ctx.lineTo(x + s, y);
+      ctx.lineTo(x, y + s); ctx.lineTo(x - s, y);
+      ctx.closePath(); ctx.fill();
+    }
+    diamond(85, 10, 10);
+    diamond(10, 85, 10);
+    diamond(135, 8, 8);
+    diamond(8, 135, 8);
+    diamond(340, 8, 7);
+    diamond(8, 340, 7);
+
+    // ═══ ARM-END FLOURISH (400-480) ═══
+    ctx.lineWidth = 10;
     ctx.beginPath();
-    ctx.moveTo(48, 6);
-    ctx.lineTo(58, -4);
-    ctx.lineTo(68, 6);
-    ctx.lineTo(58, 16);
-    ctx.closePath();
-    ctx.fill();
-
-    ctx.beginPath();
-    ctx.moveTo(6, 48);
-    ctx.lineTo(-4, 58);
-    ctx.lineTo(6, 68);
-    ctx.lineTo(16, 58);
-    ctx.closePath();
-    ctx.fill();
-
-    // ── Teardrop / leaf accents along arms ──
-    // Vertical arm leaves
-    [180, 210, 240].forEach(function (yy) {
-      ctx.beginPath();
-      ctx.ellipse(8, yy, 4, 9, 0, 0, Math.PI * 2);
-      ctx.fill();
-    });
-    // Horizontal arm leaves
-    [180, 210, 240].forEach(function (xx) {
-      ctx.beginPath();
-      ctx.ellipse(xx, 8, 9, 4, 0, 0, Math.PI * 2);
-      ctx.fill();
-    });
-
-    // ── Decorative dots near tips ──
-    [265, 275, 285].forEach(function (xx) {
-      ctx.beginPath();
-      ctx.arc(xx, 5, 4, 0, Math.PI * 2);
-      ctx.fill();
-    });
-    [265, 275, 285].forEach(function (yy) {
-      ctx.beginPath();
-      ctx.arc(5, yy, 4, 0, Math.PI * 2);
-      ctx.fill();
-    });
-
-    // ── Small fleur-de-lis center accent ──
-    ctx.lineWidth = 4;
-    ctx.beginPath();
-    ctx.moveTo(80, 80);
-    ctx.bezierCurveTo(100, 60, 110, 40, 95, 25);
+    ctx.moveTo(8, 452);
+    ctx.bezierCurveTo(58, 442, 78, 418, 60, 388);
     ctx.stroke();
+    ctx.lineWidth = 6;
     ctx.beginPath();
-    ctx.moveTo(80, 80);
-    ctx.bezierCurveTo(60, 100, 40, 110, 25, 95);
+    ctx.moveTo(60, 388);
+    ctx.bezierCurveTo(45, 402, 28, 408, 18, 396);
     ctx.stroke();
-    // Center dot
+
+    ctx.lineWidth = 10;
     ctx.beginPath();
-    ctx.arc(80, 80, 6, 0, Math.PI * 2);
-    ctx.fill();
+    ctx.moveTo(452, 8);
+    ctx.bezierCurveTo(442, 58, 418, 78, 388, 60);
+    ctx.stroke();
+    ctx.lineWidth = 6;
+    ctx.beginPath();
+    ctx.moveTo(388, 60);
+    ctx.bezierCurveTo(402, 45, 408, 28, 396, 18);
+    ctx.stroke();
+
+    // ═══ LEAF ACCENTS ALONG ARMS ═══
+    [168, 225, 285, 345].forEach(function (yy) {
+      ctx.beginPath();
+      ctx.ellipse(10, yy, 7, 17, 0, 0, Math.PI * 2);
+      ctx.fill();
+    });
+    [168, 225, 285, 345].forEach(function (xx) {
+      ctx.beginPath();
+      ctx.ellipse(xx, 10, 17, 7, 0, 0, Math.PI * 2);
+      ctx.fill();
+    });
+
+    // ═══ DOT CLUSTERS NEAR ARM ENDS ═══
+    [434, 452, 470].forEach(function (v) {
+      ctx.beginPath(); ctx.arc(v, 7, 6, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(7, v, 6, 0, Math.PI * 2); ctx.fill();
+    });
+
+    // ═══ ACCENT DOTS ALONG SCROLL PATH ═══
+    [[85, 355], [105, 300], [115, 258]].forEach(function (p) {
+      ctx.beginPath(); ctx.arc(p[0], p[1], 5, 0, Math.PI * 2); ctx.fill();
+    });
+    [[355, 85], [300, 105], [258, 115]].forEach(function (p) {
+      ctx.beginPath(); ctx.arc(p[0], p[1], 5, 0, Math.PI * 2); ctx.fill();
+    });
+
+    ctx.lineCap = 'butt';
+    ctx.lineJoin = 'miter';
   }
 
   function drawCorners(ctx) {
-    var m = 56;
+    var m = 50;
     var positions = [
       { x: m,     y: m,     sx: 1,  sy: 1 },
       { x: W - m, y: m,     sx: -1, sy: 1 },
@@ -375,10 +437,10 @@ var KodSpotQR = (function () {
    * ══════════════════════════════════════════════════════════════════════ */
   async function drawQR(ctx, qrSvg, startY) {
     var cx = W / 2;
-    var qrSize = 1500;
-    var pad = 80;
+    var qrSize = 1650;
+    var pad = 85;
     var boxSz = qrSize + pad * 2;
-    var framePad = 28;
+    var framePad = 30;
     var frameSz = boxSz + framePad * 2;
     var fx = (W - frameSz) / 2;
     var fy = startY;
@@ -387,49 +449,61 @@ var KodSpotQR = (function () {
 
     // --- Outer gold frame (thick, with glow) ---
     ctx.save();
-    ctx.shadowColor = 'rgba(197,165,90,0.35)';
-    ctx.shadowBlur = 40;
+    ctx.shadowColor = 'rgba(197,165,90,0.4)';
+    ctx.shadowBlur = 50;
     ctx.strokeStyle = gGrad(ctx, fx, fy, fx + frameSz, fy + frameSz);
-    ctx.lineWidth = 14;
+    ctx.lineWidth = 16;
     rr(ctx, fx, fy, frameSz, frameSz, 24);
     ctx.stroke();
     ctx.restore();
 
     // --- Inner decorative gold line ---
     ctx.strokeStyle = C.gold;
-    ctx.lineWidth = 4;
-    rr(ctx, fx + 20, fy + 20, frameSz - 40, frameSz - 40, 18);
+    ctx.lineWidth = 5;
+    rr(ctx, fx + 24, fy + 24, frameSz - 48, frameSz - 48, 18);
     ctx.stroke();
 
-    // --- Small corner accents on the QR frame ---
-    var cornerLen = 60;
-    var cm = 10; // offset from outer frame edge
-    var corners = [
-      [fx + cm, fy + cm],
-      [fx + frameSz - cm, fy + cm],
-      [fx + cm, fy + frameSz - cm],
-      [fx + frameSz - cm, fy + frameSz - cm]
-    ];
-    ctx.strokeStyle = C.goldHi;
-    ctx.lineWidth = 5;
-    corners.forEach(function (c, i) {
-      var sx = (i % 2 === 0) ? 1 : -1;
-      var sy = (i < 2) ? 1 : -1;
+    // --- Ornate corner brackets on QR frame ---
+    var cl = 90;
+    var co = 8;
+    ctx.lineCap = 'round';
+    [[fx + co, fy + co, 1, 1],
+     [fx + frameSz - co, fy + co, -1, 1],
+     [fx + co, fy + frameSz - co, 1, -1],
+     [fx + frameSz - co, fy + frameSz - co, -1, -1]].forEach(function (c) {
+      var cx2 = c[0], cy2 = c[1], sx = c[2], sy = c[3];
+      // Outer L-bracket
+      ctx.strokeStyle = C.goldHi;
+      ctx.lineWidth = 7;
       ctx.beginPath();
-      ctx.moveTo(c[0], c[1] + sy * cornerLen);
-      ctx.lineTo(c[0], c[1]);
-      ctx.lineTo(c[0] + sx * cornerLen, c[1]);
+      ctx.moveTo(cx2, cy2 + sy * cl);
+      ctx.lineTo(cx2, cy2);
+      ctx.lineTo(cx2 + sx * cl, cy2);
       ctx.stroke();
-      // Tiny diamond
+      // Inner L-bracket
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(cx2 + sx * 12, cy2 + sy * (cl - 18));
+      ctx.lineTo(cx2 + sx * 12, cy2 + sy * 12);
+      ctx.lineTo(cx2 + sx * (cl - 18), cy2 + sy * 12);
+      ctx.stroke();
+      // Diamond accent
       ctx.fillStyle = C.goldHi;
       ctx.beginPath();
-      ctx.moveTo(c[0], c[1] + sy * 8);
-      ctx.lineTo(c[0] + sx * 8, c[1]);
-      ctx.lineTo(c[0], c[1] - sy * 8);
-      ctx.lineTo(c[0] - sx * 8, c[1]);
+      ctx.moveTo(cx2, cy2 + sy * 14);
+      ctx.lineTo(cx2 + sx * 14, cy2);
+      ctx.lineTo(cx2, cy2 - sy * 14);
+      ctx.lineTo(cx2 - sx * 14, cy2);
       ctx.closePath();
       ctx.fill();
+      // Small scroll accent
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.moveTo(cx2 + sx * 24, cy2 + sy * 24);
+      ctx.bezierCurveTo(cx2 + sx * 40, cy2 + sy * 14, cx2 + sx * 50, cy2 + sy * 8, cx2 + sx * 62, cy2 + sy * 16);
+      ctx.stroke();
     });
+    ctx.lineCap = 'butt';
 
     // --- White background ---
     ctx.fillStyle = C.white;
