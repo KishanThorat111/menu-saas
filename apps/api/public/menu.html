@@ -1885,47 +1885,38 @@
     }
 
     /* ===================== 23. UPI PAY NOW ===================== */
-    .pay-footer {
+    /* Floating pill — bottom-right, minimal footprint */
+    .pay-pill {
       position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
+      bottom: 20px;
+      right: 16px;
       z-index: 900;
-      background: var(--bg-raised, #ffffff);
-      border-top: 1px solid var(--accent-border, #e5e7eb);
-      padding: var(--s-3) var(--s-4);
       display: flex;
       align-items: center;
-      justify-content: center;
-      box-shadow: 0 -2px 12px rgba(0,0,0,0.08);
-      animation: slideUp 0.3s var(--ease-out) both;
-    }
-    @keyframes slideUp {
-      from { transform: translateY(100%); }
-      to   { transform: translateY(0); }
-    }
-    .pay-btn {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      width: 100%;
-      max-width: 360px;
-      padding: 12px 20px;
-      background: #059669;
+      gap: 7px;
+      padding: 11px 20px 11px 16px;
+      background: #1c1814;
       color: #ffffff;
       font-family: var(--f-body);
-      font-size: 0.9375rem;
+      font-size: 0.8125rem;
       font-weight: 600;
+      letter-spacing: 0.01em;
       border: none;
-      border-radius: var(--r-lg);
+      border-radius: 100px;
       cursor: pointer;
-      transition: background var(--t-fast) var(--ease-out), transform var(--t-fast) var(--ease-out);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.18), 0 1px 4px rgba(0,0,0,0.1);
+      opacity: 0;
+      transform: translateY(24px) scale(0.92);
+      animation: payPillIn 0.5s cubic-bezier(0.2,0.9,0.3,1.2) 1.5s forwards;
       -webkit-tap-highlight-color: transparent;
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
     }
-    .pay-btn:hover { background: #047857; }
-    .pay-btn:active { transform: scale(0.97); }
-    .pay-btn svg { width: 20px; height: 20px; flex-shrink: 0; }
+    .pay-pill:hover { transform: translateY(0) scale(1.04); box-shadow: 0 6px 28px rgba(0,0,0,0.22); }
+    .pay-pill:active { transform: translateY(0) scale(0.97); }
+    .pay-pill svg { width: 18px; height: 18px; flex-shrink: 0; }
+    @keyframes payPillIn {
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
 
     /* Bottom sheet overlay */
     .pay-overlay {
@@ -1935,7 +1926,7 @@
       background: rgba(0,0,0,0.45);
       opacity: 0;
       visibility: hidden;
-      transition: opacity var(--t-base) var(--ease-out), visibility var(--t-base);
+      transition: opacity 0.25s ease, visibility 0.25s;
     }
     .pay-overlay.open { opacity: 1; visibility: visible; }
 
@@ -1946,105 +1937,139 @@
       right: 0;
       z-index: 1101;
       background: var(--bg-raised, #ffffff);
-      border-radius: var(--r-xl) var(--r-xl) 0 0;
-      padding: var(--s-6) var(--s-5) var(--s-8);
-      max-height: 85vh;
+      border-radius: 20px 20px 0 0;
+      padding: 12px 20px 24px;
+      max-height: 80vh;
       overflow-y: auto;
       transform: translateY(100%);
-      transition: transform 0.35s var(--ease-out);
-      box-shadow: 0 -8px 32px rgba(0,0,0,0.12);
+      transition: transform 0.35s cubic-bezier(0.2,0.9,0.3,1);
+      box-shadow: 0 -8px 40px rgba(0,0,0,0.12);
     }
     .pay-overlay.open .pay-sheet { transform: translateY(0); }
 
     .pay-sheet-handle {
-      width: 40px;
+      width: 36px;
       height: 4px;
       background: var(--c3, #9ca3af);
       border-radius: 2px;
-      margin: 0 auto var(--s-5);
-      opacity: 0.5;
+      margin: 0 auto 16px;
+      opacity: 0.4;
     }
-    .pay-sheet-title {
+
+    /* Identity row: logo + name + masked UPI */
+    .pay-sheet-identity {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .pay-sheet-logo {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      object-fit: cover;
+      flex-shrink: 0;
+      background: #f3f4f6;
+    }
+    .pay-sheet-logo-placeholder {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      flex-shrink: 0;
+      background: linear-gradient(135deg, #059669 0%, #047857 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
       font-size: 1.125rem;
+      font-weight: 700;
+      font-family: var(--f-body);
+    }
+    .pay-sheet-payee {
+      flex: 1;
+      min-width: 0;
+    }
+    .pay-sheet-name {
+      font-size: 0.9375rem;
       font-weight: 600;
       color: var(--c1, #1c1814);
-      text-align: center;
-      margin-bottom: var(--s-1);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
-    .pay-sheet-upi {
-      font-size: 0.8125rem;
+    .pay-sheet-upi-id {
+      font-size: 0.75rem;
+      color: var(--c3, #9ca3af);
+      font-family: monospace;
+      margin-top: 1px;
+    }
+
+    .pay-sheet-hint {
+      font-size: 0.75rem;
       color: var(--c2, #6b6259);
       text-align: center;
-      margin-bottom: var(--s-5);
-      font-family: monospace;
+      margin-bottom: 14px;
     }
+
     .pay-sheet-action {
       display: flex;
       align-items: center;
       justify-content: center;
       gap: 8px;
       width: 100%;
-      padding: 14px 20px;
+      padding: 13px 20px;
       background: #059669;
       color: #ffffff;
       font-family: var(--f-body);
-      font-size: 1rem;
+      font-size: 0.9375rem;
       font-weight: 600;
       border: none;
-      border-radius: var(--r-lg);
+      border-radius: 14px;
       cursor: pointer;
-      margin-bottom: var(--s-4);
-      transition: background var(--t-fast) var(--ease-out);
+      margin-bottom: 12px;
+      transition: background 0.15s ease;
       -webkit-tap-highlight-color: transparent;
     }
     .pay-sheet-action:hover { background: #047857; }
     .pay-sheet-action:active { transform: scale(0.97); }
-    .pay-sheet-action svg { width: 22px; height: 22px; flex-shrink: 0; }
+    .pay-sheet-action svg { width: 20px; height: 20px; flex-shrink: 0; }
 
+    /* UPI trust badge row */
+    .pay-sheet-trust {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      margin-bottom: 12px;
+    }
+    .pay-sheet-trust svg { width: 14px; height: 14px; color: var(--c3, #9ca3af); flex-shrink: 0; }
+    .pay-sheet-trust span {
+      font-size: 0.6875rem;
+      color: var(--c3, #9ca3af);
+      line-height: 1.4;
+    }
+
+    /* Desktop QR area in sheet */
     .pay-sheet-qr {
       display: flex;
       flex-direction: column;
       align-items: center;
-      margin-bottom: var(--s-4);
+      margin-bottom: 12px;
     }
-    .pay-sheet-qr svg {
-      width: 200px;
-      height: 200px;
-    }
+    .pay-sheet-qr svg { width: 200px; height: 200px; }
     .pay-sheet-qr-label {
       font-size: 0.8125rem;
       color: var(--c2, #6b6259);
       margin-top: var(--s-2);
     }
 
-    .pay-sheet-disclaimer {
-      text-align: center;
-      font-size: 0.6875rem;
-      color: var(--c3, #9ca3af);
-      line-height: 1.5;
-    }
-    .pay-sheet-close {
-      display: block;
-      margin: var(--s-3) auto 0;
-      background: none;
-      border: none;
-      color: var(--c2, #6b6259);
-      font-size: 0.875rem;
-      font-family: var(--f-body);
-      cursor: pointer;
-      padding: 8px 16px;
-      text-decoration: underline;
-      text-underline-offset: 2px;
-    }
-
-    /* Adjust footer padding when pay bar is visible */
-    body.has-pay-bar .menu-footer { padding-bottom: 72px; }
+    /* No extra footer padding needed — pill floats independently */
 
     @media print {
-      .pay-footer, .pay-overlay { display: none !important; }
+      .pay-pill, .pay-overlay { display: none !important; }
     }
     @media (prefers-reduced-motion: reduce) {
-      .pay-footer { animation: none; }
+      .pay-pill { animation: none; opacity: 1; transform: none; }
       .pay-sheet { transition: none; }
       .pay-overlay { transition: none; }
     }
