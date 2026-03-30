@@ -2500,16 +2500,18 @@ async function saveUpiSettings() {
     status.textContent = 'Saving...';
     var data = await apiFetch('/settings/upi', {
       method: 'PATCH',
-      body: JSON.stringify({ upiId: upiId, upiPayEnabled: true })
+      body: JSON.stringify({ upiId: upiId })
     });
     hotel.upiId = data.upiId || upiId;
     hotel.upiPayEnabled = data.upiPayEnabled;
     document.getElementById('clearUpiBtn').style.display = '';
     document.getElementById('upiToggleWrap').style.display = '';
-    document.getElementById('upiToggle').checked = data.upiPayEnabled;
+    document.getElementById('upiToggle').checked = !!data.upiPayEnabled;
     status.className = 'review-url-status success';
-    status.textContent = '✓ UPI Pay saved & enabled — customers will see "Pay Now" on your menu';
-    showToast('UPI Pay enabled!');
+    status.textContent = data.upiPayEnabled
+      ? '✓ UPI ID saved — customers will see "Pay Now" on your menu'
+      : '✓ UPI ID saved — toggle ON below to show "Pay Now" button on menu';
+    showToast('UPI ID saved!');
     await fetchUpiQrSvg();
   } catch (e) {
     status.className = 'review-url-status error';
