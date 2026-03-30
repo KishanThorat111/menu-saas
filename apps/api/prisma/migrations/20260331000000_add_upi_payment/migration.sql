@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "Hotel" ADD COLUMN "upiId" TEXT;
+ALTER TABLE "Hotel" ADD COLUMN "upiPayEnabled" BOOLEAN NOT NULL DEFAULT false;

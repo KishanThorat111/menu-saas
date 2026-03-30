@@ -64,7 +64,7 @@ function switchTab(tab, el) {
   document.getElementById('tab-qr').classList.toggle('hidden', tab !== 'qr');
   if (tab === 'menu') renderMenu();
   if (tab === 'billing') loadBilling();
-  if (tab === 'qr') { loadQrCode(); initReviewUrlUI(); }
+  if (tab === 'qr') { loadQrCode(); initReviewUrlUI(); initUpiUI(); }
 }
 
 async function apiFetch(endpoint, options = {}) {
@@ -2211,6 +2211,10 @@ function getQrCardConfig() {
     cfg.reviewUrl = hotel.reviewUrl;
     cfg.reviewQrSvg = reviewQrSvgCache;
   }
+  if (hotel.upiId && hotel.upiPayEnabled && upiQrSvgCache) {
+    cfg.upiId = hotel.upiId;
+    cfg.upiQrSvg = upiQrSvgCache;
+  }
   return cfg;
 }
 
@@ -2403,6 +2407,158 @@ async function clearReviewUrl() {
     status.className = 'review-url-status';
     status.textContent = '';
     showToast('Review link removed. Back side will now show menu QR.');
+  } catch (e) {
+    status.className = 'review-url-status error';
+    status.textContent = e.message || 'Failed to remove';
+  }
+}
+
+// ==================== UPI PAY MANAGEMENT ====================
+var upiQrSvgCache = null;
+
+function initUpiUI() {
+  if (!hotel) return;
+  var section = document.getElementById('upiPaySection');
+  var gate = document.getElementById('upiPlanGate');
+  var controls = document.getElementById('upiControls');
+  var input = document.getElementById('upiIdInput');
+  var clearBtn = document.getElementById('clearUpiBtn');
+  var status = document.getElementById('upiStatus');
+  var toggleWrap = document.getElementById('upiToggleWrap');
+  var toggle = document.getElementById('upiToggle');
+  if (!section || !input) return;
+
+  // Plan-gate check
+  var ePlan = (billingData && billingData.plan) || hotel.plan || 'STARTER';
+  if (hotel.status === 'TRIAL') ePlan = 'STANDARD';
+  var PLAN_TIER = { STARTER: 1, STANDARD: 2, PRO: 3 };
+  var hasUpiAccess = (PLAN_TIER[ePlan] || 1) >= 2;
+
+  if (!hasUpiAccess) {
+    gate.style.display = '';
+    controls.style.display = 'none';
+    return;
+  }
+  gate.style.display = 'none';
+  controls.style.display = '';
+
+  if (hotel.upiId) {
+    input.value = hotel.upiId;
+    clearBtn.style.display = '';
+    toggleWrap.style.display = '';
+    toggle.checked = !!hotel.upiPayEnabled;
+    status.className = 'review-url-status success';
+    status.textContent = hotel.upiPayEnabled
+      ? '✓ UPI Pay is active — customers will see "Pay Now" on your menu'
+      : '✓ UPI ID saved — toggle ON to show "Pay Now" button on menu';
+    fetchUpiQrSvg();
+  } else {
+    input.value = '';
+    clearBtn.style.display = 'none';
+    toggleWrap.style.display = 'none';
+    toggle.checked = false;
+    status.className = 'review-url-status';
+    status.textContent = '';
+    upiQrSvgCache = null;
+  }
+}
+
+async function fetchUpiQrSvg() {
+  if (!hotel || !hotel.upiId) { upiQrSvgCache = null; return; }
+  try {
+    var resp = await fetch('/api/qr/upi/' + hotel.id, { credentials: 'include' });
+    if (resp.ok) {
+      upiQrSvgCache = await resp.text();
+    } else {
+      upiQrSvgCache = null;
+    }
+  } catch (e) {
+    upiQrSvgCache = null;
+  }
+}
+
+async function saveUpiSettings() {
+  var input = document.getElementById('upiIdInput');
+  var status = document.getElementById('upiStatus');
+  var upiId = (input.value || '').trim();
+
+  if (!upiId) {
+    status.className = 'review-url-status error';
+    status.textContent = 'Please enter your UPI ID';
+    return;
+  }
+
+  // Client-side format check
+  if (!/^[a-zA-Z0-9._-]+@[a-zA-Z][a-zA-Z0-9]*$/.test(upiId)) {
+    status.className = 'review-url-status error';
+    status.textContent = 'Invalid format. Example: yourname@ybl or 9876543210@paytm';
+    return;
+  }
+
+  try {
+    status.className = 'review-url-status';
+    status.textContent = 'Saving...';
+    var data = await apiFetch('/settings/upi', {
+      method: 'PATCH',
+      body: JSON.stringify({ upiId: upiId, upiPayEnabled: true })
+    });
+    hotel.upiId = data.upiId || upiId;
+    hotel.upiPayEnabled = data.upiPayEnabled;
+    document.getElementById('clearUpiBtn').style.display = '';
+    document.getElementById('upiToggleWrap').style.display = '';
+    document.getElementById('upiToggle').checked = data.upiPayEnabled;
+    status.className = 'review-url-status success';
+    status.textContent = '✓ UPI Pay saved & enabled — customers will see "Pay Now" on your menu';
+    showToast('UPI Pay enabled!');
+    await fetchUpiQrSvg();
+  } catch (e) {
+    status.className = 'review-url-status error';
+    status.textContent = e.message || 'Failed to save';
+  }
+}
+
+async function toggleUpiPay() {
+  var toggle = document.getElementById('upiToggle');
+  var status = document.getElementById('upiStatus');
+  var enabled = toggle.checked;
+
+  try {
+    var data = await apiFetch('/settings/upi', {
+      method: 'PATCH',
+      body: JSON.stringify({ upiPayEnabled: enabled })
+    });
+    hotel.upiPayEnabled = data.upiPayEnabled;
+    status.className = 'review-url-status success';
+    status.textContent = data.upiPayEnabled
+      ? '✓ UPI Pay is active — customers will see "Pay Now" on your menu'
+      : '✓ UPI ID saved — "Pay Now" button is hidden from menu';
+    showToast(data.upiPayEnabled ? 'Pay Now button enabled on menu!' : 'Pay Now button hidden from menu.');
+  } catch (e) {
+    toggle.checked = !enabled; // revert
+    status.className = 'review-url-status error';
+    status.textContent = e.message || 'Failed to update';
+  }
+}
+
+async function clearUpiId() {
+  var status = document.getElementById('upiStatus');
+  try {
+    status.className = 'review-url-status';
+    status.textContent = 'Removing...';
+    await apiFetch('/settings/upi', {
+      method: 'PATCH',
+      body: JSON.stringify({ upiId: '' })
+    });
+    hotel.upiId = null;
+    hotel.upiPayEnabled = false;
+    document.getElementById('upiIdInput').value = '';
+    document.getElementById('clearUpiBtn').style.display = 'none';
+    document.getElementById('upiToggleWrap').style.display = 'none';
+    document.getElementById('upiToggle').checked = false;
+    upiQrSvgCache = null;
+    status.className = 'review-url-status';
+    status.textContent = '';
+    showToast('UPI ID removed. Pay Now button will no longer appear.');
   } catch (e) {
     status.className = 'review-url-status error';
     status.textContent = e.message || 'Failed to remove';

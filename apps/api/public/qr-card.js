@@ -219,6 +219,24 @@ var KodSpotQR = (function () {
     return y + 60;
   }
 
+  // ── Render CTA section (UPI pay side) ─────────────────────────────────
+  function renderUpiCTA(ctx, startY) {
+    var cx = W / 2;
+    var y = startY;
+
+    ctx.fillStyle = '#059669';
+    ctx.font = '600 68px Inter, -apple-system, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('\ud83d\udcb0 Scan to pay', cx, y);
+
+    y += 68;
+    ctx.fillStyle = '#6b7280';
+    ctx.font = '400 48px Inter, -apple-system, sans-serif';
+    ctx.fillText('Pay via UPI \u2022 PhonePe, GPay, Paytm', cx, y);
+
+    return y + 60;
+  }
+
   // ── Render URL section ─────────────────────────────────────────────────
   function renderURL(ctx, slug, startY) {
     var cx = W / 2;
@@ -345,11 +363,20 @@ var KodSpotQR = (function () {
   // If reviewUrl is provided, generates review card.
   // Otherwise, generates identical menu card (same as front).
   async function generateBack(cfg) {
-    // cfg: { name, city, slug, logoUrl, hotelId, qrSvg, plan, reviewUrl? }
-    if (!cfg.reviewUrl) {
-      // No review URL → back is identical to front
+    // cfg: { name, city, slug, logoUrl, hotelId, qrSvg, plan, reviewUrl?, reviewQrSvg?, upiId?, upiQrSvg? }
+    var hasReview = !!(cfg.reviewUrl && cfg.reviewQrSvg);
+    var hasUpi = !!(cfg.upiId && cfg.upiQrSvg);
+
+    if (!hasReview && !hasUpi) {
+      // No review URL and no UPI → back is identical to front
       return generateFront(cfg);
     }
+
+    // Decide what to show on back side:
+    // Priority: Review > UPI (review is the established pattern)
+    // If both exist, show review on back (UPI is accessible via menu anyway)
+    var useReview = hasReview;
+    var useUpi = !hasReview && hasUpi;
 
     // Review card
     if (!cfg.slug) return null;
@@ -369,19 +396,21 @@ var KodSpotQR = (function () {
     // Logo
     y = await renderLogo(ctx, cfg, y);
 
-    // Review QR Code — generate SVG from the review URL client-side
-    // We load the review URL as a QR image. Since we can't generate QR client-side
-    // without a library, we use the same server QR but with the review URL.
-    // For now, use the menu QR svg (caller should pass the review QR svg if available)
-    if (cfg.reviewQrSvg) {
+    // QR Code — review or UPI
+    if (useReview && cfg.reviewQrSvg) {
       y = await renderQR(ctx, cfg.reviewQrSvg, y);
+    } else if (useUpi && cfg.upiQrSvg) {
+      y = await renderQR(ctx, cfg.upiQrSvg, y);
     } else {
-      // Fallback: show menu QR with review CTA (rare edge case)
       y = await renderQR(ctx, cfg.qrSvg, y);
     }
 
-    // Review CTA
-    y = renderReviewCTA(ctx, y);
+    // CTA — review or UPI
+    if (useReview) {
+      y = renderReviewCTA(ctx, y);
+    } else if (useUpi) {
+      y = renderUpiCTA(ctx, y);
+    }
 
     // "For menu, flip card" hint
     y = renderFlipHint(ctx, cfg.slug, y);

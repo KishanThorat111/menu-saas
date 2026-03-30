@@ -505,6 +505,8 @@ function renderTable(hotels) {
             data-logourl="${escapeHtml(hotel.logoUrl || '')}"
             data-plan="${escapeHtml(hotel.plan || 'STARTER')}"
             data-reviewurl="${escapeHtml(hotel.reviewUrl || '')}"
+            data-upiid="${escapeHtml(hotel.upiId || '')}"
+            data-upienabled="${hotel.upiPayEnabled ? 'true' : 'false'}"
             title="View & download QR code">
             📱 QR Code
           </button>
@@ -566,6 +568,7 @@ function renderTable(hotels) {
             <span class="hotel-name">${escapeHtml(hotel.name)}</span>
             <span class="hotel-meta">${escapeHtml(hotel.city)} • ${escapeHtml(hotel.phone || 'No phone')}</span>
             <code class="hotel-slug">${escapeHtml(hotel.slug)}</code>
+            ${hotel.upiId && hotel.upiPayEnabled ? '<span style="display:inline-block;font-size:0.65rem;background:#ecfdf5;color:#059669;border:1px solid #a7f3d0;padding:1px 6px;border-radius:4px;margin-top:2px;">💰 UPI Pay</span>' : ''}
             ${!isDeleted ? `<div class="hotel-links">
               <a href="/admin" target="_blank">Admin</a>
               <a href="/m/${escapeHtml(hotel.slug)}" target="_blank">Menu</a>
@@ -710,7 +713,7 @@ function renderTable(hotels) {
   // Attach QR code button listeners
   tbody.querySelectorAll('.qr-hotel-btn').forEach(btn => {
     btn.addEventListener('click', function() {
-      openQrModal(this.dataset.id, this.dataset.name, this.dataset.slug, this.dataset.city, this.dataset.logourl, this.dataset.plan, this.dataset.reviewurl);
+      openQrModal(this.dataset.id, this.dataset.name, this.dataset.slug, this.dataset.city, this.dataset.logourl, this.dataset.plan, this.dataset.reviewurl, this.dataset.upiid, this.dataset.upienabled === 'true');
     });
   });
 }
@@ -1327,7 +1330,10 @@ let qrModalState = {
   plan: 'STARTER',
   reviewUrl: '',
   reviewQrSvg: null,
-  svgCache: null
+  svgCache: null,
+  upiId: '',
+  upiPayEnabled: false,
+  upiQrSvg: null
 };
 
 function renderSaLogoPreview() {
@@ -1443,8 +1449,8 @@ async function saRemoveLogo() {
   }
 }
 
-function openQrModal(hotelId, hotelName, slug, city, logoUrl, plan, reviewUrl) {
-  qrModalState = { id: hotelId, slug, name: hotelName, city: city || '', logoUrl: logoUrl || '', plan: plan || 'STARTER', reviewUrl: reviewUrl || '', reviewQrSvg: null, svgCache: null };
+function openQrModal(hotelId, hotelName, slug, city, logoUrl, plan, reviewUrl, upiId, upiPayEnabled) {
+  qrModalState = { id: hotelId, slug, name: hotelName, city: city || '', logoUrl: logoUrl || '', plan: plan || 'STARTER', reviewUrl: reviewUrl || '', reviewQrSvg: null, svgCache: null, upiId: upiId || '', upiPayEnabled: !!upiPayEnabled, upiQrSvg: null };
 
   document.getElementById('qrHotelName').textContent = hotelName;
   document.getElementById('qrModalCode').textContent = slug;
@@ -1501,11 +1507,19 @@ function openQrModal(hotelId, hotelName, slug, city, logoUrl, plan, reviewUrl) {
       .then(svg => { qrModalState.reviewQrSvg = svg; })
       .catch(() => {});
   }
+
+  // Fetch UPI QR SVG if UPI is enabled
+  if (upiId && upiPayEnabled) {
+    fetch('/api/qr/upi/' + hotelId, { credentials: 'include' })
+      .then(r => r.ok ? r.text() : null)
+      .then(svg => { qrModalState.upiQrSvg = svg; })
+      .catch(() => {});
+  }
 }
 
 function closeQrModal() {
   document.getElementById('qrModal').classList.remove('active');
-  qrModalState = { id: '', slug: '', name: '', city: '', logoUrl: '', plan: 'STARTER', reviewUrl: '', reviewQrSvg: null, svgCache: null };
+  qrModalState = { id: '', slug: '', name: '', city: '', logoUrl: '', plan: 'STARTER', reviewUrl: '', reviewQrSvg: null, svgCache: null, upiId: '', upiPayEnabled: false, upiQrSvg: null };
 }
 
 // ── QR Card Generation (delegates to shared qr-card.js module) ──────────
@@ -1524,6 +1538,10 @@ function getSaQrCardConfig() {
   if (qrModalState.reviewUrl && qrModalState.reviewQrSvg) {
     cfg.reviewUrl = qrModalState.reviewUrl;
     cfg.reviewQrSvg = qrModalState.reviewQrSvg;
+  }
+  if (qrModalState.upiId && qrModalState.upiPayEnabled && qrModalState.upiQrSvg) {
+    cfg.upiId = qrModalState.upiId;
+    cfg.upiQrSvg = qrModalState.upiQrSvg;
   }
   return cfg;
 }

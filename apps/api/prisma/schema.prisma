@@ -48,6 +48,10 @@ model Hotel {
   // Review QR — optional link to Google/Zomato/etc review page
   reviewUrl String?
 
+  // UPI Pay — optional direct UPI payment for customers (STANDARD+ plans)
+  upiId         String?
+  upiPayEnabled Boolean @default(false)
+
   categories    Category[]
   auditLogs     AuditLog[]
   pinResetOtps  PinResetOtp[]
