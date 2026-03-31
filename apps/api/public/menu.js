@@ -82,6 +82,8 @@
     modal.classList.add('open');
     modal.setAttribute('aria-hidden', 'false');
     document.body.style.overflow = 'hidden';
+    var pill = $('payNowPill');
+    if (pill) pill.style.display = 'none';
     trapFocus(modal);
     modalImg.focus();
   }
@@ -91,6 +93,8 @@
     modal.setAttribute('aria-hidden', 'true');
     modalImg.src = '';
     document.body.style.overflow = '';
+    var pill = $('payNowPill');
+    if (pill) pill.style.display = '';
   }
 
   modal.addEventListener('click', function (e) { if (e.target === modal) closeModal(); });
@@ -864,52 +868,28 @@
     s += '<div class="pay-sheet-hint">Pay your bill via UPI</div>';
 
     if (isMobile()) {
+      var upiParams = 'pa=' + encodeURIComponent(data.upiId)
+        + '&pn=' + encodeURIComponent(data.name) + '&cu=INR';
       var isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
 
-      s += '<div class="pay-app-label">Choose your UPI app</div>';
-      s += '<div class="pay-app-grid">';
-
-      // Google Pay
-      var gpayScheme = isIOS ? 'gpay://upi/pay' : 'tez://upi/pay';
-      var gpayLink = gpayScheme + '?pa=' + encodeURIComponent(data.upiId)
-        + '&pn=' + encodeURIComponent(data.name) + '&cu=INR';
-      s += '<a href="' + esc(gpayLink) + '" class="pay-app-btn">'
-        + '<span class="pay-app-icon" style="background:linear-gradient(135deg,#4285f4,#34a853,#fbbc05,#ea4335);">G</span>'
-        + '<span class="pay-app-name">Google Pay</span></a>';
-
-      // PhonePe
-      var ppeLink = 'phonepe://pay?pa=' + encodeURIComponent(data.upiId)
-        + '&pn=' + encodeURIComponent(data.name) + '&cu=INR';
-      s += '<a href="' + esc(ppeLink) + '" class="pay-app-btn">'
-        + '<span class="pay-app-icon" style="background:#5f259f;">Pe</span>'
-        + '<span class="pay-app-name">PhonePe</span></a>';
-
-      // Paytm
-      var ptmLink = 'paytm://pay?pa=' + encodeURIComponent(data.upiId)
-        + '&pn=' + encodeURIComponent(data.name) + '&cu=INR';
-      s += '<a href="' + esc(ptmLink) + '" class="pay-app-btn">'
-        + '<span class="pay-app-icon" style="background:#00325b;">P</span>'
-        + '<span class="pay-app-name">Paytm</span></a>';
-
-      // Android: "More" for system app chooser; iOS: skip (avoids WhatsApp hijack)
       if (!isIOS) {
-        var moreLink = 'intent://pay?pa=' + encodeURIComponent(data.upiId)
-          + '&pn=' + encodeURIComponent(data.name)
-          + '&cu=INR#Intent;scheme=upi;end';
-        s += '<a href="' + esc(moreLink) + '" class="pay-app-btn">'
-          + '<span class="pay-app-icon" style="background:#6b7280;">\u22EF</span>'
-          + '<span class="pay-app-name">More</span></a>';
+        // ── Android: intent triggers OS app chooser with ALL installed UPI apps ──
+        var intentLink = 'intent://pay?' + upiParams + '#Intent;scheme=upi;end';
+        s += '<a href="' + esc(intentLink) + '" class="pay-sheet-action" id="payUpiBtn" style="text-decoration:none;">\u20B9 Pay Now</a>';
+      } else {
+        // ── iOS: upi:// scheme — opens default UPI app if registered ──
+        var upiLink = 'upi://pay?' + upiParams;
+        s += '<a href="' + esc(upiLink) + '" class="pay-sheet-action" id="payUpiBtn" style="text-decoration:none;">\u20B9 Pay Now</a>';
       }
 
-      s += '</div>';
-
-      // Copy UPI ID — always visible as universal fallback
-      s += '<div class="pay-app-divider"><span>or pay manually</span></div>';
+      // Fallback: copy UPI ID — hidden initially, shown if app launch fails
+      s += '<div class="pay-upi-fallback" id="payUpiFallback">';
+      s += '<div class="pay-upi-fallback-msg">Didn\u2019t open? Copy the UPI ID below and pay from any UPI app.</div>';
       s += '<div class="pay-app-copy-row">';
       s += '<span class="pay-app-upi-id">' + esc(data.upiId) + '</span>';
       s += '<button class="pay-app-copy-btn" id="payUpiCopyBtn">Copy</button>';
       s += '</div>';
-      s += '<div class="pay-app-manual-hint">Open your UPI app &amp; pay to the ID above</div>';
+      s += '</div>';
     } else {
       // Desktop: show copy-able UPI ID (no QR since we don't have hotelId on public page)
       s += '<div class="pay-sheet-desktop-upi" id="payDesktopUpi">';
@@ -956,6 +936,30 @@
           try { document.execCommand('copy'); copyBtn.textContent = 'Copied!'; copyBtn.style.background = '#047857'; setTimeout(function () { copyBtn.textContent = 'Copy'; copyBtn.style.background = '#059669'; }, 2000); } catch (e) {}
           document.body.removeChild(ta);
         }
+      });
+    }
+
+    // ── UPI app-launch detection (mobile) ──
+    // If no app opens within 1.5s, reveal the copy-UPI fallback
+    var payUpiBtn = $('payUpiBtn');
+    var fallbackEl = $('payUpiFallback');
+    if (payUpiBtn && fallbackEl) {
+      payUpiBtn.addEventListener('click', function () {
+        var launched = false;
+        var onBlur = function () { launched = true; };
+        window.addEventListener('blur', onBlur);
+        document.addEventListener('visibilitychange', function vc() {
+          if (document.hidden) { launched = true; }
+          document.removeEventListener('visibilitychange', vc);
+        });
+        setTimeout(function () {
+          window.removeEventListener('blur', onBlur);
+          if (!launched) {
+            // No app opened — show fallback
+            fallbackEl.classList.add('show');
+            payUpiBtn.style.display = 'none';
+          }
+        }, 1500);
       });
     }
 
