@@ -2044,56 +2044,39 @@
     .pay-sheet-action:active { transform: scale(0.97); }
     .pay-sheet-action svg { width: 20px; height: 20px; flex-shrink: 0; }
 
-    /* UPI Fallback (copy UPI ID) — hidden until app launch fails */
-    .pay-upi-fallback {
-      display: none;
-      animation: payFallbackIn 0.3s ease;
+    /* iOS UPI App Buttons */
+    .pay-ios-apps {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 14px;
     }
-    .pay-upi-fallback.show { display: block; }
-    @keyframes payFallbackIn {
-      from { opacity: 0; transform: translateY(8px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-    .pay-upi-fallback-msg {
-      font-size: 0.8125rem;
-      color: var(--c2, #6b6259);
-      text-align: center;
-      margin-bottom: 10px;
-      line-height: 1.4;
-      font-family: var(--f-body, system-ui, sans-serif);
-    }
-    .pay-app-copy-row {
+    .pay-ios-btn {
       display: flex;
       align-items: center;
-      gap: 8px;
-      background: var(--bg-card, #f9fafb);
-      border: 1px solid var(--accent-border, #e5e7eb);
-      border-radius: 10px;
-      padding: 8px 12px;
-      margin-bottom: 6px;
-    }
-    .pay-app-upi-id {
-      flex: 1;
-      font-family: monospace;
-      font-size: 0.8125rem;
-      color: var(--c1, #1c1814);
-      user-select: all;
-      word-break: break-all;
-    }
-    .pay-app-copy-btn {
-      flex-shrink: 0;
-      background: #059669;
-      color: #fff;
+      justify-content: center;
+      width: 100%;
+      padding: 13px 20px;
       border: none;
-      border-radius: 8px;
-      padding: 6px 12px;
-      font-size: 0.75rem;
-      font-weight: 600;
-      font-family: var(--f-body, system-ui, sans-serif);
+      border-radius: 14px;
       cursor: pointer;
+      text-decoration: none;
+      transition: opacity 0.15s ease, transform 0.15s ease;
       -webkit-tap-highlight-color: transparent;
     }
-    .pay-app-copy-btn:active { background: #047857; }
+    .pay-ios-btn:active { transform: scale(0.97); }
+    .pay-ios-phonepe {
+      background: #5f259f;
+    }
+    .pay-ios-gpay {
+      background: #1a73e8;
+    }
+    .pay-ios-label {
+      font-family: var(--f-body, system-ui, sans-serif);
+      font-size: 0.9375rem;
+      font-weight: 600;
+      color: #ffffff;
+    }
 
     /* UPI trust badge row */
     .pay-sheet-trust {

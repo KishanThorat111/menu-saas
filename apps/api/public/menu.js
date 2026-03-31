@@ -875,21 +875,16 @@
       if (!isIOS) {
         // ── Android: intent triggers OS app chooser with ALL installed UPI apps ──
         var intentLink = 'intent://pay?' + upiParams + '#Intent;scheme=upi;end';
-        s += '<a href="' + esc(intentLink) + '" class="pay-sheet-action" id="payUpiBtn" style="text-decoration:none;">\u20B9 Pay Now</a>';
+        s += '<a href="' + esc(intentLink) + '" class="pay-sheet-action" style="text-decoration:none;">\u20B9 Pay Now</a>';
       } else {
-        // ── iOS: upi:// scheme — opens default UPI app if registered ──
-        var upiLink = 'upi://pay?' + upiParams;
-        s += '<a href="' + esc(upiLink) + '" class="pay-sheet-action" id="payUpiBtn" style="text-decoration:none;">\u20B9 Pay Now</a>';
+        // ── iOS: PhonePe & Google Pay deep links (verified working) ──
+        s += '<div class="pay-ios-apps">';
+        s += '<a href="phonepe://pay?' + upiParams + '" class="pay-ios-btn pay-ios-phonepe">'
+          + '<span class="pay-ios-label">Pay with PhonePe</span></a>';
+        s += '<a href="gpay://upi/pay?' + upiParams + '" class="pay-ios-btn pay-ios-gpay">'
+          + '<span class="pay-ios-label">Pay with Google Pay</span></a>';
+        s += '</div>';
       }
-
-      // Fallback: copy UPI ID — hidden initially, shown if app launch fails
-      s += '<div class="pay-upi-fallback" id="payUpiFallback">';
-      s += '<div class="pay-upi-fallback-msg">Didn\u2019t open? Copy the UPI ID below and pay from any UPI app.</div>';
-      s += '<div class="pay-app-copy-row">';
-      s += '<span class="pay-app-upi-id">' + esc(data.upiId) + '</span>';
-      s += '<button class="pay-app-copy-btn" id="payUpiCopyBtn">Copy</button>';
-      s += '</div>';
-      s += '</div>';
     } else {
       // Desktop: show copy-able UPI ID (no QR since we don't have hotelId on public page)
       s += '<div class="pay-sheet-desktop-upi" id="payDesktopUpi">';
@@ -915,7 +910,7 @@
       trapFocus(sheet);
     });
 
-    // Wire copy UPI ID button (mobile & desktop)
+    // Wire copy UPI ID button (desktop only)
     var copyBtn = $('payUpiCopyBtn');
     if (copyBtn) {
       copyBtn.addEventListener('click', function () {
@@ -936,30 +931,6 @@
           try { document.execCommand('copy'); copyBtn.textContent = 'Copied!'; copyBtn.style.background = '#047857'; setTimeout(function () { copyBtn.textContent = 'Copy'; copyBtn.style.background = '#059669'; }, 2000); } catch (e) {}
           document.body.removeChild(ta);
         }
-      });
-    }
-
-    // ── UPI app-launch detection (mobile) ──
-    // If no app opens within 1.5s, reveal the copy-UPI fallback
-    var payUpiBtn = $('payUpiBtn');
-    var fallbackEl = $('payUpiFallback');
-    if (payUpiBtn && fallbackEl) {
-      payUpiBtn.addEventListener('click', function () {
-        var launched = false;
-        var onBlur = function () { launched = true; };
-        window.addEventListener('blur', onBlur);
-        document.addEventListener('visibilitychange', function vc() {
-          if (document.hidden) { launched = true; }
-          document.removeEventListener('visibilitychange', vc);
-        });
-        setTimeout(function () {
-          window.removeEventListener('blur', onBlur);
-          if (!launched) {
-            // No app opened — show fallback
-            fallbackEl.classList.add('show');
-            payUpiBtn.style.display = 'none';
-          }
-        }, 1500);
       });
     }
 
