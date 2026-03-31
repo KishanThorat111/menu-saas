@@ -2872,8 +2872,11 @@
       background: white;
       border: 2px solid var(--border-light);
       border-radius: var(--radius-2xl);
-      padding: 1.5rem 2rem;
+      padding: 1rem 0.75rem;
       box-shadow: var(--shadow-md);
+    }
+    @media (min-width: 480px) {
+      .qr-theme-section { padding: 1.5rem 2rem; }
     }
     .qr-theme-header {
       margin-bottom: 1rem;
@@ -2920,12 +2923,14 @@
       transition: all 0.2s ease;
       background: white;
       overflow: hidden;
+      width: 88px;
       min-width: 88px;
-      flex-shrink: 0;
+      max-width: 88px;
+      flex: 0 0 88px;
       scroll-snap-align: start;
     }
     @media (min-width: 480px) {
-      .qr-theme-swatch { min-width: 0; flex-shrink: 1; scroll-snap-align: none; }
+      .qr-theme-swatch { width: auto; min-width: 0; max-width: none; flex: 1 1 0%; scroll-snap-align: none; }
     }
     .qr-theme-swatch:hover {
       border-color: var(--saffron-400);
