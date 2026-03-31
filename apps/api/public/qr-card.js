@@ -394,13 +394,17 @@ var KodSpotQR = (function () {
 
     y = logoY + logoSz + 80;
 
-    // --- Hotel name — LARGE, centered, cream ---
+    // --- Hotel name — LARGE, centered, cream with gold glow ---
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
+    ctx.save();
+    ctx.shadowColor = 'rgba(197,165,90,0.3)';
+    ctx.shadowBlur = 20;
     ctx.fillStyle = C.cream;
     ctx.font = 'bold 120px Georgia, "Times New Roman", serif';
     var displayName = truncName(ctx, cfg.name || 'Restaurant', W - 300);
     ctx.fillText(displayName, cx, y);
+    ctx.restore();
 
     y += 100;
 
@@ -430,28 +434,56 @@ var KodSpotQR = (function () {
     ctx.font = 'bold 220px Georgia, "Times New Roman", serif';
     var tw = ctx.measureText(text).width;
 
-    // Gold gradient fill
+    // Gold glow behind title
+    ctx.save();
+    ctx.shadowColor = 'rgba(197,165,90,0.5)';
+    ctx.shadowBlur = 40;
     ctx.fillStyle = gGrad(ctx, cx - tw / 2, y - 100, cx + tw / 2, y + 100);
     ctx.fillText(text, cx, y);
+    ctx.restore();
 
-    // Underline with diamond
-    y += 100;
-    var lw = Math.min(tw + 80, 800);
+    // Ornamental underline: twin lines with center diamond
+    y += 105;
+    var lw = Math.min(tw + 120, 900);
     ctx.strokeStyle = C.gold;
-    ctx.lineWidth = 5;
+    ctx.lineWidth = 4;
+    // Left line
     ctx.beginPath();
     ctx.moveTo(cx - lw / 2, y);
+    ctx.lineTo(cx - 18, y);
+    ctx.stroke();
+    // Right line
+    ctx.beginPath();
+    ctx.moveTo(cx + 18, y);
     ctx.lineTo(cx + lw / 2, y);
     ctx.stroke();
-
+    // Thin parallel lines
+    ctx.lineWidth = 1.5;
+    ctx.globalAlpha = 0.4;
+    ctx.beginPath();
+    ctx.moveTo(cx - lw / 2 + 40, y - 12);
+    ctx.lineTo(cx - 30, y - 12);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(cx + 30, y - 12);
+    ctx.lineTo(cx + lw / 2 - 40, y - 12);
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+    // Center diamond
     ctx.fillStyle = C.gold;
     ctx.beginPath();
-    ctx.moveTo(cx, y - 12);
-    ctx.lineTo(cx + 12, y);
-    ctx.lineTo(cx, y + 12);
-    ctx.lineTo(cx - 12, y);
-    ctx.closePath();
-    ctx.fill();
+    ctx.moveTo(cx, y - 14); ctx.lineTo(cx + 14, y);
+    ctx.lineTo(cx, y + 14); ctx.lineTo(cx - 14, y);
+    ctx.closePath(); ctx.fill();
+    // End cap diamonds
+    ctx.beginPath();
+    ctx.moveTo(cx - lw / 2, y - 6); ctx.lineTo(cx - lw / 2 + 6, y);
+    ctx.lineTo(cx - lw / 2, y + 6); ctx.lineTo(cx - lw / 2 - 6, y);
+    ctx.closePath(); ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(cx + lw / 2, y - 6); ctx.lineTo(cx + lw / 2 + 6, y);
+    ctx.lineTo(cx + lw / 2, y + 6); ctx.lineTo(cx + lw / 2 - 6, y);
+    ctx.closePath(); ctx.fill();
 
     return y + 30;
   }
@@ -549,26 +581,40 @@ var KodSpotQR = (function () {
   function drawMenuCTA(ctx, y) {
     var cx = W / 2;
 
-    // Gold decorative divider
+    // Ornamental divider with scroll ends
+    var dw = 500;
     ctx.strokeStyle = C.gold;
     ctx.lineWidth = 3;
-    ctx.globalAlpha = 0.5;
+    ctx.globalAlpha = 0.6;
+    // Left line with curl
     ctx.beginPath();
-    ctx.moveTo(cx - 300, y - 10);
-    ctx.lineTo(cx + 300, y - 10);
+    ctx.moveTo(cx - dw / 2, y - 20);
+    ctx.lineTo(cx - 14, y - 20);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(cx - dw / 2, y - 20, 8, 0, Math.PI, true);
+    ctx.stroke();
+    // Right line with curl
+    ctx.beginPath();
+    ctx.moveTo(cx + 14, y - 20);
+    ctx.lineTo(cx + dw / 2, y - 20);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(cx + dw / 2, y - 20, 8, 0, Math.PI, false);
     ctx.stroke();
     ctx.globalAlpha = 1;
+    // Center diamond
     ctx.fillStyle = C.gold;
     ctx.beginPath();
-    ctx.moveTo(cx, y - 18); ctx.lineTo(cx + 8, y - 10);
-    ctx.lineTo(cx, y - 2); ctx.lineTo(cx - 8, y - 10);
+    ctx.moveTo(cx, y - 28); ctx.lineTo(cx + 8, y - 20);
+    ctx.lineTo(cx, y - 12); ctx.lineTo(cx - 8, y - 20);
     ctx.closePath(); ctx.fill();
 
-    y += 30;
+    y += 35;
     ctx.textAlign = 'center';
     ctx.fillStyle = C.cream;
     ctx.font = '600 96px Georgia, "Times New Roman", serif';
-    ctx.fillText('Scan  \u2192  Tap  \u2192  View Menu', cx, y);
+    ctx.fillText('Scan  \u279C  Tap  \u279C  View Menu', cx, y);
     y += 80;
     ctx.fillStyle = C.creamSoft;
     ctx.font = 'italic 56px Georgia, "Times New Roman", serif';
@@ -579,22 +625,33 @@ var KodSpotQR = (function () {
   function drawReviewCTA(ctx, y) {
     var cx = W / 2;
 
-    // Gold decorative divider
+    // Ornamental divider with scroll ends
+    var dw = 500;
     ctx.strokeStyle = C.gold;
     ctx.lineWidth = 3;
-    ctx.globalAlpha = 0.5;
+    ctx.globalAlpha = 0.6;
     ctx.beginPath();
-    ctx.moveTo(cx - 300, y - 10);
-    ctx.lineTo(cx + 300, y - 10);
+    ctx.moveTo(cx - dw / 2, y - 20);
+    ctx.lineTo(cx - 14, y - 20);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(cx - dw / 2, y - 20, 8, 0, Math.PI, true);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(cx + 14, y - 20);
+    ctx.lineTo(cx + dw / 2, y - 20);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(cx + dw / 2, y - 20, 8, 0, Math.PI, false);
     ctx.stroke();
     ctx.globalAlpha = 1;
     ctx.fillStyle = C.gold;
     ctx.beginPath();
-    ctx.moveTo(cx, y - 18); ctx.lineTo(cx + 8, y - 10);
-    ctx.lineTo(cx, y - 2); ctx.lineTo(cx - 8, y - 10);
+    ctx.moveTo(cx, y - 28); ctx.lineTo(cx + 8, y - 20);
+    ctx.lineTo(cx, y - 12); ctx.lineTo(cx - 8, y - 20);
     ctx.closePath(); ctx.fill();
 
-    y += 30;
+    y += 35;
     ctx.textAlign = 'center';
     ctx.fillStyle = C.cream;
     ctx.font = '600 96px Georgia, "Times New Roman", serif';
@@ -609,22 +666,33 @@ var KodSpotQR = (function () {
   function drawUpiCTA(ctx, y) {
     var cx = W / 2;
 
-    // Gold decorative divider
+    // Ornamental divider with scroll ends
+    var dw = 500;
     ctx.strokeStyle = C.gold;
     ctx.lineWidth = 3;
-    ctx.globalAlpha = 0.5;
+    ctx.globalAlpha = 0.6;
     ctx.beginPath();
-    ctx.moveTo(cx - 300, y - 10);
-    ctx.lineTo(cx + 300, y - 10);
+    ctx.moveTo(cx - dw / 2, y - 20);
+    ctx.lineTo(cx - 14, y - 20);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(cx - dw / 2, y - 20, 8, 0, Math.PI, true);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(cx + 14, y - 20);
+    ctx.lineTo(cx + dw / 2, y - 20);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(cx + dw / 2, y - 20, 8, 0, Math.PI, false);
     ctx.stroke();
     ctx.globalAlpha = 1;
     ctx.fillStyle = C.gold;
     ctx.beginPath();
-    ctx.moveTo(cx, y - 18); ctx.lineTo(cx + 8, y - 10);
-    ctx.lineTo(cx, y - 2); ctx.lineTo(cx - 8, y - 10);
+    ctx.moveTo(cx, y - 28); ctx.lineTo(cx + 8, y - 20);
+    ctx.lineTo(cx, y - 12); ctx.lineTo(cx - 8, y - 20);
     ctx.closePath(); ctx.fill();
 
-    y += 30;
+    y += 35;
     ctx.textAlign = 'center';
     ctx.fillStyle = C.cream;
     ctx.font = '600 96px Georgia, "Times New Roman", serif';
@@ -700,16 +768,27 @@ var KodSpotQR = (function () {
       : innerBottom - 94;   // "kodspot.com" here, PRO plan
 
     // Elegant gold separator with diamond
+    var dw2 = 360;
     ctx.strokeStyle = C.gold;
     ctx.lineWidth = 2;
     ctx.globalAlpha = 0.5;
     ctx.beginPath();
-    ctx.moveTo(cx - 240, y - 45);
-    ctx.lineTo(cx - 16, y - 45);
+    ctx.moveTo(cx - dw2 / 2, y - 45);
+    ctx.lineTo(cx - 14, y - 45);
     ctx.stroke();
     ctx.beginPath();
-    ctx.moveTo(cx + 16, y - 45);
-    ctx.lineTo(cx + 240, y - 45);
+    ctx.moveTo(cx + 14, y - 45);
+    ctx.lineTo(cx + dw2 / 2, y - 45);
+    ctx.stroke();
+    // Thin second line
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(cx - dw2 / 2 + 30, y - 38);
+    ctx.lineTo(cx - 20, y - 38);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(cx + 20, y - 38);
+    ctx.lineTo(cx + dw2 / 2 - 30, y - 38);
     ctx.stroke();
     ctx.globalAlpha = 1;
     ctx.fillStyle = C.gold;
@@ -721,7 +800,11 @@ var KodSpotQR = (function () {
     ctx.textAlign = 'center';
     ctx.fillStyle = C.gold;
     ctx.font = '600 50px Georgia, "Times New Roman", serif';
+    ctx.save();
+    ctx.shadowColor = 'rgba(197,165,90,0.3)';
+    ctx.shadowBlur = 14;
     ctx.fillText('kodspot.com', cx, y);
+    ctx.restore();
 
     if (plan !== 'PRO') {
       ctx.fillStyle = C.footerTxt;
