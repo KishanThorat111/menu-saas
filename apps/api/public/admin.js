@@ -2214,13 +2214,18 @@ function renderQrThemePicker() {
     var t = themes[key];
     var locked = isStarter && key !== 'walnut';
     var active = key === current;
+    var pillTxt = t.pillTxt || t.bgDark;
     html += '<div class="qr-theme-swatch' + (active ? ' active' : '') + (locked ? ' locked' : '') + '"'
       + ' data-theme="' + key + '"'
-      + ' onclick="changeQrTheme(\'' + key + '\')">'
-      + '<div class="qr-theme-colors">'
-      + '<span style="background:' + t.bgDark + '"></span>'
-      + '<span style="background:' + t.gold + '"></span>'
-      + '<span style="background:' + t.cream + '"></span>'
+      + ' onclick="changeQrTheme(\'' + key + '\')">' 
+      + '<div class="qr-theme-mini-card" style="background:linear-gradient(160deg,' + t.bgLight + ',' + t.bgMid + ',' + t.bgDark + ');">'
+      + '<div class="qr-theme-mini-border" style="border:1.5px solid ' + t.gold + ';opacity:0.5;"></div>'
+      + '<div class="qr-theme-mini-title" style="color:' + t.gold + ';">MENU</div>'
+      + '<div class="qr-theme-mini-qr" style="background:' + t.white + ';">'
+      + '<svg viewBox="0 0 24 24" fill="' + t.bgDark + '"><rect x="1" y="1" width="8" height="8" rx="1"/><rect x="3" y="3" width="4" height="4" rx="0.5"/><rect x="15" y="1" width="8" height="8" rx="1"/><rect x="17" y="3" width="4" height="4" rx="0.5"/><rect x="1" y="15" width="8" height="8" rx="1"/><rect x="3" y="17" width="4" height="4" rx="0.5"/><rect x="11" y="11" width="2" height="2"/><rect x="15" y="15" width="2" height="2"/><rect x="19" y="19" width="4" height="4" rx="0.5"/></svg>'
+      + '</div>'
+      + '<div class="qr-theme-mini-cta" style="color:' + t.cream + ';">Scan ➜ View Menu</div>'
+      + '<div class="qr-theme-mini-url" style="background:' + t.gold + ';color:' + pillTxt + ';">kodspot.com</div>'
       + '</div>'
       + '<div class="qr-theme-label">' + t.label + '</div>'
       + '</div>';
