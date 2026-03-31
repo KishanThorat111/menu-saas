@@ -406,9 +406,9 @@ var KodSpotQR = (function () {
 
     // --- City below name ---
     if (cfg.city) {
-      ctx.fillStyle = C.creamSoft;
+      ctx.fillStyle = C.gold;
       ctx.font = '400 60px Georgia, "Times New Roman", serif';
-      ctx.fillText('\uD83D\uDCCD ' + cfg.city, cx, y);
+      ctx.fillText('\u25C6 ' + cfg.city, cx, y);
       y += 50;
     } else {
       y += 14;
@@ -548,6 +548,23 @@ var KodSpotQR = (function () {
    * ══════════════════════════════════════════════════════════════════════ */
   function drawMenuCTA(ctx, y) {
     var cx = W / 2;
+
+    // Gold decorative divider
+    ctx.strokeStyle = C.gold;
+    ctx.lineWidth = 3;
+    ctx.globalAlpha = 0.5;
+    ctx.beginPath();
+    ctx.moveTo(cx - 300, y - 10);
+    ctx.lineTo(cx + 300, y - 10);
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = C.gold;
+    ctx.beginPath();
+    ctx.moveTo(cx, y - 18); ctx.lineTo(cx + 8, y - 10);
+    ctx.lineTo(cx, y - 2); ctx.lineTo(cx - 8, y - 10);
+    ctx.closePath(); ctx.fill();
+
+    y += 30;
     ctx.textAlign = 'center';
     ctx.fillStyle = C.cream;
     ctx.font = '600 96px Georgia, "Times New Roman", serif';
@@ -556,11 +573,28 @@ var KodSpotQR = (function () {
     ctx.fillStyle = C.creamSoft;
     ctx.font = 'italic 56px Georgia, "Times New Roman", serif';
     ctx.fillText('Open Menu:', cx, y);
-    return y + 110;
+    return y + 100;
   }
 
   function drawReviewCTA(ctx, y) {
     var cx = W / 2;
+
+    // Gold decorative divider
+    ctx.strokeStyle = C.gold;
+    ctx.lineWidth = 3;
+    ctx.globalAlpha = 0.5;
+    ctx.beginPath();
+    ctx.moveTo(cx - 300, y - 10);
+    ctx.lineTo(cx + 300, y - 10);
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = C.gold;
+    ctx.beginPath();
+    ctx.moveTo(cx, y - 18); ctx.lineTo(cx + 8, y - 10);
+    ctx.lineTo(cx, y - 2); ctx.lineTo(cx - 8, y - 10);
+    ctx.closePath(); ctx.fill();
+
+    y += 30;
     ctx.textAlign = 'center';
     ctx.fillStyle = C.cream;
     ctx.font = '600 96px Georgia, "Times New Roman", serif';
@@ -569,11 +603,28 @@ var KodSpotQR = (function () {
     ctx.fillStyle = C.creamSoft;
     ctx.font = 'italic 56px Georgia, "Times New Roman", serif';
     ctx.fillText('Tap to leave us a review!', cx, y);
-    return y + 110;
+    return y + 100;
   }
 
   function drawUpiCTA(ctx, y) {
     var cx = W / 2;
+
+    // Gold decorative divider
+    ctx.strokeStyle = C.gold;
+    ctx.lineWidth = 3;
+    ctx.globalAlpha = 0.5;
+    ctx.beginPath();
+    ctx.moveTo(cx - 300, y - 10);
+    ctx.lineTo(cx + 300, y - 10);
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = C.gold;
+    ctx.beginPath();
+    ctx.moveTo(cx, y - 18); ctx.lineTo(cx + 8, y - 10);
+    ctx.lineTo(cx, y - 2); ctx.lineTo(cx - 8, y - 10);
+    ctx.closePath(); ctx.fill();
+
+    y += 30;
     ctx.textAlign = 'center';
     ctx.fillStyle = C.cream;
     ctx.font = '600 96px Georgia, "Times New Roman", serif';
@@ -582,7 +633,7 @@ var KodSpotQR = (function () {
     ctx.fillStyle = C.creamSoft;
     ctx.font = 'italic 56px Georgia, "Times New Roman", serif';
     ctx.fillText('Pay via UPI \u2022 PhonePe, GPay, Paytm', cx, y);
-    return y + 110;
+    return y + 100;
   }
 
   /* ══════════════════════════════════════════════════════════════════════
@@ -591,16 +642,22 @@ var KodSpotQR = (function () {
   function drawURL(ctx, slug, y) {
     var cx = W / 2;
     var txt = 'kodspot.com/m/' + slug;
-    ctx.font = '600 64px Georgia, "Times New Roman", serif';
+    ctx.font = '600 76px Georgia, "Times New Roman", serif';
     var tw = ctx.measureText(txt).width;
-    var pw = tw + 120;
-    var ph = 90;
+    var pw = tw + 140;
+    var ph = 110;
     var px = (W - pw) / 2;
     var py = y - ph / 2;
 
+    // Pill shadow for depth
+    ctx.save();
+    ctx.shadowColor = 'rgba(197,165,90,0.35)';
+    ctx.shadowBlur = 30;
+    ctx.shadowOffsetY = 6;
     ctx.fillStyle = gGrad(ctx, px, py, px + pw, py + ph);
     rr(ctx, px, py, pw, ph, ph / 2);
     ctx.fill();
+    ctx.restore();
 
     // Highlight border
     ctx.strokeStyle = C.goldHi;
@@ -642,15 +699,24 @@ var KodSpotQR = (function () {
       ? innerBottom - 144   // "kodspot.com" here, "Powered by" 50px below
       : innerBottom - 94;   // "kodspot.com" here, PRO plan
 
-    // Gold separator
+    // Elegant gold separator with diamond
     ctx.strokeStyle = C.gold;
     ctx.lineWidth = 2;
-    ctx.globalAlpha = 0.4;
+    ctx.globalAlpha = 0.5;
     ctx.beginPath();
-    ctx.moveTo(cx - 160, y - 50);
-    ctx.lineTo(cx + 160, y - 50);
+    ctx.moveTo(cx - 240, y - 45);
+    ctx.lineTo(cx - 16, y - 45);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(cx + 16, y - 45);
+    ctx.lineTo(cx + 240, y - 45);
     ctx.stroke();
     ctx.globalAlpha = 1;
+    ctx.fillStyle = C.gold;
+    ctx.beginPath();
+    ctx.moveTo(cx, y - 53); ctx.lineTo(cx + 8, y - 45);
+    ctx.lineTo(cx, y - 37); ctx.lineTo(cx - 8, y - 45);
+    ctx.closePath(); ctx.fill();
 
     ctx.textAlign = 'center';
     ctx.fillStyle = C.gold;
