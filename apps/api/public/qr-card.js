@@ -557,7 +557,7 @@ var KodSpotQR = (function () {
    * ══════════════════════════════════════════════════════════════════════ */
   async function drawQR(ctx, qrSvg, startY) {
     var cx = W / 2;
-    var qrSize = 1960;
+    var qrSize = 2000;
     var pad = 15;
     var boxSz = qrSize + pad * 2;
     var framePad = 18;
@@ -636,7 +636,7 @@ var KodSpotQR = (function () {
       ctx.drawImage(qrImg, bx + pad, by + pad, qrSize, qrSize);
     }
 
-    return fy + frameSz + 40;
+    return fy + frameSz + 65;
   }
 
   /* ══════════════════════════════════════════════════════════════════════
@@ -674,17 +674,16 @@ var KodSpotQR = (function () {
     ctx.lineTo(cx, y - 12); ctx.lineTo(cx - 8, y - 20);
     ctx.closePath(); ctx.fill();
 
-    y += 30;
+    y += 35;
     ctx.textAlign = 'center';
     ctx.fillStyle = C.cream;
     ctx.font = '600 96px Georgia, "Times New Roman", serif';
     ctx.fillText('Scan  \u279C  Tap  \u279C  View Menu', cx, y);
-
-    y += 55;
+    y += 80;
     ctx.fillStyle = C.creamSoft;
     ctx.font = 'italic 56px Georgia, "Times New Roman", serif';
     ctx.fillText('Open Menu:', cx, y);
-    return y + 45;
+    return y + 100;
   }
 
   function drawReviewCTA(ctx, y) {
@@ -716,17 +715,16 @@ var KodSpotQR = (function () {
     ctx.lineTo(cx, y - 12); ctx.lineTo(cx - 8, y - 20);
     ctx.closePath(); ctx.fill();
 
-    y += 30;
+    y += 35;
     ctx.textAlign = 'center';
     ctx.fillStyle = C.cream;
     ctx.font = '600 96px Georgia, "Times New Roman", serif';
     ctx.fillText('\u2B50 Enjoyed your meal?', cx, y);
-
-    y += 55;
+    y += 80;
     ctx.fillStyle = C.creamSoft;
     ctx.font = 'italic 56px Georgia, "Times New Roman", serif';
     ctx.fillText('Tap to leave us a review!', cx, y);
-    return y + 45;
+    return y + 100;
   }
 
   function drawUpiCTA(ctx, y) {
@@ -758,17 +756,16 @@ var KodSpotQR = (function () {
     ctx.lineTo(cx, y - 12); ctx.lineTo(cx - 8, y - 20);
     ctx.closePath(); ctx.fill();
 
-    y += 30;
+    y += 35;
     ctx.textAlign = 'center';
     ctx.fillStyle = C.cream;
     ctx.font = '600 96px Georgia, "Times New Roman", serif';
     ctx.fillText('\uD83D\uDCB0 Scan to Pay', cx, y);
-
-    y += 55;
+    y += 80;
     ctx.fillStyle = C.creamSoft;
     ctx.font = 'italic 56px Georgia, "Times New Roman", serif';
     ctx.fillText('Pay via UPI \u2022 PhonePe, GPay, Paytm', cx, y);
-    return y + 45;
+    return y + 100;
   }
 
   /* ══════════════════════════════════════════════════════════════════════
@@ -806,7 +803,7 @@ var KodSpotQR = (function () {
     ctx.fillText(txt, cx, y + 2);
     ctx.textBaseline = 'alphabetic';
 
-    return y + ph / 2 + 35;
+    return y + ph / 2 + 20;
   }
 
   /* ══════════════════════════════════════════════════════════════════════
