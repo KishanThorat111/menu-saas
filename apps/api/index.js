@@ -110,7 +110,7 @@ function effectivePlan(plan, status) {
 }
 
 // QR card theme tiers: which qr themes each plan unlocks
-const ALL_QR_THEMES = ['walnut', 'noir', 'sapphire', 'emerald', 'bordeaux'];
+const ALL_QR_THEMES = ['walnut', 'noir', 'sapphire', 'emerald', 'bordeaux', 'marble', 'navy', 'crimson', 'champagne', 'teal'];
 const QR_THEME_TIERS = {
   STARTER:  ['walnut'],
   STANDARD: ALL_QR_THEMES.slice(),
