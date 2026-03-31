@@ -2138,6 +2138,9 @@ async function loadQrCode() {
   // Render logo preview in QR tab
   renderLogoPreview();
 
+  // Render QR theme picker
+  renderQrThemePicker();
+
   const preview = document.getElementById('qrPreview');
   const codeText = document.getElementById('qrCodeText');
   const menuLink = document.getElementById('qrMenuLink');
@@ -2195,6 +2198,63 @@ function copyMenuCode() {
   });
 }
 
+// ── QR Theme Picker ─────────────────────────────────────────────────
+function renderQrThemePicker() {
+  var container = document.getElementById('qrThemePicker');
+  var hint = document.getElementById('qrThemeUpgradeHint');
+  if (!container || !hotel) return;
+
+  var themes = KodSpotQR.THEMES;
+  var current = hotel.qrTheme || 'walnut';
+  var ePlan = (hotel.status === 'TRIAL') ? 'STANDARD' : (hotel.plan || 'STARTER');
+  var isStarter = ePlan === 'STARTER';
+
+  var html = '';
+  Object.keys(themes).forEach(function(key) {
+    var t = themes[key];
+    var locked = isStarter && key !== 'walnut';
+    var active = key === current;
+    html += '<div class="qr-theme-swatch' + (active ? ' active' : '') + (locked ? ' locked' : '') + '"'
+      + ' data-theme="' + key + '"'
+      + ' onclick="changeQrTheme(\'' + key + '\')">'
+      + '<div class="qr-theme-colors">'
+      + '<span style="background:' + t.bgDark + '"></span>'
+      + '<span style="background:' + t.gold + '"></span>'
+      + '<span style="background:' + t.cream + '"></span>'
+      + '</div>'
+      + '<div class="qr-theme-label">' + t.label + '</div>'
+      + '</div>';
+  });
+  container.innerHTML = html;
+
+  if (hint) hint.style.display = isStarter ? 'block' : 'none';
+}
+
+async function changeQrTheme(themeId) {
+  if (!hotel) return;
+  var ePlan = (hotel.status === 'TRIAL') ? 'STANDARD' : (hotel.plan || 'STARTER');
+  if (ePlan === 'STARTER' && themeId !== 'walnut') {
+    showToast('Upgrade to Standard or Pro to use premium QR themes', 'error');
+    return;
+  }
+  if (hotel.qrTheme === themeId) return;
+
+  try {
+    var res = await apiFetch('/settings/qr-theme', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ qrTheme: themeId })
+    });
+    var data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to change QR theme');
+    hotel.qrTheme = data.qrTheme || themeId;
+    renderQrThemePicker();
+    showToast('QR card theme updated!', 'success');
+  } catch (e) {
+    showToast(e.message || 'Failed to change QR theme', 'error');
+  }
+}
+
 // ── QR Card generation — delegates to shared qr-card.js module ──────────
 function getQrCardConfig() {
   if (!hotel || !qrSvgCache) return null;
@@ -2205,6 +2265,7 @@ function getQrCardConfig() {
     logoUrl: hotel.logoUrl,
     hotelId: hotel.id,
     qrSvg: qrSvgCache,
+    qrTheme: hotel.qrTheme || 'walnut',
     plan: (billingData && billingData.plan) || hotel.plan || 'STARTER'
   };
   if (hotel.reviewUrl && reviewQrSvgCache) {

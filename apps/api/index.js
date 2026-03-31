@@ -109,6 +109,14 @@ function effectivePlan(plan, status) {
   return plan || 'STARTER';
 }
 
+// QR card theme tiers: which qr themes each plan unlocks
+const ALL_QR_THEMES = ['walnut', 'noir', 'sapphire', 'emerald', 'bordeaux'];
+const QR_THEME_TIERS = {
+  STARTER:  ['walnut'],
+  STANDARD: ALL_QR_THEMES.slice(),
+  PRO:      ALL_QR_THEMES.slice()
+};
+
 //==================== RAZORPAY CLIENT ====================
 let razorpayClient = null;
 function getRazorpay() {
@@ -1768,7 +1776,7 @@ function registerRoutes() {
         where: { id: request.hotelId },
         select: {
           id: true, name: true, slug: true, city: true, phone: true,
-          plan: true, status: true, theme: true, logoUrl: true, reviewUrl: true, views: true,
+          plan: true, status: true, theme: true, qrTheme: true, logoUrl: true, reviewUrl: true, views: true,
           upiId: true, upiPayEnabled: true,
           trialEnds: true, paidUntil: true, createdAt: true, updatedAt: true,
           categories: {
@@ -2130,6 +2138,39 @@ function registerRoutes() {
       try { await purgeMenuCacheForHotel(request.hotelId); } catch (e) { fastify.log.warn('purge error', e.message || e); }
 
       return { success: true, theme: updated.theme };
+    });
+
+    // ==================== QR CARD THEME (HOTEL OWNER) ====================
+    app.patch('/settings/qr-theme', async (request, reply) => {
+      const schema = z.object({
+        qrTheme: z.enum(ALL_QR_THEMES)
+      });
+      const { qrTheme } = schema.parse(request.body);
+
+      const hotel = await prisma.hotel.findUnique({ where: { id: request.hotelId }, select: { plan: true, status: true } });
+      const ePlan = effectivePlan(hotel?.plan, hotel?.status);
+      const allowed = QR_THEME_TIERS[ePlan] || QR_THEME_TIERS.STARTER;
+      if (!allowed.includes(qrTheme)) {
+        return reply.code(403).send({ error: 'QR theme not available on your current plan. Please upgrade.' });
+      }
+
+      const updated = await prisma.hotel.update({
+        where: { id: request.hotelId },
+        data: { qrTheme }
+      });
+
+      await prisma.auditLog.create({
+        data: {
+          hotelId: request.hotelId,
+          actorType: 'owner',
+          action: 'qr_theme_changed',
+          entityType: 'Hotel',
+          entityId: request.hotelId,
+          newValue: { qrTheme }
+        }
+      });
+
+      return { success: true, qrTheme: updated.qrTheme };
     });
 
     // ==================== REVIEW URL (HOTEL OWNER) ====================
@@ -3175,7 +3216,7 @@ function registerRoutes() {
           select: {
             id: true, name: true, slug: true, city: true, phone: true,
             status: true, plan: true, trialEnds: true, paidUntil: true,
-            views: true, createdAt: true, theme: true, logoUrl: true, reviewUrl: true,
+            views: true, createdAt: true, theme: true, qrTheme: true, logoUrl: true, reviewUrl: true,
             upiId: true, upiPayEnabled: true,
             pinResetCount: true, // [6-DIGIT PIN CHANGE] ADDED: Include reset count
             lastPinResetAt: true,  // [6-DIGIT PIN CHANGE] ADDED: Include last reset

@@ -12,19 +12,46 @@ var KodSpotQR = (function () {
   var W = 2480;
   var H = 3508;
 
-  var C = {
-    bgDark:    '#2A1508',
-    bgMid:     '#3B2314',
-    bgLight:   '#4D301A',
-    gold:      '#C5A55A',
-    goldHi:    '#E0CC88',
-    goldLo:    '#96782E',
-    cream:     '#F5E6C8',
-    creamSoft: '#D9C6A0',
-    white:     '#FFFFFF',
-    kBadge:    '#D4900A',
-    footerTxt: '#8B7355'
+  /* ── Premium QR Card Themes ───────────────────────────────────────── */
+  var THEMES = {
+    walnut: {
+      id: 'walnut', label: 'Royal Walnut',
+      bgDark: '#2A1508', bgMid: '#3B2314', bgLight: '#4D301A',
+      gold: '#C5A55A', goldHi: '#E0CC88', goldLo: '#96782E',
+      cream: '#F5E6C8', creamSoft: '#D9C6A0',
+      white: '#FFFFFF', kBadge: '#D4900A', footerTxt: '#8B7355'
+    },
+    noir: {
+      id: 'noir', label: 'Obsidian Noir',
+      bgDark: '#0D0B10', bgMid: '#1A161E', bgLight: '#28222E',
+      gold: '#C49688', goldHi: '#DDBCB0', goldLo: '#8A6458',
+      cream: '#F0EBE6', creamSoft: '#C4BAB2',
+      white: '#FFFFFF', kBadge: '#C49688', footerTxt: '#706460'
+    },
+    sapphire: {
+      id: 'sapphire', label: 'Sapphire Regal',
+      bgDark: '#080E1C', bgMid: '#101E34', bgLight: '#1C2E48',
+      gold: '#A8B8C8', goldHi: '#CCD8E2', goldLo: '#6E808E',
+      cream: '#ECF0F4', creamSoft: '#A8B4C0',
+      white: '#FFFFFF', kBadge: '#3A6EA8', footerTxt: '#5A6A7A'
+    },
+    emerald: {
+      id: 'emerald', label: 'Emerald Imperial',
+      bgDark: '#0C1A10', bgMid: '#1A3020', bgLight: '#284236',
+      gold: '#D4AF37', goldHi: '#E8D48B', goldLo: '#A08020',
+      cream: '#F0EDE0', creamSoft: '#C4C0AC',
+      white: '#FFFFFF', kBadge: '#2C8E4E', footerTxt: '#5A6858'
+    },
+    bordeaux: {
+      id: 'bordeaux', label: 'Bordeaux Velvet',
+      bgDark: '#14060C', bgMid: '#2C1220', bgLight: '#401C2C',
+      gold: '#C8B478', goldHi: '#E0D4A8', goldLo: '#967836',
+      cream: '#F5EDDE', creamSoft: '#D4C4A8',
+      white: '#FFFFFF', kBadge: '#A03050', footerTxt: '#7A6058'
+    }
   };
+
+  var C = THEMES.walnut; // default, overridden per-render
 
   /* ══════════════════════════════════════════════════════════════════════
    *  UTILITIES
@@ -827,6 +854,7 @@ var KodSpotQR = (function () {
    * ══════════════════════════════════════════════════════════════════════ */
   async function generateFront(cfg) {
     if (!cfg.qrSvg || !cfg.slug) return null;
+    C = THEMES[cfg.qrTheme] || THEMES.walnut;
 
     var canvas = document.createElement('canvas');
     canvas.width = W;
@@ -855,6 +883,7 @@ var KodSpotQR = (function () {
     var useReview = hasReview;
     var useUpi = !hasReview && hasUpi;
     if (!cfg.slug) return null;
+    C = THEMES[cfg.qrTheme] || THEMES.walnut;
 
     var canvas = document.createElement('canvas');
     canvas.width = W;
@@ -965,6 +994,7 @@ var KodSpotQR = (function () {
     downloadBlob: downloadBlob,
     safeName: safeName,
     W: W,
-    H: H
+    H: H,
+    THEMES: THEMES
   };
 })();
