@@ -48,6 +48,9 @@ model Hotel {
   // Review QR — optional link to Google/Zomato/etc review page
   reviewUrl String?
 
+  // QR card color theme (walnut = free, others = STANDARD+)
+  qrTheme String @default("walnut")
+
   // UPI Pay — optional direct UPI payment for customers (STANDARD+ plans)
   upiId         String?
   upiPayEnabled Boolean @default(false)

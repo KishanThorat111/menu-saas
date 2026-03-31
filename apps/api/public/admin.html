@@ -2865,6 +2865,92 @@
       font-weight: 700;
     }
 
+    /* QR Theme Picker */
+    .qr-theme-section {
+      max-width: 500px;
+      width: 100%;
+      background: white;
+      border: 2px solid var(--border-light);
+      border-radius: var(--radius-2xl);
+      padding: 1.5rem 2rem;
+      box-shadow: var(--shadow-md);
+    }
+    .qr-theme-header {
+      margin-bottom: 1rem;
+    }
+    .qr-theme-header h4 {
+      font-family: var(--font-display);
+      font-size: 1.125rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 0.125rem;
+    }
+    .qr-theme-header p {
+      color: var(--text-secondary);
+      font-size: 0.8125rem;
+    }
+    .qr-theme-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+      gap: 0.75rem;
+    }
+    .qr-theme-swatch {
+      position: relative;
+      border: 2.5px solid var(--border-light);
+      border-radius: var(--radius-lg);
+      padding: 0.75rem 0.5rem;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      background: white;
+    }
+    .qr-theme-swatch:hover {
+      border-color: var(--saffron-400);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+    .qr-theme-swatch.active {
+      border-color: var(--saffron-500);
+      box-shadow: 0 0 0 3px rgba(245,158,11,0.18);
+    }
+    .qr-theme-swatch.locked {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+    .qr-theme-swatch.locked::after {
+      content: '🔒';
+      position: absolute;
+      top: 4px;
+      right: 6px;
+      font-size: 0.75rem;
+    }
+    .qr-theme-colors {
+      display: flex;
+      gap: 4px;
+      justify-content: center;
+      margin-bottom: 0.5rem;
+    }
+    .qr-theme-colors span {
+      display: inline-block;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      border: 1.5px solid rgba(0,0,0,0.1);
+    }
+    .qr-theme-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+    .qr-theme-upgrade-hint {
+      margin-top: 0.75rem;
+      font-size: 0.8125rem;
+      color: var(--text-secondary);
+      text-align: center;
+      padding: 0.5rem;
+      background: var(--slate-50);
+      border-radius: var(--radius-md);
+    }
+
     .qr-loading {
       display: flex;
       flex-direction: column;
@@ -3384,6 +3470,21 @@
             <button id="btnRemoveLogo" class="btn btn-remove-logo" style="display:none" onclick="removeLogo()">🗑️ Remove</button>
           </div>
         </div>
+
+        <!-- QR Card Theme Picker -->
+        <div class="qr-theme-section">
+          <div class="qr-theme-header">
+            <h4>🎨 QR Card Theme</h4>
+            <p>Choose the color theme for your printed QR card</p>
+          </div>
+          <div id="qrThemePicker" class="qr-theme-grid">
+            <!-- Populated by admin.js -->
+          </div>
+          <div id="qrThemeUpgradeHint" class="qr-theme-upgrade-hint" style="display:none;">
+            🔒 Upgrade to <strong>Standard</strong> or <strong>Pro</strong> to unlock premium QR themes
+          </div>
+        </div>
+
         <div class="qr-card">
           <div class="qr-card-header">
             <h3>Your Menu QR Code</h3>

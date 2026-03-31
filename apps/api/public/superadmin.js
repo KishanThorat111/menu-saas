@@ -507,6 +507,7 @@ function renderTable(hotels) {
             data-reviewurl="${escapeHtml(hotel.reviewUrl || '')}"
             data-upiid="${escapeHtml(hotel.upiId || '')}"
             data-upienabled="${hotel.upiPayEnabled ? 'true' : 'false'}"
+            data-qrtheme="${escapeHtml(hotel.qrTheme || 'walnut')}"
             title="View & download QR code">
             📱 QR Code
           </button>
@@ -713,7 +714,7 @@ function renderTable(hotels) {
   // Attach QR code button listeners
   tbody.querySelectorAll('.qr-hotel-btn').forEach(btn => {
     btn.addEventListener('click', function() {
-      openQrModal(this.dataset.id, this.dataset.name, this.dataset.slug, this.dataset.city, this.dataset.logourl, this.dataset.plan, this.dataset.reviewurl, this.dataset.upiid, this.dataset.upienabled === 'true');
+      openQrModal(this.dataset.id, this.dataset.name, this.dataset.slug, this.dataset.city, this.dataset.logourl, this.dataset.plan, this.dataset.reviewurl, this.dataset.upiid, this.dataset.upienabled === 'true', this.dataset.qrtheme);
     });
   });
 }
@@ -1328,6 +1329,7 @@ let qrModalState = {
   city: '',
   logoUrl: '',
   plan: 'STARTER',
+  qrTheme: 'walnut',
   reviewUrl: '',
   reviewQrSvg: null,
   svgCache: null,
@@ -1449,8 +1451,8 @@ async function saRemoveLogo() {
   }
 }
 
-function openQrModal(hotelId, hotelName, slug, city, logoUrl, plan, reviewUrl, upiId, upiPayEnabled) {
-  qrModalState = { id: hotelId, slug, name: hotelName, city: city || '', logoUrl: logoUrl || '', plan: plan || 'STARTER', reviewUrl: reviewUrl || '', reviewQrSvg: null, svgCache: null, upiId: upiId || '', upiPayEnabled: !!upiPayEnabled, upiQrSvg: null };
+function openQrModal(hotelId, hotelName, slug, city, logoUrl, plan, reviewUrl, upiId, upiPayEnabled, qrTheme) {
+  qrModalState = { id: hotelId, slug, name: hotelName, city: city || '', logoUrl: logoUrl || '', plan: plan || 'STARTER', qrTheme: qrTheme || 'walnut', reviewUrl: reviewUrl || '', reviewQrSvg: null, svgCache: null, upiId: upiId || '', upiPayEnabled: !!upiPayEnabled, upiQrSvg: null };
 
   document.getElementById('qrHotelName').textContent = hotelName;
   document.getElementById('qrModalCode').textContent = slug;
@@ -1519,7 +1521,7 @@ function openQrModal(hotelId, hotelName, slug, city, logoUrl, plan, reviewUrl, u
 
 function closeQrModal() {
   document.getElementById('qrModal').classList.remove('active');
-  qrModalState = { id: '', slug: '', name: '', city: '', logoUrl: '', plan: 'STARTER', reviewUrl: '', reviewQrSvg: null, svgCache: null, upiId: '', upiPayEnabled: false, upiQrSvg: null };
+  qrModalState = { id: '', slug: '', name: '', city: '', logoUrl: '', plan: 'STARTER', qrTheme: 'walnut', reviewUrl: '', reviewQrSvg: null, svgCache: null, upiId: '', upiPayEnabled: false, upiQrSvg: null };
 }
 
 // ── QR Card Generation (delegates to shared qr-card.js module) ──────────
@@ -1533,6 +1535,7 @@ function getSaQrCardConfig() {
     logoUrl: qrModalState.logoUrl,
     hotelId: qrModalState.id,
     qrSvg: qrModalState.svgCache,
+    qrTheme: qrModalState.qrTheme || 'walnut',
     plan: qrModalState.plan || 'STARTER'
   };
   if (qrModalState.reviewUrl && qrModalState.reviewQrSvg) {
