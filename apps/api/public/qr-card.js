@@ -392,7 +392,7 @@ var KodSpotQR = (function () {
       ctx.fillText('K', cx, logoY + logoSz / 2);
     }
 
-    y = logoY + logoSz + 36;
+    y = logoY + logoSz + 30;
 
     // --- Hotel name — LARGE, centered, cream ---
     ctx.textAlign = 'center';
@@ -402,14 +402,14 @@ var KodSpotQR = (function () {
     var displayName = truncName(ctx, cfg.name || 'Restaurant', W - 300);
     ctx.fillText(displayName, cx, y);
 
-    y += 60;
+    y += 50;
 
     // --- City below name ---
     if (cfg.city) {
       ctx.fillStyle = C.creamSoft;
       ctx.font = '400 60px Georgia, "Times New Roman", serif';
       ctx.fillText('\uD83D\uDCCD ' + cfg.city, cx, y);
-      y += 50;
+      y += 40;
     } else {
       y += 14;
     }
@@ -423,7 +423,7 @@ var KodSpotQR = (function () {
    * ══════════════════════════════════════════════════════════════════════ */
   function drawTitle(ctx, text, startY) {
     var cx = W / 2;
-    var y = startY + 130;
+    var y = startY + 120;
 
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
@@ -435,7 +435,7 @@ var KodSpotQR = (function () {
     ctx.fillText(text, cx, y);
 
     // Underline with diamond
-    y += 110;
+    y += 100;
     var lw = Math.min(tw + 80, 800);
     ctx.strokeStyle = C.gold;
     ctx.lineWidth = 5;
@@ -453,7 +453,7 @@ var KodSpotQR = (function () {
     ctx.closePath();
     ctx.fill();
 
-    return y + 20;
+    return y + 14;
   }
 
   /* ══════════════════════════════════════════════════════════════════════
@@ -461,8 +461,8 @@ var KodSpotQR = (function () {
    * ══════════════════════════════════════════════════════════════════════ */
   async function drawQR(ctx, qrSvg, startY) {
     var cx = W / 2;
-    var qrSize = 2050;
-    var pad = 30;
+    var qrSize = 2134;
+    var pad = 15;
     var boxSz = qrSize + pad * 2;
     var framePad = 18;
     var frameSz = boxSz + framePad * 2;
@@ -540,7 +540,7 @@ var KodSpotQR = (function () {
       ctx.drawImage(qrImg, bx + pad, by + pad, qrSize, qrSize);
     }
 
-    return fy + frameSz + 20;
+    return fy + frameSz + 14;
   }
 
   /* ══════════════════════════════════════════════════════════════════════
@@ -552,11 +552,11 @@ var KodSpotQR = (function () {
     ctx.fillStyle = C.cream;
     ctx.font = '600 96px Georgia, "Times New Roman", serif';
     ctx.fillText('Scan  \u2192  Tap  \u2192  View Menu', cx, y);
-    y += 90;
+    y += 80;
     ctx.fillStyle = C.creamSoft;
     ctx.font = 'italic 56px Georgia, "Times New Roman", serif';
     ctx.fillText('Open Menu:', cx, y);
-    return y + 55;
+    return y + 45;
   }
 
   function drawReviewCTA(ctx, y) {
@@ -565,11 +565,11 @@ var KodSpotQR = (function () {
     ctx.fillStyle = C.cream;
     ctx.font = '600 96px Georgia, "Times New Roman", serif';
     ctx.fillText('\u2B50 Enjoyed your meal?', cx, y);
-    y += 90;
+    y += 80;
     ctx.fillStyle = C.creamSoft;
     ctx.font = 'italic 56px Georgia, "Times New Roman", serif';
     ctx.fillText('Tap to leave us a review!', cx, y);
-    return y + 55;
+    return y + 45;
   }
 
   function drawUpiCTA(ctx, y) {
@@ -578,11 +578,11 @@ var KodSpotQR = (function () {
     ctx.fillStyle = C.cream;
     ctx.font = '600 96px Georgia, "Times New Roman", serif';
     ctx.fillText('\uD83D\uDCB0 Scan to Pay', cx, y);
-    y += 90;
+    y += 80;
     ctx.fillStyle = C.creamSoft;
     ctx.font = 'italic 56px Georgia, "Times New Roman", serif';
     ctx.fillText('Pay via UPI \u2022 PhonePe, GPay, Paytm', cx, y);
-    return y + 55;
+    return y + 45;
   }
 
   /* ══════════════════════════════════════════════════════════════════════
@@ -594,7 +594,7 @@ var KodSpotQR = (function () {
     ctx.font = '600 64px Georgia, "Times New Roman", serif';
     var tw = ctx.measureText(txt).width;
     var pw = tw + 120;
-    var ph = 100;
+    var ph = 90;
     var px = (W - pw) / 2;
     var py = y - ph / 2;
 
@@ -614,7 +614,7 @@ var KodSpotQR = (function () {
     ctx.fillText(txt, cx, y + 2);
     ctx.textBaseline = 'alphabetic';
 
-    return y + ph / 2 + 30;
+    return y + ph / 2 + 20;
   }
 
   /* ══════════════════════════════════════════════════════════════════════
@@ -634,13 +634,13 @@ var KodSpotQR = (function () {
   /* ══════════════════════════════════════════════════════════════════════
    *  FOOTER — "kodspot.com" + optional powered-by
    * ══════════════════════════════════════════════════════════════════════ */
-  function drawFooter(ctx, plan, contentEndY) {
+  function drawFooter(ctx, plan) {
     var cx = W / 2;
-    var bottomSafe = H - 130; // above outer border
-    // Place footer close below content, not floating
-    var y = contentEndY + 60;
-    // Clamp so it doesn't overflow into bottom border
-    if (y > bottomSafe - 80) y = bottomSafe - 80;
+    // Bottom-anchored: 114px margin from inner border, symmetric with top
+    var innerBottom = H - 86;
+    var y = (plan !== 'PRO')
+      ? innerBottom - 164   // "kodspot.com" here, "Powered by" 50px below, 114px to border
+      : innerBottom - 114;  // "kodspot.com" here, 114px to border
 
     // Gold separator
     ctx.strokeStyle = C.gold;
