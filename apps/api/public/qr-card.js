@@ -48,6 +48,43 @@ var KodSpotQR = (function () {
       gold: '#C8B478', goldHi: '#E0D4A8', goldLo: '#967836',
       cream: '#F5EDDE', creamSoft: '#D4C4A8',
       white: '#FFFFFF', kBadge: '#A03050', footerTxt: '#7A6058'
+    },
+    marble: {
+      id: 'marble', label: 'Carrara Marble',
+      bgDark: '#D8CFC2', bgMid: '#E4DDD2', bgLight: '#EDE8E0',
+      gold: '#A68A4C', goldHi: '#C4AA6E', goldLo: '#7A6232',
+      cream: '#1E1610', creamSoft: '#3E3228',
+      white: '#FFFFFF', kBadge: '#A68A4C', footerTxt: '#7A6E5E',
+      isLight: true, pillTxt: '#FFFFFF',
+      shadowGold: 'rgba(120,100,50,0.35)', shadowGlow: 'rgba(90,70,30,0.25)'
+    },
+    navy: {
+      id: 'navy', label: 'Royal Navy',
+      bgDark: '#0A1628', bgMid: '#142440', bgLight: '#1E3458',
+      gold: '#C5A55A', goldHi: '#E0CC88', goldLo: '#96782E',
+      cream: '#F0E8D8', creamSoft: '#B8AE9C',
+      white: '#FFFFFF', kBadge: '#1E5090', footerTxt: '#6878A0'
+    },
+    crimson: {
+      id: 'crimson', label: 'Crimson Imperial',
+      bgDark: '#1A0808', bgMid: '#301010', bgLight: '#4A1818',
+      gold: '#D4A850', goldHi: '#E8CA80', goldLo: '#A07828',
+      cream: '#F5E8D6', creamSoft: '#C8BAA4',
+      white: '#FFFFFF', kBadge: '#A03030', footerTxt: '#8A6050'
+    },
+    champagne: {
+      id: 'champagne', label: 'Champagne Pearl',
+      bgDark: '#1E1A16', bgMid: '#2E2820', bgLight: '#3E362C',
+      gold: '#D4C4A0', goldHi: '#E8DCC0', goldLo: '#A09070',
+      cream: '#F5F0E6', creamSoft: '#C8C0B0',
+      white: '#FFFFFF', kBadge: '#C4A870', footerTxt: '#8A8070'
+    },
+    teal: {
+      id: 'teal', label: 'Midnight Teal',
+      bgDark: '#081A1C', bgMid: '#0E2E30', bgLight: '#184042',
+      gold: '#C5A55A', goldHi: '#E0CC88', goldLo: '#96782E',
+      cream: '#E8F0EC', creamSoft: '#A8B8B0',
+      white: '#FFFFFF', kBadge: '#1A7A6A', footerTxt: '#5A8A80'
     }
   };
 
@@ -118,10 +155,10 @@ var KodSpotQR = (function () {
     ctx.fillStyle = g;
     ctx.fillRect(0, 0, W, H);
 
-    // Leather grain noise
-    ctx.globalAlpha = 0.035;
+    // Leather grain noise (reduced for light themes)
+    ctx.globalAlpha = C.isLight ? 0.015 : 0.035;
     for (var i = 0; i < 20000; i++) {
-      ctx.fillStyle = Math.random() > 0.5 ? '#000' : '#FFF';
+      ctx.fillStyle = C.isLight ? (Math.random() > 0.6 ? '#999' : '#bbb') : (Math.random() > 0.5 ? '#000' : '#FFF');
       ctx.fillRect(
         Math.random() * W | 0,
         Math.random() * H | 0,
@@ -425,7 +462,7 @@ var KodSpotQR = (function () {
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.save();
-    ctx.shadowColor = 'rgba(197,165,90,0.3)';
+    ctx.shadowColor = C.shadowGlow || 'rgba(197,165,90,0.3)';
     ctx.shadowBlur = 20;
     ctx.fillStyle = C.cream;
     ctx.font = 'bold 120px Georgia, "Times New Roman", serif';
@@ -463,7 +500,7 @@ var KodSpotQR = (function () {
 
     // Gold glow behind title
     ctx.save();
-    ctx.shadowColor = 'rgba(197,165,90,0.5)';
+    ctx.shadowColor = C.shadowGold || 'rgba(197,165,90,0.5)';
     ctx.shadowBlur = 40;
     ctx.fillStyle = gGrad(ctx, cx - tw / 2, y - 100, cx + tw / 2, y + 100);
     ctx.fillText(text, cx, y);
@@ -532,7 +569,7 @@ var KodSpotQR = (function () {
 
     // --- Outer gold frame (thick, with glow) ---
     ctx.save();
-    ctx.shadowColor = 'rgba(197,165,90,0.4)';
+    ctx.shadowColor = C.shadowGold || 'rgba(197,165,90,0.4)';
     ctx.shadowBlur = 50;
     ctx.strokeStyle = gGrad(ctx, fx, fy, fx + frameSz, fy + frameSz);
     ctx.lineWidth = 16;
@@ -746,7 +783,7 @@ var KodSpotQR = (function () {
 
     // Pill shadow for depth
     ctx.save();
-    ctx.shadowColor = 'rgba(197,165,90,0.35)';
+    ctx.shadowColor = C.shadowGold || 'rgba(197,165,90,0.35)';
     ctx.shadowBlur = 30;
     ctx.shadowOffsetY = 6;
     ctx.fillStyle = gGrad(ctx, px, py, px + pw, py + ph);
@@ -760,7 +797,7 @@ var KodSpotQR = (function () {
     rr(ctx, px + 3, py + 3, pw - 6, ph - 6, (ph - 6) / 2);
     ctx.stroke();
 
-    ctx.fillStyle = C.bgDark;
+    ctx.fillStyle = C.pillTxt || C.bgDark;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(txt, cx, y + 2);
@@ -828,7 +865,7 @@ var KodSpotQR = (function () {
     ctx.fillStyle = C.gold;
     ctx.font = '600 50px Georgia, "Times New Roman", serif';
     ctx.save();
-    ctx.shadowColor = 'rgba(197,165,90,0.3)';
+    ctx.shadowColor = C.shadowGlow || 'rgba(197,165,90,0.3)';
     ctx.shadowBlur = 14;
     ctx.fillText('kodspot.com', cx, y);
     ctx.restore();
