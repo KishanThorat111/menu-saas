@@ -557,7 +557,7 @@ var KodSpotQR = (function () {
    * ══════════════════════════════════════════════════════════════════════ */
   async function drawQR(ctx, qrSvg, startY) {
     var cx = W / 2;
-    var qrSize = 1850;
+    var qrSize = 1960;
     var pad = 15;
     var boxSz = qrSize + pad * 2;
     var framePad = 18;
@@ -636,7 +636,7 @@ var KodSpotQR = (function () {
       ctx.drawImage(qrImg, bx + pad, by + pad, qrSize, qrSize);
     }
 
-    return fy + frameSz + 65;
+    return fy + frameSz + 40;
   }
 
   /* ══════════════════════════════════════════════════════════════════════
@@ -674,26 +674,17 @@ var KodSpotQR = (function () {
     ctx.lineTo(cx, y - 12); ctx.lineTo(cx - 8, y - 20);
     ctx.closePath(); ctx.fill();
 
-    y += 40;
+    y += 30;
     ctx.textAlign = 'center';
     ctx.fillStyle = C.cream;
     ctx.font = '600 96px Georgia, "Times New Roman", serif';
     ctx.fillText('Scan  \u279C  Tap  \u279C  View Menu', cx, y);
 
-    // Small decorative dots between CTA lines
-    y += 65;
-    ctx.fillStyle = C.gold;
-    ctx.globalAlpha = 0.5;
-    ctx.beginPath(); ctx.arc(cx - 30, y, 4, 0, Math.PI * 2); ctx.fill();
-    ctx.beginPath(); ctx.arc(cx, y, 5, 0, Math.PI * 2); ctx.fill();
-    ctx.beginPath(); ctx.arc(cx + 30, y, 4, 0, Math.PI * 2); ctx.fill();
-    ctx.globalAlpha = 1;
-
     y += 55;
     ctx.fillStyle = C.creamSoft;
     ctx.font = 'italic 56px Georgia, "Times New Roman", serif';
     ctx.fillText('Open Menu:', cx, y);
-    return y + 80;
+    return y + 45;
   }
 
   function drawReviewCTA(ctx, y) {
@@ -725,25 +716,17 @@ var KodSpotQR = (function () {
     ctx.lineTo(cx, y - 12); ctx.lineTo(cx - 8, y - 20);
     ctx.closePath(); ctx.fill();
 
-    y += 40;
+    y += 30;
     ctx.textAlign = 'center';
     ctx.fillStyle = C.cream;
     ctx.font = '600 96px Georgia, "Times New Roman", serif';
     ctx.fillText('\u2B50 Enjoyed your meal?', cx, y);
 
-    y += 65;
-    ctx.fillStyle = C.gold;
-    ctx.globalAlpha = 0.5;
-    ctx.beginPath(); ctx.arc(cx - 30, y, 4, 0, Math.PI * 2); ctx.fill();
-    ctx.beginPath(); ctx.arc(cx, y, 5, 0, Math.PI * 2); ctx.fill();
-    ctx.beginPath(); ctx.arc(cx + 30, y, 4, 0, Math.PI * 2); ctx.fill();
-    ctx.globalAlpha = 1;
-
     y += 55;
     ctx.fillStyle = C.creamSoft;
     ctx.font = 'italic 56px Georgia, "Times New Roman", serif';
     ctx.fillText('Tap to leave us a review!', cx, y);
-    return y + 80;
+    return y + 45;
   }
 
   function drawUpiCTA(ctx, y) {
@@ -775,25 +758,17 @@ var KodSpotQR = (function () {
     ctx.lineTo(cx, y - 12); ctx.lineTo(cx - 8, y - 20);
     ctx.closePath(); ctx.fill();
 
-    y += 40;
+    y += 30;
     ctx.textAlign = 'center';
     ctx.fillStyle = C.cream;
     ctx.font = '600 96px Georgia, "Times New Roman", serif';
     ctx.fillText('\uD83D\uDCB0 Scan to Pay', cx, y);
 
-    y += 65;
-    ctx.fillStyle = C.gold;
-    ctx.globalAlpha = 0.5;
-    ctx.beginPath(); ctx.arc(cx - 30, y, 4, 0, Math.PI * 2); ctx.fill();
-    ctx.beginPath(); ctx.arc(cx, y, 5, 0, Math.PI * 2); ctx.fill();
-    ctx.beginPath(); ctx.arc(cx + 30, y, 4, 0, Math.PI * 2); ctx.fill();
-    ctx.globalAlpha = 1;
-
     y += 55;
     ctx.fillStyle = C.creamSoft;
     ctx.font = 'italic 56px Georgia, "Times New Roman", serif';
     ctx.fillText('Pay via UPI \u2022 PhonePe, GPay, Paytm', cx, y);
-    return y + 80;
+    return y + 45;
   }
 
   /* ══════════════════════════════════════════════════════════════════════
@@ -831,7 +806,7 @@ var KodSpotQR = (function () {
     ctx.fillText(txt, cx, y + 2);
     ctx.textBaseline = 'alphabetic';
 
-    return y + ph / 2 + 50;
+    return y + ph / 2 + 35;
   }
 
   /* ══════════════════════════════════════════════════════════════════════
