@@ -119,9 +119,9 @@ model Item {
 }
 
 model AuditLog {
-  id      String @id @default(uuid())
-  hotelId String
-  hotel   Hotel  @relation(fields: [hotelId], references: [id], onDelete: Cascade)
+  id      String  @id @default(uuid())
+  hotelId String?
+  hotel   Hotel?  @relation(fields: [hotelId], references: [id], onDelete: SetNull)
 
   actorType String
   actorId   String?
@@ -169,8 +169,8 @@ enum PaymentStatus {
 
 model Payment {
   id      String @id @default(uuid())
-  hotelId String
-  hotel   Hotel  @relation(fields: [hotelId], references: [id], onDelete: Cascade)
+  hotelId String?
+  hotel   Hotel?  @relation(fields: [hotelId], references: [id], onDelete: SetNull)
 
   razorpayOrderId   String  @unique
   razorpayPaymentId String? @unique
@@ -229,6 +229,9 @@ model TrialRequest {
   status  String   @default("pending") // pending | approved | rejected
   notes   String?  // Internal notes (superadmin)
   hotelId String?  // Linked hotel after approval
+
+  consentedAt      DateTime?  // When user agreed to Privacy Policy + Terms
+  consentVersion   String?    // Version of privacy policy consented to
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
