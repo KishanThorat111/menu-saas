@@ -877,9 +877,11 @@
         var intentLink = 'intent://pay?' + upiParams + '#Intent;scheme=upi;end';
         s += '<a href="' + esc(intentLink) + '" class="pay-sheet-action" style="text-decoration:none;">\u20B9 Pay Now</a>';
       } else {
-        // ── iOS: PhonePe & Google Pay deep links (verified working) ──
+        // ── iOS: PhonePe & Google Pay deep links ──
+        // PhonePe requires tn (transaction note) on newer iOS app versions
+        var ppParams = upiParams + '&tn=' + encodeURIComponent('Pay ' + data.name);
         s += '<div class="pay-ios-apps">';
-        s += '<a href="phonepe://pay?' + upiParams + '" class="pay-ios-btn pay-ios-phonepe">'
+        s += '<a href="phonepe://pay?' + ppParams + '" class="pay-ios-btn pay-ios-phonepe">'
           + '<span class="pay-ios-label">Pay with PhonePe</span></a>';
         s += '<a href="gpay://upi/pay?' + upiParams + '" class="pay-ios-btn pay-ios-gpay">'
           + '<span class="pay-ios-label">Pay with Google Pay</span></a>';
