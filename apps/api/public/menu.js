@@ -886,6 +886,7 @@
         s += '<a href="gpay://upi/pay?' + upiParams + '" class="pay-ios-btn pay-ios-gpay">'
           + '<span class="pay-ios-label">Pay with Google Pay</span></a>';
         s += '</div>';
+        s += '<div class="pay-ios-hint">Please ensure the app is installed on your device</div>';
       }
     } else {
       // Desktop: show copy-able UPI ID (no QR since we don't have hotelId on public page)
