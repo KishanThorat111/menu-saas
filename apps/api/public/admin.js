@@ -2,7 +2,7 @@ const API = window.location.origin;
 let hotel = null;
 let currentTab = 'menu';
 
-// ==================== WEAK PIN DETECTION (mirrors server-side) ====================
+// ==================== WEAK PIN DETECTION (mirrors server-side feature) ====================
 var WEAK_PIN_SET = new Set([
   '12345678','87654321','00000000','11111111','22222222','33333333','44444444',
   '55555555','66666666','77777777','88888888','99999999','12341234','11223344',
