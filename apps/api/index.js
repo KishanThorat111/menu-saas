@@ -2904,13 +2904,24 @@ function registerRoutes() {
     }, async (request, reply) => {
       const { adminKey } = z.object({ adminKey: z.string().min(1) }).parse(request.body);
 
-      if (!process.env.ADMIN_KEY || adminKey !== process.env.ADMIN_KEY) {
+      const expectedKey = process.env.ADMIN_KEY || '';
+      const submittedKey = adminKey;
+      let valid = false;
+      if (expectedKey.length > 0 && expectedKey.length === submittedKey.length) {
+        try {
+          valid = crypto.timingSafeEqual(Buffer.from(expectedKey), Buffer.from(submittedKey));
+        } catch { valid = false; }
+      }
+
+      if (!valid) {
+        fastify.log.warn(`Superadmin login FAILED from IP ${request.ip}`);
         await new Promise(r => setTimeout(r, 500 + Math.random() * 500));
         return reply.code(403).send({ error: 'Invalid admin key' });
       }
 
       const token = hashAdminKey(adminKey);
       reply.setCookie('superadmin_token', token, COOKIE_CONFIG);
+      fastify.log.info(`Superadmin login OK from IP ${request.ip}`);
 
       return { success: true, message: 'Authenticated' };
     });
@@ -3160,6 +3171,19 @@ function registerRoutes() {
           pinResetCount: 0
         }
       });
+
+      // Audit log for hotel creation
+      await prisma.auditLog.create({
+        data: {
+          hotelId: hotel.id,
+          actorType: 'admin',
+          action: 'hotel_created',
+          entityType: 'Hotel',
+          entityId: hotel.id,
+          newValue: { name, city, phone, plan, slug: hotel.slug, email: email || null }
+        }
+      }).catch(err => fastify.log.error(`Audit log failed for hotel creation ${hotel.id}: ${err.message}`));
+      fastify.log.info(`Hotel created by admin: id=${hotel.id} slug=${hotel.slug} plan=${plan}`);
 
       // Send welcome email (best-effort, never blocks response)
       if (email) {
