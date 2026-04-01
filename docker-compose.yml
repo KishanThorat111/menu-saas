@@ -103,6 +103,29 @@ services:
     networks:
       - menu-network
 
+  backup:
+    image: postgres:15-alpine
+    container_name: menu-backup
+    restart: unless-stopped
+    entrypoint: ["sh", "/scripts/backup.sh"]
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_DB: ${DB_NAME}
+      PGPASSWORD: ${DB_PASSWORD}
+      BACKUP_ENCRYPTION_KEY: ${BACKUP_ENCRYPTION_KEY}
+    volumes:
+      - ./infrastructure/backup.sh:/scripts/backup.sh:ro
+      - ./data/backups:/backups
+    depends_on:
+      db:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+    networks:
+      - menu-network
+
 networks:
   menu-network:
     driver: bridge

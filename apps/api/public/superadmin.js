@@ -358,8 +358,8 @@ async function fetchTrialRequests() {
         + '<span style="font-size:12px;color:#94a3b8;">' + time + '</span>'
         + '</div>'
         + '<div style="display:flex;gap:6px;">'
-        + '<button class="btn btn-primary btn-sm" onclick="prefillFromRequest(\'' + escapeHtml(r.id) + '\',\'' + escapeHtml(r.name) + '\',\'' + escapeHtml(r.city) + '\',\'' + escapeHtml(r.phone) + '\',\'' + escapeHtml(r.email || '') + '\')">Create Hotel</button>'
-        + '<button class="btn btn-secondary btn-sm" onclick="markRequestHandled(\'' + escapeHtml(r.id) + '\',\'rejected\')">Dismiss</button>'
+        + '<button class="btn btn-primary btn-sm" data-action="prefill" data-id="' + escapeHtml(r.id) + '" data-name="' + escapeHtml(r.name) + '" data-city="' + escapeHtml(r.city) + '" data-phone="' + escapeHtml(r.phone) + '" data-email="' + escapeHtml(r.email || '') + '">Create Hotel</button>'
+        + '<button class="btn btn-secondary btn-sm" data-action="dismiss" data-id="' + escapeHtml(r.id) + '">Dismiss</button>'
         + '</div>'
         + '</div>';
     }).join('');
@@ -1211,6 +1211,32 @@ function setupEventListeners() {
       content.classList.toggle('collapsed');
       toggle.classList.toggle('rotated');
       createToggleHeader.classList.toggle('active');
+    });
+  }
+
+  // Trial requests section toggle (CSP-safe, replaces inline onclick)
+  var trialToggle = document.getElementById('trialRequestsToggle');
+  if (trialToggle) {
+    trialToggle.addEventListener('click', function() {
+      document.getElementById('trialRequestsContent').classList.toggle('hidden');
+      trialToggle.classList.toggle('active');
+      document.getElementById('trialRequestsToggleIcon').textContent = trialToggle.classList.contains('active') ? '▾' : '▸';
+    });
+  }
+
+  // Trial request buttons – event delegation (CSP-safe, prevents XSS)
+  var trialList = document.getElementById('trialRequestsList');
+  if (trialList) {
+    trialList.addEventListener('click', function(e) {
+      var btn = e.target.closest('[data-action="prefill"]');
+      if (btn) {
+        prefillFromRequest(btn.dataset.id, btn.dataset.name, btn.dataset.city, btn.dataset.phone, btn.dataset.email);
+        return;
+      }
+      btn = e.target.closest('[data-action="dismiss"]');
+      if (btn) {
+        markRequestHandled(btn.dataset.id, 'rejected');
+      }
     });
   }
 

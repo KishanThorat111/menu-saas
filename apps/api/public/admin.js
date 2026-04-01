@@ -31,11 +31,11 @@ let forgotPinState = {
   otpExpiresAt: null
 };
 
-function getToken() {
-  return localStorage.getItem('menu_token');
+function isLoggedIn() {
+  return localStorage.getItem('menu_logged_in') === '1';
 }
 
-if (getToken()) loadDashboard();
+if (isLoggedIn()) loadDashboard();
 
 function escapeHtml(text) {
   if (!text) return '';
@@ -72,8 +72,7 @@ async function apiFetch(endpoint, options = {}) {
   if (options.body && !(options.body instanceof FormData) && !options.headers['Content-Type']) {
     options.headers['Content-Type'] = 'application/json';
   }
-  const token = getToken();
-  if (token) options.headers['Authorization'] = `Bearer ${token}`;
+  options.credentials = 'include';
   
   const res = await fetch(`${API}${endpoint}`, options);
   if (res.status === 401) {
@@ -112,12 +111,13 @@ async function login() {
     const res = await fetch(`${API}/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
       body: JSON.stringify({ code, pin })
     });
     const data = await res.json();
     if (data.error) throw new Error(data.error);
     
-    localStorage.setItem('menu_token', data.token);
+    localStorage.setItem('menu_logged_in', '1');
     showToast('Login successful!');
     loadDashboard();
   } catch (e) {
@@ -125,7 +125,9 @@ async function login() {
   }
 }
 
-function logout() {
+async function logout() {
+  try { await fetch(`${API}/auth/hotel/logout`, { method: 'POST', credentials: 'include' }); } catch (e) { /* ignore */ }
+  localStorage.removeItem('menu_logged_in');
   localStorage.removeItem('menu_token');
   location.reload();
 }

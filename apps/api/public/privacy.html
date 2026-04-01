@@ -24,16 +24,18 @@
 <body>
 <div class="container">
     <h1>Privacy Policy</h1>
-    <p class="updated">Last updated: February 2026 &bull; Version 1.1</p>
+    <p class="updated">Last updated: April 2026 &bull; Version 1.2</p>
 
     <p>KodSpot is operated by <strong>Kishan Thorat</strong> (Sole Proprietor), based in Belagavi, Karnataka, India. This policy explains what data we collect, why, and how we protect it.</p>
 
     <h2>What we collect</h2>
     <ul>
         <li><strong>Hotel owners (our customers):</strong> Name, city, phone number, email (optional), and an 8-digit PIN for login.</li>
-        <li><strong>Menu visitors (your customers):</strong> We do <em>not</em> collect any personal data from people viewing menus. No cookies, no tracking, no analytics.</li>
+        <li><strong>Menu visitors (your customers):</strong> We do <em>not</em> use cookies or third-party analytics. To count unique daily visitors per hotel (required for plan limits), we store a one-way hash derived from the visitor&rsquo;s IP address, the date, and a secret salt. No raw IP address is ever stored. These hashes are automatically deleted after 90 days and cannot be used to identify any individual.</li>
         <li><strong>Menu content:</strong> Category names, item names, prices, descriptions, and images you upload.</li>
-        <li><strong>Activity logs:</strong> We log administrative actions (menu edits, login events, account changes) for security and troubleshooting purposes.</li>
+        <li><strong>Activity logs:</strong> We log administrative actions (menu edits, login events, account changes) for security and troubleshooting. These logs may include details of changed fields (e.g. previous and new values of hotel name, phone, or email). Logs are retained for the lifetime of the account and deleted within 30 days of account deletion.</li>
+        <li><strong>Security metadata:</strong> When you request a PIN reset, we temporarily store your IP address, browser type, and device fingerprint to prevent abuse. This data is automatically deleted 7 days after the OTP expires.</li>
+        <li><strong>Payment records:</strong> We store transaction IDs, amounts, and payment method type (not card or bank details) for each subscription payment. These are retained as required by Indian tax and accounting regulations.</li>
     </ul>
 
     <h2>Why we collect it</h2>
@@ -70,6 +72,14 @@
 
     <h2>Data retention</h2>
     <p>We keep your data as long as your account is active. If you ask us to delete your account, we will remove all your data within 30 days.</p>
+
+    <h2>Third-party services</h2>
+    <p>We use the following services to operate KodSpot. Your data is shared with them only as needed to provide the service:</p>
+    <ul>
+        <li><strong>Razorpay</strong> (payment processing) &mdash; processes your subscription payments. We do not store card or bank details.</li>
+        <li><strong>Cloudflare R2</strong> (image storage) &mdash; stores menu images you upload.</li>
+        <li><strong>Amazon SES</strong> (email) &mdash; sends OTP and notification emails to hotel owners only.</li>
+    </ul>
 
     <h2>Changes to this policy</h2>
     <p>If we update this policy, we&rsquo;ll change the date at the top. For major changes, we&rsquo;ll notify you by email (if provided).</p>

@@ -1,15 +1,25 @@
 const path = require("path");
-const { appendFile, mkdir } = require('fs/promises');
+const { appendFile, mkdir, stat, rename } = require('fs/promises');
 const crypto = require('crypto');
+
+const ERROR_LOG_MAX_BYTES = 50 * 1024 * 1024; // 50 MB
 
 async function logError(err) {
   try {
     const logDir = path.join(__dirname, "../../data/logs");
     await mkdir(logDir, { recursive: true });
     const logPath = path.join(logDir, "error.log");
+
+    // Rotate if over 50 MB
+    const stats = await stat(logPath).catch(() => null);
+    if (stats && stats.size > ERROR_LOG_MAX_BYTES) {
+      await rename(logPath, logPath + '.old').catch(() => {});
+    }
+
     await appendFile(logPath, `[${new Date().toISOString()}] ${err.stack}\n\n`);
   } catch (e) {
-    fastify.log.error('Failed to write to error log:', e);
+    // Cannot use fastify.log here — fastify may not be initialized yet
+    console.error('Failed to write to error log:', e);
   }
 }
 
@@ -25,7 +35,10 @@ const REQUIRED_ENV = [
   "R2_PUBLIC_URL",
   "ADMIN_KEY",
   "COOKIE_SECRET",
-  "PIN_PEPPER"
+  "PIN_PEPPER",
+  "RAZORPAY_KEY_ID",
+  "RAZORPAY_KEY_SECRET",
+  "RAZORPAY_WEBHOOK_SECRET"
 ];
 
 for (const key of REQUIRED_ENV) {
@@ -335,6 +348,119 @@ function buildOtpEmailText(hotelName, otp, expiryMinutes) {
   return `KodSpot — PIN Reset Code\n\nHello,\n\nA PIN reset was requested for ${hotelName}.\n\nYour reset code: ${otp}\n\nThis code expires in ${expiryMinutes} minutes.\nDo not share this code with anyone.\n\nIf you did not request this, you can safely ignore this email. Your PIN will not change.\n\n--\nKodSpot — Digital Menu Management\nhttps://kodspot.com\nThis is an automated message. Please do not reply.`;
 }
 
+function buildReminderEmailHtml(hotelName, type, daysLeft, slug, planLabel) {
+  const isTrialReminder = type === 'trial';
+  const title = isTrialReminder ? 'Your Free Trial Is Ending Soon' : 'Subscription Renewal Reminder';
+  const mainMsg = isTrialReminder
+    ? `Your <strong>14-day free trial</strong> for <strong>${escapeEmailHtml(hotelName)}</strong> ends in <strong>${daysLeft} day${daysLeft !== 1 ? 's' : ''}</strong>.`
+    : `Your <strong>${escapeEmailHtml(planLabel)}</strong> subscription for <strong>${escapeEmailHtml(hotelName)}</strong> expires in <strong>${daysLeft} day${daysLeft !== 1 ? 's' : ''}</strong>.`;
+  const subMsg = isTrialReminder
+    ? 'To keep your digital menu live, choose a plan and complete payment before the trial ends.'
+    : 'To avoid any interruption, please renew your subscription before it expires.';
+  const ctaLabel = isTrialReminder ? 'Choose a Plan' : 'Renew Now';
+  const adminUrl = 'https://kodspot.com/admin';
+
+  return `<!DOCTYPE html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#f4f4f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f5;padding:40px 20px;">
+    <tr><td align="center">
+      <table width="100%" cellpadding="0" cellspacing="0" style="max-width:480px;background:#ffffff;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,0.06);overflow:hidden;">
+        <tr><td style="background:linear-gradient(135deg,#c68b52,#b07440);padding:32px 32px 24px;text-align:center;">
+          <div style="font-size:24px;font-weight:800;color:#ffffff;letter-spacing:0.5px;margin-bottom:12px;">KodSpot</div>
+          <h1 style="margin:0;color:#ffffff;font-size:20px;font-weight:600;opacity:0.95;">${title}</h1>
+        </td></tr>
+        <tr><td style="padding:32px;">
+          <p style="margin:0 0 8px;color:#374151;font-size:15px;">Hello,</p>
+          <p style="margin:0 0 16px;color:#374151;font-size:15px;">${mainMsg}</p>
+          <p style="margin:0 0 24px;color:#374151;font-size:15px;">${subMsg}</p>
+          <div style="text-align:center;margin:0 0 24px;">
+            <a href="${adminUrl}" style="display:inline-block;background:#c68b52;color:#ffffff;text-decoration:none;padding:14px 32px;border-radius:8px;font-size:15px;font-weight:600;">${ctaLabel}</a>
+          </div>
+          <div style="background:#fdf8f0;border-radius:8px;padding:16px;margin:0 0 24px;">
+            <p style="margin:0 0 4px;color:#6b7280;font-size:13px;">Your menu code: <strong style="color:#1f2937;font-family:monospace;letter-spacing:0.1em;">${escapeEmailHtml(slug)}</strong></p>
+            <p style="margin:0;color:#6b7280;font-size:13px;">Menu link: <a href="https://kodspot.com/m/${escapeEmailHtml(slug)}" style="color:#b07440;">kodspot.com/m/${escapeEmailHtml(slug)}</a></p>
+          </div>
+          <div style="border-top:1px solid #e5e7eb;padding-top:20px;">
+            <p style="margin:0;color:#9ca3af;font-size:12px;">Your menu will continue to work during the grace period, but renewing on time ensures uninterrupted service.</p>
+          </div>
+        </td></tr>
+        <tr><td style="background:#f9fafb;padding:16px 32px;text-align:center;border-top:1px solid #e5e7eb;">
+          <p style="margin:0 0 4px;color:#9ca3af;font-size:11px;"><a href="https://kodspot.com" style="color:#b07440;text-decoration:none;font-weight:600;">KodSpot</a> &mdash; Digital Menu Management</p>
+          <p style="margin:0;color:#c0c5cc;font-size:10px;">This is an automated message. Please do not reply.</p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body></html>`;
+}
+
+function buildReminderEmailText(hotelName, type, daysLeft, slug, planLabel) {
+  const isTrialReminder = type === 'trial';
+  const title = isTrialReminder ? 'Your Free Trial Is Ending Soon' : 'Subscription Renewal Reminder';
+  const mainMsg = isTrialReminder
+    ? `Your 14-day free trial for ${hotelName} ends in ${daysLeft} day${daysLeft !== 1 ? 's' : ''}.`
+    : `Your ${planLabel} subscription for ${hotelName} expires in ${daysLeft} day${daysLeft !== 1 ? 's' : ''}.`;
+  const subMsg = isTrialReminder
+    ? 'To keep your digital menu live, choose a plan and complete payment before the trial ends.'
+    : 'To avoid any interruption, please renew your subscription before it expires.';
+  return `KodSpot — ${title}\n\nHello,\n\n${mainMsg}\n\n${subMsg}\n\nLog in to your dashboard: https://kodspot.com/admin\nYour menu code: ${slug}\nMenu link: https://kodspot.com/m/${slug}\n\nYour menu will continue to work during the grace period, but renewing on time ensures uninterrupted service.\n\n--\nKodSpot — Digital Menu Management\nhttps://kodspot.com\nThis is an automated message. Please do not reply.`;
+}
+
+function buildWelcomeEmailHtml(hotelName, slug, planLabel) {
+  const adminUrl = 'https://kodspot.com/admin';
+  const menuUrl = `https://kodspot.com/m/${escapeEmailHtml(slug)}`;
+  return `<!DOCTYPE html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#f4f4f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f5;padding:40px 20px;">
+    <tr><td align="center">
+      <table width="100%" cellpadding="0" cellspacing="0" style="max-width:480px;background:#ffffff;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,0.06);overflow:hidden;">
+        <tr><td style="background:linear-gradient(135deg,#c68b52,#b07440);padding:32px 32px 24px;text-align:center;">
+          <div style="font-size:24px;font-weight:800;color:#ffffff;letter-spacing:0.5px;margin-bottom:12px;">KodSpot</div>
+          <h1 style="margin:0;color:#ffffff;font-size:20px;font-weight:600;opacity:0.95;">Welcome to KodSpot</h1>
+        </td></tr>
+        <tr><td style="padding:32px;">
+          <p style="margin:0 0 16px;color:#374151;font-size:15px;">Hello,</p>
+          <p style="margin:0 0 24px;color:#374151;font-size:15px;"><strong>${escapeEmailHtml(hotelName)}</strong> is now live on KodSpot! Your digital menu is ready.</p>
+          <div style="background:#fdf8f0;border:2px dashed #c68b52;border-radius:10px;padding:20px;text-align:center;margin:0 0 24px;">
+            <p style="margin:0 0 6px;color:#6b7280;font-size:13px;">Your Menu Code</p>
+            <div style="font-family:'Courier New',monospace;font-size:32px;font-weight:800;letter-spacing:0.3em;color:#1f2937;">${escapeEmailHtml(slug)}</div>
+          </div>
+          <div style="background:#f9fafb;border-radius:8px;padding:20px;margin:0 0 24px;">
+            <p style="margin:0 0 12px;color:#1f2937;font-size:15px;font-weight:600;">Getting Started</p>
+            <table width="100%" cellpadding="0" cellspacing="0">
+              <tr><td style="padding:6px 0;color:#374151;font-size:14px;"><strong style="color:#c68b52;">1.</strong> Log in at <a href="${adminUrl}" style="color:#b07440;text-decoration:none;font-weight:500;">kodspot.com/admin</a> with your menu code and PIN</td></tr>
+              <tr><td style="padding:6px 0;color:#374151;font-size:14px;"><strong style="color:#c68b52;">2.</strong> Add your menu categories and items</td></tr>
+              <tr><td style="padding:6px 0;color:#374151;font-size:14px;"><strong style="color:#c68b52;">3.</strong> Download your QR code and share it with customers</td></tr>
+            </table>
+          </div>
+          <div style="text-align:center;margin:0 0 24px;">
+            <a href="${adminUrl}" style="display:inline-block;background:#c68b52;color:#ffffff;text-decoration:none;padding:14px 32px;border-radius:8px;font-size:15px;font-weight:600;">Open Dashboard</a>
+          </div>
+          <div style="background:#fdf8f0;border-radius:8px;padding:16px;margin:0 0 24px;">
+            <p style="margin:0 0 4px;color:#6b7280;font-size:13px;">Plan: <strong style="color:#1f2937;">${escapeEmailHtml(planLabel)}</strong></p>
+            <p style="margin:0 0 4px;color:#6b7280;font-size:13px;">Trial: <strong style="color:#1f2937;">14 days free</strong></p>
+            <p style="margin:0;color:#6b7280;font-size:13px;">Menu: <a href="${menuUrl}" style="color:#b07440;">kodspot.com/m/${escapeEmailHtml(slug)}</a></p>
+          </div>
+          <div style="border-top:1px solid #e5e7eb;padding-top:20px;">
+            <p style="margin:0;color:#9ca3af;font-size:12px;">Your PIN was shared separately. If you need to change it, use the "Forgot PIN" option on the login page.</p>
+          </div>
+        </td></tr>
+        <tr><td style="background:#f9fafb;padding:16px 32px;text-align:center;border-top:1px solid #e5e7eb;">
+          <p style="margin:0 0 4px;color:#9ca3af;font-size:11px;"><a href="https://kodspot.com" style="color:#b07440;text-decoration:none;font-weight:600;">KodSpot</a> &mdash; Digital Menu Management</p>
+          <p style="margin:0;color:#c0c5cc;font-size:10px;">This is an automated message. Please do not reply.</p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body></html>`;
+}
+
+function buildWelcomeEmailText(hotelName, slug, planLabel) {
+  return `KodSpot — Welcome to KodSpot\n\nHello,\n\n${hotelName} is now live on KodSpot! Your digital menu is ready.\n\nYour Menu Code: ${slug}\n\nGetting Started:\n1. Log in at kodspot.com/admin with your menu code and PIN\n2. Add your menu categories and items\n3. Download your QR code and share it with customers\n\nPlan: ${planLabel}\nTrial: 14 days free\nDashboard: https://kodspot.com/admin\nMenu link: https://kodspot.com/m/${slug}\n\nYour PIN was shared separately. If you need to change it, use the "Forgot PIN" option on the login page.\n\n--\nKodSpot — Digital Menu Management\nhttps://kodspot.com\nThis is an automated message. Please do not reply.`;
+}
+
 //==================== HELPERS ====================
 // Semaphore to limit concurrent sharp() image processing (prevents OOM)
 let _sharpActive = 0;
@@ -574,7 +700,7 @@ async function registerContentPlugins() {
 //==================== AUTH MIDDLEWARE ====================
 async function authenticate(request, reply) {
   try {
-    const token = request.headers.authorization?.replace('Bearer ', '');
+    const token = request.cookies?.admin_token || request.headers.authorization?.replace('Bearer ', '');
     if (!token) throw new Error('No token');
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     if (decoded.type !== 'hotel_owner') throw new Error('Invalid token type');
@@ -1334,7 +1460,9 @@ function registerRoutes() {
         name: data.name,
         city: data.city,
         phone: data.phone,
-        email: data.email || null
+        email: data.email || null,
+        consentedAt: new Date(),
+        consentVersion: '1.2'
       }
     });
 
@@ -1399,8 +1527,9 @@ function registerRoutes() {
       { expiresIn: '24h' }
     );
 
+    reply.setCookie('admin_token', token, COOKIE_CONFIG);
+
     return {
-      token,
       hotel: { id: hotel.id, name: hotel.name, slug: hotel.slug, status: hotel.status }
     };
   });
@@ -1510,7 +1639,9 @@ function registerRoutes() {
         fastify.log.info(`OTP email sent for hotel ${hotel.id} to ${hotel.email.replace(/(.{2}).*(@.*)/, '$1***$2')}`);
       } catch (err) {
         fastify.log.error(`Failed to send OTP email for hotel ${hotel.id}: ${err.message}`);
-        // Don't reveal email delivery failure to client
+        // Delete the OTP record so the daily limit isn't consumed by a failed send
+        await prisma.pinResetOtp.deleteMany({ where: { hotelId: hotel.id, used: false, expiresAt: { gt: new Date() } } }).catch(() => {});
+        return reply.code(500).send({ error: 'Unable to send reset email. Please try again later.' });
       }
 
       // Audit log
@@ -1770,6 +1901,11 @@ function registerRoutes() {
   //==================== PROTECTED HOTEL OWNER ROUTES ====================
   fastify.register(async function (app) {
     app.addHook('preHandler', authenticate);
+
+    app.post('/auth/hotel/logout', async (request, reply) => {
+      reply.clearCookie('admin_token', COOKIE_CONFIG);
+      return { success: true, message: 'Logged out' };
+    });
 
     app.get('/me', async (request) => {
       return prisma.hotel.findUnique({
@@ -3018,12 +3154,32 @@ function registerRoutes() {
           name, city, phone, slug, pinHash, plan,
           email: email || null,
           consentedAt: new Date(),
-          consentVersion: '1.0',
+          consentVersion: '1.2',
           status: 'TRIAL',
           trialEnds: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
           pinResetCount: 0
         }
       });
+
+      // Send welcome email (best-effort, never blocks response)
+      if (email) {
+        try {
+          const transporter = getSesTransporter();
+          if (transporter) {
+            const planLabel = (PLANS[plan] || PLANS.STARTER).label.split(' \u2014 ')[0];
+            await transporter.sendMail({
+              from: `KodSpot <${SES_FROM}>`,
+              to: email,
+              subject: `Welcome to KodSpot \u2014 ${name}`,
+              html: buildWelcomeEmailHtml(name, hotel.slug, planLabel),
+              text: buildWelcomeEmailText(name, hotel.slug, planLabel)
+            });
+            fastify.log.info(`Welcome email sent to hotel ${hotel.id}`);
+          }
+        } catch (emailErr) {
+          fastify.log.error(`Welcome email failed for hotel ${hotel.id}: ${emailErr.message}`);
+        }
+      }
 
       return {
         id: hotel.id,
@@ -3035,7 +3191,7 @@ function registerRoutes() {
       };
     });
 
-    // ==================== SUPERADMIN: Platform Analytics ====================
+    // ==================== SUPERADMIN: Platform Analytics ==
     app.get('/admin/stats', async (request, reply) => {
       const [
         hotelCounts,
@@ -3414,7 +3570,7 @@ function registerRoutes() {
     });
 
     // ==================== HOTEL SOFT DELETE (DPDPA COMPLIANT) ====================
-    // Soft-delete: anonymize PII, set status=DELETED, schedule purge after 180 days
+    // Soft-delete: anonymize PII, set status=DELETED, schedule purge after 30 days
     app.delete('/admin/hotels/:id', async (request, reply) => {
       const { id } = request.params;
       if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
@@ -3430,7 +3586,7 @@ function registerRoutes() {
       if (hotel.status === 'DELETED') return reply.code(409).send({ error: 'Hotel already deleted' });
 
       const now = new Date();
-      const purgeAfter = new Date(now.getTime() + 180 * 24 * 60 * 60 * 1000); // 180 days
+      const purgeAfter = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000); // 30 days (matches privacy policy)
 
       // Anonymize PII + set DELETED status
       const updated = await prisma.hotel.update({
@@ -3473,7 +3629,7 @@ function registerRoutes() {
 
       return {
         success: true,
-        message: 'Hotel deleted. PII anonymized. Data will be purged after 180 days.',
+        message: 'Hotel deleted. PII anonymized. Data will be purged after 30 days.',
         hotel: {
           id: updated.id,
           status: updated.status,
@@ -3530,7 +3686,22 @@ function registerRoutes() {
       // Invalidate menu cache before hard delete
       invalidateMenuCache(hotel.slug);
 
-      // Hard delete hotel (cascade removes categories, items, audit logs)
+      // Scrub PII from audit logs before hard delete (logs survive via SetNull, but redact JSON values)
+      await prisma.$executeRaw`
+        UPDATE "AuditLog" SET
+          "oldValue" = CASE WHEN "oldValue" IS NOT NULL THEN '{"redacted": true}'::jsonb ELSE NULL END,
+          "newValue" = CASE WHEN "newValue" IS NOT NULL THEN '{"redacted": true}'::jsonb ELSE NULL END
+        WHERE "hotelId" = ${id}
+      `;
+
+      // Scrub PII from payment metadata before hard delete (payments survive via SetNull; financial fields preserved for tax compliance)
+      await prisma.$executeRaw`
+        UPDATE "Payment" SET
+          "metadata" = CASE WHEN "metadata" IS NOT NULL THEN '{"redacted": true}'::jsonb ELSE NULL END
+        WHERE "hotelId" = ${id}
+      `;
+
+      // Hard delete hotel (cascade removes categories, items, scan data; audit logs + payments preserved with null hotelId)
       await prisma.hotel.delete({ where: { id } });
 
       fastify.log.info(`Hotel ${id} (slug: ${hotel.slug}) permanently purged. Images: ${imageResults.deleted} deleted, ${imageResults.failed} failed.`);
@@ -3777,6 +3948,7 @@ function validateImageBuffer(buffer, mimetype) {
 
   const sig = signatures[mimetype];
   if (!sig) return false;
+  if (buffer.length < sig.length) return false;
   return sig.every((byte, i) => buffer[i] === byte);
 }
 
@@ -3850,11 +4022,11 @@ async function start() {
 
     // ==================== BILLING LIFECYCLE CRON (hourly) ====================
     setInterval(async () => {
-      try {
-        const now = new Date();
-        const gracePeriodMs = 3 * 24 * 60 * 60 * 1000; // 3 days
+      const now = new Date();
+      const gracePeriodMs = 3 * 24 * 60 * 60 * 1000; // 3 days
 
-        // Job 1: Activate pending paid plan changes (paidUntil has passed)
+      // Job 1: Activate pending paid plan changes (paidUntil has passed)
+      try {
         const pendingActivated = await prisma.$executeRaw`
           UPDATE "Hotel"
           SET "plan" = "pendingPlan",
@@ -3869,8 +4041,10 @@ async function start() {
             AND "status" = 'ACTIVE'::"HotelStatus"
         `;
         if (pendingActivated > 0) fastify.log.info(`Cron: activated ${pendingActivated} pending paid plan changes`);
+      } catch (err) { fastify.log.error(`Cron job 1 (pending activations) failed: ${err.message}`); }
 
-        // Job 2: Apply pending free downgrades (paidUntil has passed)
+      // Job 2: Apply pending free downgrades (paidUntil has passed)
+      try {
         const pendingDowngraded = await prisma.$executeRaw`
           UPDATE "Hotel"
           SET "plan" = "pendingPlan",
@@ -3884,8 +4058,10 @@ async function start() {
             AND "status" = 'ACTIVE'::"HotelStatus"
         `;
         if (pendingDowngraded > 0) fastify.log.info(`Cron: applied ${pendingDowngraded} pending downgrades`);
+      } catch (err) { fastify.log.error(`Cron job 2 (pending downgrades) failed: ${err.message}`); }
 
-        // Job 3: ACTIVE → GRACE (paidUntil passed, no pending plan)
+      // Job 3: ACTIVE → GRACE (paidUntil passed, no pending plan)
+      try {
         const graced = await prisma.$executeRaw`
           UPDATE "Hotel"
           SET "status" = 'GRACE'::"HotelStatus",
@@ -3895,8 +4071,10 @@ async function start() {
             AND "pendingPlan" IS NULL
         `;
         if (graced > 0) fastify.log.info(`Cron: moved ${graced} hotels to GRACE`);
+      } catch (err) { fastify.log.error(`Cron job 3 (active to grace) failed: ${err.message}`); }
 
-        // Job 4: GRACE → EXPIRED (3 days after paidUntil)
+      // Job 4: GRACE → EXPIRED (3 days after paidUntil)
+      try {
         const graceDeadline = new Date(now.getTime() - gracePeriodMs);
         const expired = await prisma.$executeRaw`
           UPDATE "Hotel"
@@ -3906,8 +4084,10 @@ async function start() {
             AND "paidUntil" <= ${graceDeadline}
         `;
         if (expired > 0) fastify.log.info(`Cron: moved ${expired} hotels to EXPIRED`);
+      } catch (err) { fastify.log.error(`Cron job 4 (grace to expired) failed: ${err.message}`); }
 
-        // Job 5: TRIAL → EXPIRED (trialEnds passed)
+      // Job 5: TRIAL → EXPIRED (trialEnds passed)
+      try {
         const trialExpired = await prisma.$executeRaw`
           UPDATE "Hotel"
           SET "status" = 'EXPIRED'::"HotelStatus",
@@ -3916,17 +4096,126 @@ async function start() {
             AND "trialEnds" <= ${now}
         `;
         if (trialExpired > 0) fastify.log.info(`Cron: expired ${trialExpired} trials`);
+      } catch (err) { fastify.log.error(`Cron job 5 (trial expiry) failed: ${err.message}`); }
 
-        // Job 6: Cleanup old DailyScanVisitor rows (>90 days) to save storage
+      // Job 6: Cleanup old DailyScanVisitor rows (>90 days) to save storage
+      try {
         const cutoffDate = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
         const purgedVisitors = await prisma.$executeRaw`
           DELETE FROM "DailyScanVisitor" WHERE "date" < ${cutoffDate}
         `;
         if (purgedVisitors > 0) fastify.log.info(`Cron: purged ${purgedVisitors} old visitor hash rows`);
+      } catch (err) { fastify.log.error(`Cron job 6 (visitor cleanup) failed: ${err.message}`); }
 
-      } catch (err) {
-        fastify.log.error(`Billing cron error: ${err.message}`);
-      }
+      // Job 7: Cleanup expired PinResetOtp records (>7 days past expiry) to limit PII retention
+      try {
+        const otpCutoff = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        const purgedOtps = await prisma.pinResetOtp.deleteMany({
+          where: { expiresAt: { lt: otpCutoff } }
+        });
+        if (purgedOtps.count > 0) fastify.log.info(`Cron: purged ${purgedOtps.count} expired OTP records`);
+      } catch (err) { fastify.log.error(`Cron job 7 (OTP cleanup) failed: ${err.message}`); }
+
+      // Job 8: Cleanup old TrialRequest records (>90 days rejected/pending, >30 days approved) — DPDPA retention compliance
+      try {
+        const trialCutoff90 = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+        const trialCutoff30 = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+        const purgedTrials = await prisma.trialRequest.deleteMany({
+          where: {
+            OR: [
+              { status: 'rejected', createdAt: { lt: trialCutoff90 } },
+              { status: 'approved', createdAt: { lt: trialCutoff30 } },
+              { status: 'pending', createdAt: { lt: trialCutoff90 } }
+            ]
+          }
+        });
+        if (purgedTrials.count > 0) fastify.log.info(`Cron: purged ${purgedTrials.count} old trial requests`);
+      } catch (err) { fastify.log.error(`Cron job 8 (trial cleanup) failed: ${err.message}`); }
+
+      // Job 9: Cleanup old DailyScanLog rows (>90 days) to align with visitor hash retention
+      try {
+        const scanLogCutoff = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+        const purgedLogs = await prisma.$executeRaw`
+          DELETE FROM "DailyScanLog" WHERE "date" < ${scanLogCutoff}
+        `;
+        if (purgedLogs > 0) fastify.log.info(`Cron: purged ${purgedLogs} old scan log rows`);
+      } catch (err) { fastify.log.error(`Cron job 9 (scan log cleanup) failed: ${err.message}`); }
+
+      // Job 10: Trial expiry reminder emails (3 days before trialEnds)
+      try {
+        const transporter = getSesTransporter();
+        if (transporter) {
+          const trialReminderWindow = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000);
+          const hotelsTrialExpiring = await prisma.hotel.findMany({
+            where: { status: 'TRIAL', email: { not: null }, trialEnds: { gt: now, lte: trialReminderWindow } },
+            select: { id: true, name: true, email: true, slug: true, trialEnds: true }
+          });
+
+          if (hotelsTrialExpiring.length > 0) {
+            const dedup = new Set((await prisma.auditLog.findMany({
+              where: { action: 'trial_expiry_reminder', hotelId: { in: hotelsTrialExpiring.map(h => h.id) }, createdAt: { gt: new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000) } },
+              select: { hotelId: true }
+            })).map(a => a.hotelId));
+
+            let sent = 0;
+            for (const h of hotelsTrialExpiring) {
+              if (dedup.has(h.id)) continue;
+              const daysLeft = Math.max(1, Math.ceil((new Date(h.trialEnds).getTime() - now.getTime()) / (24 * 60 * 60 * 1000)));
+              try {
+                await transporter.sendMail({
+                  from: `KodSpot <${SES_FROM}>`,
+                  to: h.email,
+                  subject: `Your KodSpot trial ends in ${daysLeft} day${daysLeft !== 1 ? 's' : ''} — ${h.name}`,
+                  html: buildReminderEmailHtml(h.name, 'trial', daysLeft, h.slug, null),
+                  text: buildReminderEmailText(h.name, 'trial', daysLeft, h.slug, null)
+                });
+                await prisma.auditLog.create({ data: { hotelId: h.id, actorType: 'system', action: 'trial_expiry_reminder', entityType: 'Hotel', entityId: h.id, newValue: { daysLeft, email: h.email } } });
+                sent++;
+              } catch (emailErr) { fastify.log.error(`Failed to send trial reminder to hotel ${h.id}: ${emailErr.message}`); }
+            }
+            if (sent > 0) fastify.log.info(`Cron: sent ${sent} trial expiry reminder(s)`);
+          }
+        }
+      } catch (err) { fastify.log.error(`Cron job 10 (trial reminders) failed: ${err.message}`); }
+
+      // Job 11: Subscription renewal reminder emails (7 days before paidUntil)
+      try {
+        const transporter = getSesTransporter();
+        if (transporter) {
+          const renewalWindow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+          const hotelsRenewSoon = await prisma.hotel.findMany({
+            where: { status: 'ACTIVE', email: { not: null }, paidUntil: { gt: now, lte: renewalWindow }, pendingPlanPaid: false },
+            select: { id: true, name: true, email: true, slug: true, plan: true, paidUntil: true }
+          });
+
+          if (hotelsRenewSoon.length > 0) {
+            const dedup = new Set((await prisma.auditLog.findMany({
+              where: { action: 'renewal_reminder', hotelId: { in: hotelsRenewSoon.map(h => h.id) }, createdAt: { gt: new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000) } },
+              select: { hotelId: true }
+            })).map(a => a.hotelId));
+
+            let sent = 0;
+            for (const h of hotelsRenewSoon) {
+              if (dedup.has(h.id)) continue;
+              const daysLeft = Math.max(1, Math.ceil((new Date(h.paidUntil).getTime() - now.getTime()) / (24 * 60 * 60 * 1000)));
+              const planLabel = (PLANS[h.plan] || PLANS.STARTER).label.split(' \u2014 ')[0];
+              try {
+                await transporter.sendMail({
+                  from: `KodSpot <${SES_FROM}>`,
+                  to: h.email,
+                  subject: `Renew your KodSpot plan — expires in ${daysLeft} day${daysLeft !== 1 ? 's' : ''} — ${h.name}`,
+                  html: buildReminderEmailHtml(h.name, 'renewal', daysLeft, h.slug, planLabel),
+                  text: buildReminderEmailText(h.name, 'renewal', daysLeft, h.slug, planLabel)
+                });
+                await prisma.auditLog.create({ data: { hotelId: h.id, actorType: 'system', action: 'renewal_reminder', entityType: 'Hotel', entityId: h.id, newValue: { daysLeft, plan: h.plan, email: h.email } } });
+                sent++;
+              } catch (emailErr) { fastify.log.error(`Failed to send renewal reminder to hotel ${h.id}: ${emailErr.message}`); }
+            }
+            if (sent > 0) fastify.log.info(`Cron: sent ${sent} subscription renewal reminder(s)`);
+          }
+        }
+      } catch (err) { fastify.log.error(`Cron job 11 (renewal reminders) failed: ${err.message}`); }
+
     }, 60 * 60 * 1000); // Run every hour
   } catch (err) {
     fastify.log.error(err);
