@@ -1434,7 +1434,7 @@ function renderBilling() {
   html += '<div class="billing-cards">';
 
   // Plan card
-  var planSummary = { STARTER: '150 visitors/day \u00b7 4 themes', STANDARD: '500 visitors/day \u00b7 8 themes', PRO: 'Unlimited visitors \u00b7 15 themes' };
+  var planSummary = { STARTER: '\u20b9499/mo \u00b7 150 visitors/day \u00b7 4 themes', STANDARD: '\u20b9999/mo \u00b7 500 visitors/day \u00b7 8 themes', PRO: '\u20b91,499/mo \u00b7 Unlimited visitors \u00b7 15 themes' };
   var planDisplay = { STARTER: 'Starter', STANDARD: 'Standard', PRO: 'Pro' };
   html += '<div class="billing-card highlight">';
   html += '<div class="billing-card-icon">\ud83d\udc8e</div>';
@@ -1519,9 +1519,45 @@ function renderBilling() {
   html += '<div class="plan-cards">';
 
   var plans = [
-    { key: 'STARTER', name: 'Starter', price: '\u20b9499', desc: '150 visitors/day \u00b7 4 themes \u00b7 1-day analytics', badge: '' },
-    { key: 'STANDARD', name: 'Standard', price: '\u20b9999', desc: '500 visitors/day \u00b7 8 themes \u00b7 7-day analytics', badge: 'value' },
-    { key: 'PRO', name: 'Pro', price: '\u20b91,499', desc: 'Unlimited visitors \u00b7 15 themes \u00b7 30-day analytics \u00b7 No branding', badge: 'popular' }
+    {
+      key: 'STARTER', name: 'Starter', price: '\u20b9499', perDay: '\u20b917/day',
+      tagline: 'Get your menu online',
+      badge: '', ctaLabel: 'Start with Starter',
+      features: [
+        { text: '150 menu views/day', has: true },
+        { text: '4 menu themes', has: true },
+        { text: 'QR code included', has: true },
+        { text: 'Basic analytics', has: true },
+        { text: 'UPI payment link', has: false },
+        { text: 'Remove branding', has: false }
+      ]
+    },
+    {
+      key: 'STANDARD', name: 'Standard', price: '\u20b9999', perDay: '\u20b933/day',
+      tagline: 'Grow your restaurant',
+      badge: 'popular', ctaLabel: 'Choose Standard',
+      features: [
+        { text: '500 menu views/day', has: true },
+        { text: '8 menu themes', has: true },
+        { text: 'QR code included', has: true },
+        { text: '7-day analytics', has: true },
+        { text: 'UPI payment link', has: true },
+        { text: 'Remove branding', has: false }
+      ]
+    },
+    {
+      key: 'PRO', name: 'Pro', price: '\u20b91,499', perDay: '\u20b950/day',
+      tagline: 'Stand out from competition',
+      badge: 'premium', ctaLabel: 'Go Pro',
+      features: [
+        { text: 'Unlimited menu views', has: true },
+        { text: 'All 15 premium themes', has: true },
+        { text: 'QR code included', has: true },
+        { text: '30-day analytics', has: true },
+        { text: 'UPI payment link', has: true },
+        { text: 'Remove branding', has: true }
+      ]
+    }
   ];
 
   plans.forEach(function(p) {
@@ -1535,19 +1571,29 @@ function renderBilling() {
       html += '<div class="plan-card-badge pending-badge">\ud83d\udd04 Scheduled</div>';
     } else if (p.badge === 'popular') {
       html += '<div class="plan-card-badge popular-badge">\u2b50 Most Popular</div>';
-    } else if (p.badge === 'value') {
-      html += '<div class="plan-card-badge value-badge">\ud83d\udcaa Best Value</div>';
+    } else if (p.badge === 'premium') {
+      html += '<div class="plan-card-badge premium-badge">\ud83d\udc51 Premium</div>';
     } else {
       html += '<div class="plan-card-badge spacer-badge">\u00a0</div>';
     }
     html += '<div class="plan-card-name">' + escapeHtml(p.name) + '</div>';
+    html += '<div class="plan-card-tagline">' + escapeHtml(p.tagline) + '</div>';
     html += '<div class="plan-card-price">' + p.price + '<span class="price-period">/mo</span></div>';
-    html += '<div class="plan-card-desc">' + escapeHtml(p.desc) + '</div>';
+    html += '<div class="plan-card-perday">Just ' + p.perDay + '</div>';
+
+    // Feature checklist
+    html += '<ul class="plan-features">';
+    p.features.forEach(function(f) {
+      html += '<li class="' + (f.has ? 'has' : 'no') + '">';
+      html += '<span class="plan-feature-icon">' + (f.has ? '\u2713' : '\u2717') + '</span>';
+      html += escapeHtml(f.text) + '</li>';
+    });
+    html += '</ul>';
 
     // Smart button labels
     if (isTrial || isExpired) {
-      // Trial/Expired: all plans show "Buy Plan" (no renew, no downgrade concept)
-      html += '<button class="btn btn-primary plan-pay-btn" data-plan="' + p.key + '">\ud83d\uded2 Buy Plan</button>';
+      var btnClass = p.key === 'STANDARD' ? 'btn btn-primary' : (p.key === 'PRO' ? 'btn btn-primary' : 'btn btn-secondary');
+      html += '<button class="' + btnClass + ' plan-pay-btn" data-plan="' + p.key + '">' + escapeHtml(p.ctaLabel) + '</button>';
     } else if (b.pendingPlan === p.key) {
       html += '<button class="btn btn-secondary plan-pay-btn" disabled>Scheduled</button>';
     } else if (hasPaidPending) {
@@ -1561,7 +1607,7 @@ function renderBilling() {
     } else if (isActive && PLAN_TIER[p.key] < PLAN_TIER[b.plan]) {
       html += '<button class="btn btn-secondary plan-downgrade-btn" data-plan="' + p.key + '">\ud83d\udd04 Switch Plan</button>';
     } else {
-      html += '<button class="btn btn-secondary plan-pay-btn" data-plan="' + p.key + '">\u2b06\ufe0f Upgrade</button>';
+      html += '<button class="btn btn-primary plan-pay-btn" data-plan="' + p.key + '">\u2b06\ufe0f Upgrade</button>';
     }
     html += '</div>';
   });
