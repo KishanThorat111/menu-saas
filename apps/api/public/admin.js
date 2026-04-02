@@ -1457,7 +1457,7 @@ function renderBilling() {
   // Scans card (with inline analytics when available)
   html += '<div class="billing-card">';
   html += '<div class="billing-card-icon">\ud83d\udcca</div>';
-  html += '<div class="billing-card-label">Today\u2019s Menu Views</div>';
+  html += '<div class="billing-card-label">Today\u2019s Unique Visitors</div>';
   html += '<div class="billing-card-value">' + (b.todayUnique || 0) + (isUnlimited ? '' : ' of ' + b.dailyUniqueLimit) + '</div>';
   html += '<div class="billing-card-sub">' + b.todayScans + ' total scan' + (b.todayScans !== 1 ? 's' : '') + ' today</div>';
   if (!isUnlimited) {
@@ -1524,7 +1524,7 @@ function renderBilling() {
       tagline: 'Get your menu online',
       badge: '', ctaLabel: 'Start with Starter',
       features: [
-        { text: '150 menu views/day', has: true },
+        { text: '150 unique visitors/day', has: true },
         { text: '4 menu themes', has: true },
         { text: 'QR code included', has: true },
         { text: 'Basic analytics', has: true },
@@ -1537,7 +1537,7 @@ function renderBilling() {
       tagline: 'Grow your restaurant',
       badge: 'popular', ctaLabel: 'Choose Standard',
       features: [
-        { text: '500 menu views/day', has: true },
+        { text: '500 unique visitors/day', has: true },
         { text: '8 menu themes', has: true },
         { text: 'QR code included', has: true },
         { text: '7-day analytics', has: true },
@@ -1550,7 +1550,7 @@ function renderBilling() {
       tagline: 'Stand out from competition',
       badge: 'premium', ctaLabel: 'Go Pro',
       features: [
-        { text: 'Unlimited menu views', has: true },
+        { text: 'Unlimited visitors', has: true },
         { text: 'All 15 premium themes', has: true },
         { text: 'QR code included', has: true },
         { text: '30-day analytics', has: true },
