@@ -1428,57 +1428,40 @@ function renderBilling() {
   else if (isTrial) statusIcon = '\ud83e\uddea';
   else if (isExpired) statusIcon = '\ud83d\udea8';
 
-  let html = '<div class="billing-header"><h3>\ud83d\udcb3 Billing &amp; Plan</h3></div>';
+  let html = '<div class="billing-header"><h3>\ud83d\udccb Your Plan & Billing</h3></div>';
 
   // Status cards
   html += '<div class="billing-cards">';
 
   // Plan card
+  var planSummary = { STARTER: '150 visitors/day \u00b7 4 themes', STANDARD: '500 visitors/day \u00b7 8 themes', PRO: 'Unlimited visitors \u00b7 15 themes' };
+  var planDisplay = { STARTER: 'Starter', STANDARD: 'Standard', PRO: 'Pro' };
   html += '<div class="billing-card highlight">';
   html += '<div class="billing-card-icon">\ud83d\udc8e</div>';
-  html += '<div class="billing-card-label">Current Plan</div>';
-  html += '<div class="billing-card-value">' + escapeHtml(b.plan) + '</div>';
-  html += '<div class="billing-card-sub">' + escapeHtml(b.planLabel) + '</div>';
+  html += '<div class="billing-card-label">Your Plan</div>';
+  html += '<div class="billing-card-value">' + escapeHtml(planDisplay[b.plan] || b.plan) + '</div>';
+  html += '<div class="billing-card-sub">' + (planSummary[b.plan] || escapeHtml(b.planLabel)) + '</div>';
   html += '</div>';
 
   // Status card
   html += '<div class="billing-card ' + statusCard + '">';
   html += '<div class="billing-card-icon">' + statusIcon + '</div>';
-  html += '<div class="billing-card-label">Status</div>';
-  html += '<div class="billing-card-value">' + escapeHtml(b.status === 'GRACE' ? 'PAYMENT DUE' : b.status) + '</div>';
-  if (isTrial) html += '<div class="billing-card-sub">Trial ends: ' + trialEndsStr + '</div>';
-  else if (b.paidUntil) html += '<div class="billing-card-sub">Active until: ' + paidUntilStr + '</div>';
+  html += '<div class="billing-card-label">Account Status</div>';
+  var statusDisplay = { ACTIVE: 'Active', TRIAL: 'Free Trial', GRACE: 'Payment Overdue', EXPIRED: 'Expired' };
+  html += '<div class="billing-card-value">' + escapeHtml(statusDisplay[b.status] || b.status) + '</div>';
+  if (isTrial) html += '<div class="billing-card-sub">Ends on ' + trialEndsStr + '</div>';
+  else if (isExpired) html += '<div class="billing-card-sub">Renew to go live again</div>';
+  else if (b.paidUntil) html += '<div class="billing-card-sub">Renews on ' + paidUntilStr + '</div>';
   html += '</div>';
 
   // Scans card (with inline analytics when available)
   html += '<div class="billing-card">';
   html += '<div class="billing-card-icon">\ud83d\udcca</div>';
-  html += '<div class="billing-card-label">Today\u2019s Visitors</div>';
-  html += '<div class="billing-card-value">' + (b.todayUnique || 0) + (isUnlimited ? '' : ' / ' + b.dailyUniqueLimit) + '</div>';
-  html += '<div class="billing-card-sub">' + b.todayScans + ' total scan' + (b.todayScans !== 1 ? 's' : '') + '</div>';
+  html += '<div class="billing-card-label">Today\u2019s Menu Views</div>';
+  html += '<div class="billing-card-value">' + (b.todayUnique || 0) + (isUnlimited ? '' : ' of ' + b.dailyUniqueLimit) + '</div>';
+  html += '<div class="billing-card-sub">' + b.todayScans + ' total scan' + (b.todayScans !== 1 ? 's' : '') + ' today</div>';
   if (!isUnlimited) {
     html += '<div class="scan-bar"><div class="scan-bar-fill" style="width:' + uniquePercent + '%;background:' + barColor + ';"></div></div>';
-  }
-  // Inline sparkline (show available days based on plan)
-  var sparkDays = (analyticsData && analyticsData.analyticsDays) || 1;
-  if (analyticsData && analyticsData.daily && analyticsData.daily.length >= 2) {
-    var spark = analyticsData.daily.slice(-Math.min(sparkDays, analyticsData.daily.length));
-    var sparkMax = 1;
-    for (var si = 0; si < spark.length; si++) {
-      if (spark[si].scans > sparkMax) sparkMax = spark[si].scans;
-    }
-    html += '<div class="sparkline-row">';
-    html += '<span class="sparkline-label">' + spark.length + '-day trend</span>';
-    html += '<div class="sparkline-bars">';
-    for (var si = 0; si < spark.length; si++) {
-      var sh = spark[si].scans > 0 ? Math.max(4, Math.round((spark[si].scans / sparkMax) * 24)) : 0;
-      html += '<div class="sparkline-bar" style="height:' + sh + 'px" title="' + spark[si].scans + ' scans"></div>';
-    }
-    html += '</div>';
-    if (analyticsData.week) {
-      html += '<span class="sparkline-stat">' + analyticsData.week.unique + ' unique this week</span>';
-    }
-    html += '</div>';
   }
   html += '</div>';
 
@@ -1536,9 +1519,9 @@ function renderBilling() {
   html += '<div class="plan-cards">';
 
   var plans = [
-    { key: 'STARTER', name: 'Starter', price: '\u20b9499', desc: '150 unique visitors/day \u00b7 4 themes', badge: '' },
-    { key: 'STANDARD', name: 'Standard', price: '\u20b9999', desc: '500 unique visitors/day \u00b7 8 themes', badge: 'value' },
-    { key: 'PRO', name: 'Pro', price: '\u20b91,499', desc: 'Unlimited visitors \u00b7 All 15 themes \u00b7 No branding', badge: 'popular' }
+    { key: 'STARTER', name: 'Starter', price: '\u20b9499', desc: '150 visitors/day \u00b7 4 themes \u00b7 1-day analytics', badge: '' },
+    { key: 'STANDARD', name: 'Standard', price: '\u20b9999', desc: '500 visitors/day \u00b7 8 themes \u00b7 7-day analytics', badge: 'value' },
+    { key: 'PRO', name: 'Pro', price: '\u20b91,499', desc: 'Unlimited visitors \u00b7 15 themes \u00b7 30-day analytics \u00b7 No branding', badge: 'popular' }
   ];
 
   plans.forEach(function(p) {
@@ -1752,7 +1735,7 @@ async function initiatePayment(plan) {
 }
 
 async function initiateDowngrade(plan) {
-  var planNames = { STARTER: 'Starter (\u20b9299/mo)', STANDARD: 'Standard (\u20b9499/mo)', PRO: 'Pro (\u20b9999/mo)' };
+  var planNames = { STARTER: 'Starter (\u20b9499/mo)', STANDARD: 'Standard (\u20b9999/mo)', PRO: 'Pro (\u20b91,499/mo)' };
   // Show styled modal instead of browser confirm()
   var overlay = document.getElementById('switchPlanModalOverlay');
   document.getElementById('switchPlanName').textContent = planNames[plan] || plan;
