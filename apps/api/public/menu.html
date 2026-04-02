@@ -79,7 +79,7 @@
       --shadow-lg: 0 8px 24px rgba(0,0,0,0.1);
     }
 
-    /* ===================== 1. THEME: CELEBRATION (classic) ===================== */
+    /* ===================== 1. ESSENTIAL: Celebration (classic) ===================== */
     .theme-classic {
       --bg: #faf7f2;
       --bg-card: #ffffff;
@@ -137,10 +137,10 @@
       --placeholder-icon: #d8d0c6;
     }
 
-    /* ===================== 2. THEME: WARM ===================== */
+    /* ===================== 2. ESSENTIAL: Terracotta (warm) ===================== */
     .theme-warm {
       --bg: #fdf6f0;
-      --bg-card: #ffffff;
+      --bg-card: #fffdf8;
       --bg-card-hover: #fff8f2;
       --bg-raised: #ffffff;
       --bg-hero: linear-gradient(135deg, #c2410c 0%, #ea580c 40%, #d4550a 100%);
@@ -180,11 +180,15 @@
       --skel-shine: #fdf0e6;
 
       --footer: #c0a08a;
-      --card-shadow: 0 1px 3px rgba(194,65,12,0.05), 0 0 1px rgba(234,88,12,0.06);
-      --card-shadow-hover: 0 4px 16px rgba(234,88,12,0.1);
+      --card-shadow: 0 1px 4px rgba(194,65,12,0.06), 0 0 1px rgba(234,88,12,0.06);
+      --card-shadow-hover: 0 6px 20px rgba(234,88,12,0.12);
 
-      --hero-pat: radial-gradient(circle, rgba(255,255,255,0.1) 1px, transparent 1px);
-      --hero-pat-size: 20px 20px;
+      --hero-pat: radial-gradient(circle, rgba(255,255,255,0.1) 2.5px, transparent 3px);
+      --hero-pat-size: 32px 32px;
+
+      --r-md: 14px;
+      --r-lg: 20px;
+      --r-xl: 28px;
 
       --search-bg: #ffffff;
       --search-border: #f5e6d8;
@@ -195,10 +199,10 @@
       --placeholder-icon: #e8d0ba;
     }
 
-    /* ===================== 3. THEME: MORNING (nature) ===================== */
+    /* ===================== 3. ESSENTIAL: Morning Fresh (nature) ===================== */
     .theme-nature {
       --bg: #f2f8f4;
-      --bg-card: #ffffff;
+      --bg-card: #fafdf9;
       --bg-card-hover: #f0f7f2;
       --bg-raised: #ffffff;
       --bg-hero: linear-gradient(135deg, #059669 0%, #10b981 45%, #047857 100%);
@@ -238,11 +242,14 @@
       --skel-shine: #f0f7f2;
 
       --footer: #9bb5a8;
-      --card-shadow: 0 1px 3px rgba(5,150,105,0.05), 0 0 1px rgba(5,150,105,0.06);
-      --card-shadow-hover: 0 4px 16px rgba(5,150,105,0.1);
+      --card-shadow: 0 1px 3px rgba(5,150,105,0.06), 0 0 1px rgba(5,150,105,0.04);
+      --card-shadow-hover: 0 6px 18px rgba(5,150,105,0.10);
 
-      --hero-pat: radial-gradient(circle, rgba(255,255,255,0.07) 1.2px, transparent 1.2px);
-      --hero-pat-size: 18px 18px;
+      --hero-pat:
+        radial-gradient(ellipse at 25% 40%, rgba(255,255,255,0.07) 0%, transparent 50%),
+        radial-gradient(ellipse at 75% 60%, rgba(255,255,255,0.05) 0%, transparent 45%),
+        radial-gradient(ellipse at 50% 15%, rgba(255,255,255,0.04) 0%, transparent 40%);
+      --hero-pat-size: auto;
 
       --search-bg: #ffffff;
       --search-border: #dbeee2;
@@ -253,7 +260,7 @@
       --placeholder-icon: #a7f3d0;
     }
 
-    /* ===================== 4. THEME: HERITAGE (elegant) ===================== */
+    /* ===================== 4. ESSENTIAL: Heritage Gold (elegant) ===================== */
     .theme-elegant {
       --bg: #0b1121;
       --bg-card: #111b30;
@@ -314,10 +321,10 @@
       --placeholder-icon: #2a3650;
     }
 
-    /* ===================== 5. PREMIUM THEME: ROYAL ===================== */
+    /* ===================== 5. PREMIUM: Royal Velvet (royal) ===================== */
     .theme-royal {
       --bg: #f5f0fa;
-      --bg-card: #ffffff;
+      --bg-card: #fdfbff;
       --bg-card-hover: #faf7fd;
       --bg-raised: #ffffff;
       --bg-hero: linear-gradient(135deg, #5b21b6 0%, #7c3aed 45%, #6d28d9 100%);
@@ -348,10 +355,15 @@
       --skel-base: #e8dff2;
       --skel-shine: #f3ecfe;
       --footer: #a898b8;
-      --card-shadow: 0 1px 3px rgba(91,33,182,0.06);
-      --card-shadow-hover: 0 4px 16px rgba(124,58,237,0.12);
-      --hero-pat: radial-gradient(circle, rgba(255,255,255,0.08) 1px, transparent 1px);
-      --hero-pat-size: 24px 24px;
+      --card-shadow: 0 2px 6px rgba(91,33,182,0.08), 0 1px 2px rgba(91,33,182,0.06);
+      --card-shadow-hover: 0 8px 24px rgba(124,58,237,0.15);
+      --hero-pat:
+        repeating-linear-gradient(45deg, transparent, transparent 18px, rgba(255,255,255,0.04) 18px, rgba(255,255,255,0.04) 19px),
+        repeating-linear-gradient(-45deg, transparent, transparent 18px, rgba(255,255,255,0.04) 18px, rgba(255,255,255,0.04) 19px);
+      --hero-pat-size: auto;
+      --r-md: 8px;
+      --r-lg: 10px;
+      --r-xl: 16px;
       --search-bg: #ffffff;
       --search-border: #e8dff2;
       --search-focus: #7c3aed;
@@ -361,10 +373,10 @@
       --placeholder-icon: #d4c8e4;
     }
 
-    /* ===================== 6. PREMIUM THEME: OCEAN ===================== */
+    /* ===================== 6. PREMIUM: Ocean Breeze (ocean) ===================== */
     .theme-ocean {
       --bg: #f0f7fc;
-      --bg-card: #ffffff;
+      --bg-card: #fafcff;
       --bg-card-hover: #f5faff;
       --bg-raised: #ffffff;
       --bg-hero: linear-gradient(135deg, #0369a1 0%, #0284c7 45%, #0277b5 100%);
@@ -395,10 +407,13 @@
       --skel-base: #d8ebf5;
       --skel-shine: #e6f4fd;
       --footer: #8ab0c8;
-      --card-shadow: 0 1px 3px rgba(3,105,161,0.06);
-      --card-shadow-hover: 0 4px 16px rgba(2,132,199,0.12);
-      --hero-pat: radial-gradient(circle, rgba(255,255,255,0.1) 1px, transparent 1px);
-      --hero-pat-size: 20px 20px;
+      --card-shadow: 0 1px 2px rgba(3,105,161,0.04);
+      --card-shadow-hover: 0 3px 10px rgba(2,132,199,0.08);
+      --hero-pat: repeating-radial-gradient(circle at 50% 50%, transparent 0px, transparent 20px, rgba(255,255,255,0.04) 21px, transparent 22px);
+      --hero-pat-size: auto;
+      --r-md: 14px;
+      --r-lg: 20px;
+      --r-xl: 28px;
       --search-bg: #ffffff;
       --search-border: #d8ebf5;
       --search-focus: #0284c7;
@@ -408,10 +423,10 @@
       --placeholder-icon: #b8ddf5;
     }
 
-    /* ===================== 7. PREMIUM THEME: RUSTIC ===================== */
+    /* ===================== 7. PREMIUM: Haveli (rustic) ===================== */
     .theme-rustic {
       --bg: #faf5ef;
-      --bg-card: #ffffff;
+      --bg-card: #fffcf6;
       --bg-card-hover: #fdf9f4;
       --bg-raised: #ffffff;
       --bg-hero: linear-gradient(135deg, #78350f 0%, #92400e 45%, #854d0e 100%);
@@ -442,10 +457,15 @@
       --skel-base: #ede0cc;
       --skel-shine: #f5ece0;
       --footer: #b8a590;
-      --card-shadow: 0 1px 3px rgba(120,53,15,0.06);
-      --card-shadow-hover: 0 4px 16px rgba(146,64,14,0.1);
-      --hero-pat: radial-gradient(circle, rgba(255,255,255,0.08) 1px, transparent 1px);
-      --hero-pat-size: 18px 18px;
+      --card-shadow: 0 2px 6px rgba(120,53,15,0.1), 0 1px 2px rgba(120,53,15,0.06);
+      --card-shadow-hover: 0 8px 24px rgba(146,64,14,0.16);
+      --hero-pat:
+        repeating-linear-gradient(55deg, transparent, transparent 11px, rgba(255,255,255,0.035) 11px, rgba(255,255,255,0.035) 12px),
+        repeating-linear-gradient(-55deg, transparent, transparent 11px, rgba(255,255,255,0.035) 11px, rgba(255,255,255,0.035) 12px);
+      --hero-pat-size: auto;
+      --r-md: 10px;
+      --r-lg: 12px;
+      --r-xl: 18px;
       --search-bg: #ffffff;
       --search-border: #ede0cc;
       --search-focus: #92400e;
@@ -455,7 +475,7 @@
       --placeholder-icon: #dcc8aa;
     }
 
-    /* ===================== 8. PREMIUM THEME: MINIMAL ===================== */
+    /* ===================== 8. PREMIUM: Pure Canvas (minimal) ===================== */
     .theme-minimal {
       --bg: #fafafa;
       --bg-card: #ffffff;
@@ -489,10 +509,13 @@
       --skel-base: #e5e7eb;
       --skel-shine: #f3f4f6;
       --footer: #9ca3af;
-      --card-shadow: 0 1px 3px rgba(0,0,0,0.05);
-      --card-shadow-hover: 0 4px 16px rgba(0,0,0,0.08);
+      --card-shadow: none;
+      --card-shadow-hover: none;
       --hero-pat: none;
       --hero-pat-size: auto;
+      --r-md: 8px;
+      --r-lg: 10px;
+      --r-xl: 14px;
       --search-bg: #ffffff;
       --search-border: #e5e7eb;
       --search-focus: #374151;
@@ -502,10 +525,10 @@
       --placeholder-icon: #d1d5db;
     }
 
-    /* ===================== 9. EXCLUSIVE THEME: SPICE ===================== */
+    /* ===================== 9. SIGNATURE: Crimson Spice (spice) ===================== */
     .theme-spice {
       --bg: #fdf2f2;
-      --bg-card: #ffffff;
+      --bg-card: #fffbfa;
       --bg-card-hover: #fef5f5;
       --bg-raised: #ffffff;
       --bg-hero: linear-gradient(135deg, #991b1b 0%, #dc2626 45%, #b91c1c 100%);
@@ -536,10 +559,13 @@
       --skel-base: #f5d5d5;
       --skel-shine: #fee2e2;
       --footer: #c09090;
-      --card-shadow: 0 1px 3px rgba(153,27,27,0.06);
-      --card-shadow-hover: 0 4px 16px rgba(220,38,38,0.12);
-      --hero-pat: radial-gradient(circle, rgba(255,255,255,0.08) 1px, transparent 1px);
-      --hero-pat-size: 22px 22px;
+      --card-shadow: 0 2px 5px rgba(153,27,27,0.08), 0 1px 2px rgba(153,27,27,0.05);
+      --card-shadow-hover: 0 6px 20px rgba(220,38,38,0.14);
+      --hero-pat: radial-gradient(circle, rgba(255,255,255,0.09) 0.8px, transparent 0.8px);
+      --hero-pat-size: 14px 14px;
+      --r-md: 10px;
+      --r-lg: 12px;
+      --r-xl: 18px;
       --search-bg: #ffffff;
       --search-border: #f5d5d5;
       --search-focus: #dc2626;
@@ -549,7 +575,7 @@
       --placeholder-icon: #e8b4b4;
     }
 
-    /* ===================== 10. EXCLUSIVE THEME: NEON ===================== */
+    /* ===================== 10. SIGNATURE: Neon Glow (neon) ===================== */
     .theme-neon {
       --bg: #0a0f0a;
       --bg-card: #141e14;
@@ -583,10 +609,12 @@
       --skel-base: #1a2a1a;
       --skel-shine: #223822;
       --footer: #5a855a;
-      --card-shadow: 0 1px 4px rgba(0,0,0,0.4);
-      --card-shadow-hover: 0 4px 20px rgba(16,185,129,0.15);
-      --hero-pat: radial-gradient(circle, rgba(16,185,129,0.08) 1px, transparent 1px);
-      --hero-pat-size: 24px 24px;
+      --card-shadow: 0 2px 6px rgba(0,0,0,0.5);
+      --card-shadow-hover: 0 4px 24px rgba(16,185,129,0.2), 0 0 8px rgba(16,185,129,0.1);
+      --hero-pat:
+        repeating-linear-gradient(0deg, transparent, transparent 23px, rgba(16,185,129,0.06) 23px, rgba(16,185,129,0.06) 24px),
+        repeating-linear-gradient(90deg, transparent, transparent 23px, rgba(16,185,129,0.06) 23px, rgba(16,185,129,0.06) 24px);
+      --hero-pat-size: auto;
       --search-bg: #141e14;
       --search-border: #1e2e1e;
       --search-focus: #10b981;
@@ -596,10 +624,10 @@
       --placeholder-icon: #2a4a2a;
     }
 
-    /* ===================== 11. EXCLUSIVE THEME: CHERRY ===================== */
+    /* ===================== 11. SIGNATURE: Rose Petal (cherry) ===================== */
     .theme-cherry {
       --bg: #fdf2f8;
-      --bg-card: #ffffff;
+      --bg-card: #fffafb;
       --bg-card-hover: #fef5fa;
       --bg-raised: #ffffff;
       --bg-hero: linear-gradient(135deg, #9f1239 0%, #e11d48 45%, #be123c 100%);
@@ -630,10 +658,17 @@
       --skel-base: #f5d0e0;
       --skel-shine: #ffe4ed;
       --footer: #c090a8;
-      --card-shadow: 0 1px 3px rgba(159,18,57,0.06);
-      --card-shadow-hover: 0 4px 16px rgba(225,29,72,0.12);
-      --hero-pat: radial-gradient(circle, rgba(255,255,255,0.08) 1px, transparent 1px);
-      --hero-pat-size: 20px 20px;
+      --card-shadow: 0 2px 8px rgba(159,18,57,0.06), 0 -1px 3px rgba(159,18,57,0.02);
+      --card-shadow-hover: 0 8px 24px rgba(225,29,72,0.13);
+      --hero-pat:
+        radial-gradient(ellipse at 25% 40%, rgba(255,255,255,0.08) 0%, transparent 50%),
+        radial-gradient(ellipse at 75% 60%, rgba(255,255,255,0.06) 0%, transparent 45%),
+        radial-gradient(ellipse at 50% 20%, rgba(255,255,255,0.05) 0%, transparent 40%),
+        radial-gradient(ellipse at 60% 85%, rgba(255,255,255,0.04) 0%, transparent 35%);
+      --hero-pat-size: auto;
+      --r-md: 16px;
+      --r-lg: 22px;
+      --r-xl: 32px;
       --search-bg: #ffffff;
       --search-border: #f5d0e0;
       --search-focus: #e11d48;
@@ -643,7 +678,7 @@
       --placeholder-icon: #e8a8c4;
     }
 
-    /* ===================== 12. EXCLUSIVE THEME: MIDNIGHT ===================== */
+    /* ===================== 12. SIGNATURE: Midnight Star (midnight) ===================== */
     .theme-midnight {
       --bg: #0f172a;
       --bg-card: #1e293b;
@@ -677,10 +712,15 @@
       --skel-base: #1e293b;
       --skel-shine: #293a52;
       --footer: #5a7898;
-      --card-shadow: 0 1px 4px rgba(0,0,0,0.4);
-      --card-shadow-hover: 0 4px 20px rgba(59,130,246,0.15);
-      --hero-pat: radial-gradient(circle, rgba(59,130,246,0.06) 1px, transparent 1px);
-      --hero-pat-size: 22px 22px;
+      --card-shadow: 0 2px 6px rgba(0,0,0,0.5);
+      --card-shadow-hover: 0 4px 24px rgba(59,130,246,0.2), 0 0 8px rgba(59,130,246,0.08);
+      --hero-pat:
+        radial-gradient(circle, rgba(59,130,246,0.08) 1px, transparent 1px),
+        radial-gradient(circle, rgba(59,130,246,0.04) 0.5px, transparent 0.5px);
+      --hero-pat-size: 32px 32px, 18px 18px;
+      --r-md: 10px;
+      --r-lg: 12px;
+      --r-xl: 18px;
       --search-bg: #1e293b;
       --search-border: #293a52;
       --search-focus: #3b82f6;
@@ -690,57 +730,57 @@
       --placeholder-icon: #354868;
     }
 
-    /* ===================== 13. EXCLUSIVE THEME: SUNSET ===================== */
+    /* ===================== 13. SIGNATURE: Golden Horizon (sunset) ===================== */
     .theme-sunset {
-      --bg: #fef7f0;
-      --bg-card: #ffffff;
-      --bg-card-hover: #fff8f2;
+      --bg: #fef8f0;
+      --bg-card: #fffdf6;
+      --bg-card-hover: #fffaf0;
       --bg-raised: #ffffff;
-      --bg-hero: linear-gradient(135deg, #c2410c 0%, #ea580c 30%, #d97706 100%);
+      --bg-hero: linear-gradient(to right, #c2410c 0%, #ea580c 30%, #d97706 65%, #eab308 100%);
       --bg-hero-text: #ffffff;
-      --bg-nav: rgba(254,247,240,0.92);
+      --bg-nav: rgba(254,248,240,0.92);
       --c1: #1c1208;
       --c2: #7a5c3a;
       --c3: #a08060;
       --c-inv: #ffffff;
-      --accent: #ea580c;
-      --accent-soft: #fff4eb;
-      --accent-border: #fdba74;
+      --accent: #d97706;
+      --accent-soft: #fef3c7;
+      --accent-border: #fcd34d;
       --accent-text: #ffffff;
       --price: #1a7a3a;
       --price-bg: #ecf7ef;
-      --border: #f5e0cc;
-      --border-strong: #e8c8a8;
+      --border: #f5e6cc;
+      --border-strong: #e8d0a8;
       --veg: #1a7a3a;
       --nonveg: #c0392b;
-      --pop-text: #c2410c;
-      --pop-bg: #fff7ed;
-      --pop-border: #fdba74;
-      --pop-card-border: #f97316;
-      --pop-card-bg: rgba(255,247,237,0.4);
-      --cat-accent: #ea580c;
-      --cat-soft: #fff4eb;
-      --cat-border: #fdba74;
-      --skel-base: #f5e0cc;
+      --pop-text: #b45309;
+      --pop-bg: #fffbeb;
+      --pop-border: #fcd34d;
+      --pop-card-border: #f59e0b;
+      --pop-card-bg: rgba(255,251,235,0.4);
+      --cat-accent: #d97706;
+      --cat-soft: #fef3c7;
+      --cat-border: #fcd34d;
+      --skel-base: #f5e6cc;
       --skel-shine: #faeede;
-      --footer: #c0a080;
-      --card-shadow: 0 1px 3px rgba(194,65,12,0.06);
-      --card-shadow-hover: 0 4px 16px rgba(234,88,12,0.12);
-      --hero-pat: radial-gradient(circle, rgba(255,255,255,0.1) 1px, transparent 1px);
-      --hero-pat-size: 20px 20px;
+      --footer: #c0a070;
+      --card-shadow: 0 1px 3px rgba(217,119,6,0.06);
+      --card-shadow-hover: 0 4px 16px rgba(217,119,6,0.12);
+      --hero-pat: repeating-linear-gradient(to bottom, transparent, transparent 8px, rgba(255,255,255,0.04) 8px, rgba(255,255,255,0.04) 9px);
+      --hero-pat-size: auto;
       --search-bg: #ffffff;
-      --search-border: #f5e0cc;
-      --search-focus: #ea580c;
+      --search-border: #f5e6cc;
+      --search-focus: #d97706;
       --filter-bg: #ffffff;
-      --filter-active-bg: #fff4eb;
-      --filter-active-border: #ea580c;
-      --placeholder-icon: #e8c8a8;
+      --filter-active-bg: #fef3c7;
+      --filter-active-border: #d97706;
+      --placeholder-icon: #e8d0a8;
     }
 
-    /* ===================== 14. EXCLUSIVE THEME: FOREST ===================== */
+    /* ===================== 14. SIGNATURE: Evergreen (forest) ===================== */
     .theme-forest {
       --bg: #f0f5f0;
-      --bg-card: #ffffff;
+      --bg-card: #f9fcf9;
       --bg-card-hover: #f5f9f5;
       --bg-raised: #ffffff;
       --bg-hero: linear-gradient(135deg, #14532d 0%, #166534 45%, #15603a 100%);
@@ -771,10 +811,13 @@
       --skel-base: #d4e8d8;
       --skel-shine: #e2f0e6;
       --footer: #88b098;
-      --card-shadow: 0 1px 3px rgba(20,83,45,0.06);
-      --card-shadow-hover: 0 4px 16px rgba(22,101,52,0.12);
-      --hero-pat: radial-gradient(circle, rgba(255,255,255,0.08) 1px, transparent 1px);
-      --hero-pat-size: 22px 22px;
+      --card-shadow: 0 2px 5px rgba(20,83,45,0.08), 0 1px 2px rgba(20,83,45,0.05);
+      --card-shadow-hover: 0 6px 20px rgba(22,101,52,0.14);
+      --hero-pat: repeating-linear-gradient(35deg, transparent, transparent 14px, rgba(255,255,255,0.04) 14px, rgba(255,255,255,0.04) 15px);
+      --hero-pat-size: auto;
+      --r-md: 10px;
+      --r-lg: 14px;
+      --r-xl: 20px;
       --search-bg: #ffffff;
       --search-border: #d4e8d8;
       --search-focus: #166534;
@@ -784,51 +827,54 @@
       --placeholder-icon: #a8d4b2;
     }
 
-    /* ===================== 15. EXCLUSIVE THEME: MARBLE ===================== */
+    /* ===================== 15. SIGNATURE: Italian Marble (marble) ===================== */
     .theme-marble {
-      --bg: #f8f8f8;
-      --bg-card: #ffffff;
-      --bg-card-hover: #fcfcfc;
+      --bg: #f8f7f5;
+      --bg-card: #fdfcfa;
+      --bg-card-hover: #fbfaf8;
       --bg-raised: #ffffff;
-      --bg-hero: linear-gradient(135deg, #4b5563 0%, #6b7280 45%, #57606e 100%);
+      --bg-hero: linear-gradient(135deg, #57524a 0%, #736b63 45%, #635c54 100%);
       --bg-hero-text: #ffffff;
-      --bg-nav: rgba(248,248,248,0.92);
-      --c1: #1a1a1a;
-      --c2: #6b6b6b;
-      --c3: #9a9a9a;
+      --bg-nav: rgba(248,247,245,0.92);
+      --c1: #1a1916;
+      --c2: #6b6560;
+      --c3: #9a948e;
       --c-inv: #ffffff;
-      --accent: #6b7280;
-      --accent-soft: #f3f4f6;
-      --accent-border: #d1d5db;
+      --accent: #736b63;
+      --accent-soft: #f0eeeb;
+      --accent-border: #d4d0ca;
       --accent-text: #ffffff;
       --price: #1a7a3a;
       --price-bg: #ecf7ef;
-      --border: #e5e5e5;
-      --border-strong: #d0d0d0;
+      --border: #e5e2de;
+      --border-strong: #d0cdc8;
       --veg: #1a7a3a;
       --nonveg: #c0392b;
-      --pop-text: #4b5563;
-      --pop-bg: #f9fafb;
-      --pop-border: #d1d5db;
-      --pop-card-border: #9ca3af;
-      --pop-card-bg: rgba(249,250,251,0.4);
-      --cat-accent: #6b7280;
-      --cat-soft: #f3f4f6;
-      --cat-border: #d1d5db;
-      --skel-base: #e5e5e5;
-      --skel-shine: #f0f0f0;
-      --footer: #9a9a9a;
-      --card-shadow: 0 1px 3px rgba(0,0,0,0.05);
-      --card-shadow-hover: 0 4px 16px rgba(0,0,0,0.08);
-      --hero-pat: none;
+      --pop-text: #57524a;
+      --pop-bg: #f5f4f2;
+      --pop-border: #d4d0ca;
+      --pop-card-border: #9a948e;
+      --pop-card-bg: rgba(245,244,242,0.4);
+      --cat-accent: #736b63;
+      --cat-soft: #f0eeeb;
+      --cat-border: #d4d0ca;
+      --skel-base: #e5e2de;
+      --skel-shine: #f0eeeb;
+      --footer: #9a948e;
+      --card-shadow: 0 1px 4px rgba(0,0,0,0.06), 0 0 1px rgba(0,0,0,0.04);
+      --card-shadow-hover: 0 4px 16px rgba(0,0,0,0.09);
+      --hero-pat: repeating-linear-gradient(125deg, transparent, transparent 40px, rgba(255,255,255,0.04) 40px, rgba(255,255,255,0.04) 41px);
       --hero-pat-size: auto;
+      --r-md: 8px;
+      --r-lg: 10px;
+      --r-xl: 16px;
       --search-bg: #ffffff;
-      --search-border: #e5e5e5;
-      --search-focus: #6b7280;
+      --search-border: #e5e2de;
+      --search-focus: #736b63;
       --filter-bg: #ffffff;
-      --filter-active-bg: #f3f4f6;
-      --filter-active-border: #6b7280;
-      --placeholder-icon: #d0d0d0;
+      --filter-active-bg: #f0eeeb;
+      --filter-active-border: #736b63;
+      --placeholder-icon: #d0cdc8;
     }
 
     /* ===================== 16. RESET & BASE ===================== */

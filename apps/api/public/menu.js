@@ -160,9 +160,9 @@
     neon: '#10b981',
     cherry: '#e11d48',
     midnight: '#1e40af',
-    sunset: '#ea580c',
+    sunset: '#d97706',
     forest: '#166534',
-    marble: '#6b7280'
+    marble: '#736b63'
   };
 
   // ── Render Menu ────────────────────────────────────────────────────────
