@@ -2790,11 +2790,11 @@
     }
     .qr-modal-url a:hover { text-decoration: underline; }
     .qr-modal-actions {
-      display: flex;
-      gap: 0.625rem;
-      flex-wrap: wrap;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.5rem;
     }
-    .qr-modal-actions .btn { flex: 1; min-width: 120px; }
+    .qr-modal-actions .btn-full { grid-column: 1 / -1; }
     .qr-modal-loading {
       display: flex;
       flex-direction: column;
@@ -3482,11 +3482,11 @@
           </div>
         </div>
         <div class="qr-modal-actions">
-          <button id="qrDownloadPngBtn" class="btn btn-sm btn-primary">📥 Download Front (PNG)</button>
-          <button id="qrDownloadBackPngBtn" class="btn btn-sm btn-primary" style="background:var(--slate-50,#f8fafc);color:var(--slate-700,#334155);border:1px solid var(--slate-200,#e2e8f0);">📥 Download Back (PNG)</button>
-          <button id="qrDownloadPrintReadyBtn" class="btn btn-sm btn-secondary">📄 Download Print-Ready</button>
-          <button id="qrDownloadSvgBtn" class="btn btn-sm btn-secondary">🖨️ Download SVG</button>
-          <button id="qrShareBtn" class="btn btn-sm btn-success">📤 Share</button>
+          <button id="qrDownloadPngBtn" class="btn btn-sm btn-primary">📥 Front (PNG)</button>
+          <button id="qrDownloadBackPngBtn" class="btn btn-sm" style="background:var(--slate-50,#f8fafc);color:var(--slate-700,#334155);border:1px solid var(--slate-200,#e2e8f0);">📥 Back (PNG)</button>
+          <button id="qrDownloadPrintReadyBtn" class="btn btn-sm btn-secondary">📄 Print-Ready (A6)</button>
+          <button id="qrDownloadSvgBtn" class="btn btn-sm btn-secondary">🖨️ SVG</button>
+          <button id="qrShareBtn" class="btn btn-sm btn-success btn-full">📤 Share</button>
         </div>
         <!-- Custom Size Downloads (10.1 × 15.2 cm) -->
         <div style="margin-top:0.75rem;padding:0.75rem;background:#fef3c7;border:1px solid #fde68a;border-radius:8px;">

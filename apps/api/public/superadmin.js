@@ -1792,6 +1792,7 @@ async function changeSaQrTheme(themeId) {
     showToast(e.message || 'Failed to change theme', 'error');
   }
 }
+window.changeSaQrTheme = changeSaQrTheme;
 
 // ==================== REVIEW URL (SUPERADMIN) ====================
 function initSaReviewUrlUI() {
