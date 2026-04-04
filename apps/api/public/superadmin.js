@@ -1774,14 +1774,10 @@ async function changeSaQrTheme(themeId) {
   if (!qrModalState.id) return;
   if (qrModalState.qrTheme === themeId) return;
   try {
-    var res = await fetch('/admin/hotels/' + qrModalState.id + '/qr-theme', {
+    var data = await fetchAPI('/admin/hotels/' + qrModalState.id + '/qr-theme', {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
       body: JSON.stringify({ qrTheme: themeId })
     });
-    var data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Failed to change theme');
     qrModalState.qrTheme = data.qrTheme || themeId;
     // Update the source button data attribute so re-opening preserves the choice
     var srcBtn = document.querySelector('.qr-hotel-btn[data-id="' + qrModalState.id + '"]');
