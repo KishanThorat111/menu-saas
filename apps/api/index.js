@@ -1429,6 +1429,8 @@ function registerRoutes() {
   });
 
   // ==================== TRIAL REQUEST (PUBLIC) ====================
+  const TRIAL_NOTIFY_EMAIL = process.env.ADMIN_NOTIFICATION_EMAIL || 'support@kodspot.com';
+
   fastify.post('/auth/request-trial', {
     config: {
       rateLimit: {
@@ -1442,10 +1444,17 @@ function registerRoutes() {
       name: z.string().min(1).max(200).transform(v => v.trim()),
       city: z.string().min(1).max(100).transform(v => v.trim()),
       phone: z.string().min(10).max(15).regex(/^\d{10,15}$/, 'Invalid phone number'),
-      email: z.string().email().max(200).optional().or(z.literal(''))
+      email: z.string().email().max(200).optional().or(z.literal('')),
+      consent: z.literal(true, { errorMap: () => ({ message: 'Consent to Privacy Policy and Terms is required' }) }),
+      website: z.string().max(500).optional().default('') // Honeypot — real users never see this field; bots auto-fill it
     });
 
     const data = schema.parse(request.body);
+
+    // Honeypot check — if 'website' field has any value, silently discard (bot)
+    if (data.website) {
+      return { success: true, message: 'Thank you! We will set up your account and contact you via WhatsApp within a few hours.' };
+    }
 
     // Deduplicate: reject if same phone already has a pending request
     const existing = await prisma.trialRequest.findFirst({
@@ -1466,19 +1475,44 @@ function registerRoutes() {
       }
     });
 
-    // Best-effort email notification to admin
+    // Email notification to admin (support@kodspot.com)
     try {
       const transporter = getSesTransporter();
       if (transporter) {
+        const htmlBody = `<!DOCTYPE html><html><body style="margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f8fafc;">
+<div style="max-width:520px;margin:24px auto;background:#fff;border-radius:12px;border:1px solid #e2e8f0;overflow:hidden;">
+  <div style="background:linear-gradient(135deg,#c68b52,#a0714a);padding:20px 24px;">
+    <h2 style="margin:0;color:#fff;font-size:18px;">🔔 New Trial Request</h2>
+  </div>
+  <div style="padding:24px;">
+    <table style="width:100%;border-collapse:collapse;font-size:14px;color:#334155;">
+      <tr><td style="padding:8px 0;font-weight:600;width:100px;">Restaurant</td><td style="padding:8px 0;">${escapeEmailHtml(data.name)}</td></tr>
+      <tr><td style="padding:8px 0;font-weight:600;">City</td><td style="padding:8px 0;">${escapeEmailHtml(data.city)}</td></tr>
+      <tr><td style="padding:8px 0;font-weight:600;">Phone</td><td style="padding:8px 0;"><a href="https://wa.me/91${data.phone}" style="color:#c68b52;">${escapeEmailHtml(data.phone)}</a></td></tr>
+      <tr><td style="padding:8px 0;font-weight:600;">Email</td><td style="padding:8px 0;">${data.email ? escapeEmailHtml(data.email) : '<span style="color:#94a3b8;">Not provided</span>'}</td></tr>
+    </table>
+    <div style="margin-top:20px;padding-top:16px;border-top:1px solid #f1f5f9;text-align:center;">
+      <a href="https://kodspot.com/superadmin" style="display:inline-block;padding:10px 24px;background:#c68b52;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;font-size:14px;">Review in Dashboard</a>
+    </div>
+  </div>
+  <div style="padding:12px 24px;background:#f8fafc;text-align:center;font-size:12px;color:#94a3b8;">KodSpot — Digital Menu Management</div>
+</div></body></html>`;
+
+        const textBody = `New Trial Request\n\nRestaurant: ${data.name}\nCity: ${data.city}\nPhone: ${data.phone}\nEmail: ${data.email || 'Not provided'}\n\nReview: https://kodspot.com/superadmin`;
+
         await transporter.sendMail({
           from: `KodSpot <${SES_FROM}>`,
-          to: process.env.ADMIN_NOTIFICATION_EMAIL || SES_FROM,
-          subject: `New Trial Request — ${data.name} (${data.city})`,
-          text: `New trial request:\n\nRestaurant: ${data.name}\nCity: ${data.city}\nPhone: ${data.phone}\nEmail: ${data.email || 'Not provided'}\n\nLogin to superadmin to review.`
+          to: TRIAL_NOTIFY_EMAIL,
+          subject: `🔔 New Trial Request — ${data.name} (${data.city})`,
+          text: textBody,
+          html: htmlBody
         });
+        fastify.log.info(`Trial request notification sent to ${TRIAL_NOTIFY_EMAIL} for ${data.name}`);
+      } else {
+        fastify.log.warn(`Trial request from ${data.name} (${data.city}) — SES not configured, email notification skipped`);
       }
     } catch (emailErr) {
-      fastify.log.error(`Trial request notification email failed: ${emailErr.message}`);
+      fastify.log.error(`Trial request notification email failed for ${data.name}: ${emailErr.message}`);
     }
 
     return {

@@ -1192,6 +1192,15 @@ function setupEventListeners() {
   document.getElementById('saReviewUrlSaveBtn').addEventListener('click', saveSaReviewUrl);
   document.getElementById('saReviewUrlClearBtn').addEventListener('click', clearSaReviewUrl);
 
+  // QR theme picker — CSP-safe event delegation (replaces inline onclick)
+  var saQrPicker = document.getElementById('saQrThemePicker');
+  if (saQrPicker) {
+    saQrPicker.addEventListener('click', function(e) {
+      var swatch = e.target.closest('[data-theme]');
+      if (swatch) changeSaQrTheme(swatch.dataset.theme);
+    });
+  }
+
   // Escape key to close modals
   document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {
@@ -1756,7 +1765,7 @@ function renderSaQrThemePicker() {
     var t = themes[key];
     var active = key === current;
     var pillTxt = t.pillTxt || t.bgDark;
-    html += '<div style="min-width:72px;max-width:72px;border:2px solid ' + (active ? '#f59e0b' : '#e2e8f0') + ';border-radius:8px;cursor:pointer;overflow:hidden;text-align:center;transition:all 0.2s;scroll-snap-align:start;' + (active ? 'box-shadow:0 0 0 3px rgba(245,158,11,0.18);' : '') + '" onclick="changeSaQrTheme(\'' + key + '\')">'
+    html += '<div data-theme="' + key + '" style="min-width:72px;max-width:72px;border:2px solid ' + (active ? '#f59e0b' : '#e2e8f0') + ';border-radius:8px;cursor:pointer;overflow:hidden;text-align:center;transition:all 0.2s;scroll-snap-align:start;' + (active ? 'box-shadow:0 0 0 3px rgba(245,158,11,0.18);' : '') + '">'
       + '<div style="aspect-ratio:5/7;padding:5px 4px 3px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;background:linear-gradient(160deg,' + t.bgLight + ',' + t.bgMid + ',' + t.bgDark + ');position:relative;">'
       + '<div style="position:absolute;inset:3px;border:1px solid ' + t.gold + ';opacity:0.5;border-radius:2px;pointer-events:none;"></div>'
       + '<div style="font-family:Georgia,serif;font-weight:700;font-size:0.45rem;color:' + t.gold + ';letter-spacing:0.1em;">MENU</div>'
@@ -1788,7 +1797,6 @@ async function changeSaQrTheme(themeId) {
     showToast(e.message || 'Failed to change theme', 'error');
   }
 }
-window.changeSaQrTheme = changeSaQrTheme;
 
 // ==================== REVIEW URL (SUPERADMIN) ====================
 function initSaReviewUrlUI() {
