@@ -1009,17 +1009,46 @@ var KodSpotQR = (function () {
   }
 
   /* ══════════════════════════════════════════════════════════════════════
-   *  CUSTOM SIZE — temporarily override W/H for custom print dimensions
+   *  CUSTOM SIZE — render at native A6, then rescale to target dimensions
+   *  This preserves all hardcoded design coordinates perfectly.
    * ══════════════════════════════════════════════════════════════════════ */
+  function rescaleBlob(srcBlob, tw, th) {
+    return new Promise(function (ok) {
+      var u = URL.createObjectURL(srcBlob);
+      var img = new Image();
+      img.onload = function () {
+        var c = document.createElement('canvas');
+        c.width = tw; c.height = th;
+        var ctx = c.getContext('2d');
+        ctx.drawImage(img, 0, 0, tw, th);
+        URL.revokeObjectURL(u);
+        c.toBlob(ok, 'image/png', 1.0);
+      };
+      img.onerror = function () { URL.revokeObjectURL(u); ok(null); };
+      img.src = u;
+    });
+  }
+
+  async function generateFrontCustom(cfg, cw, ch) {
+    var blob = await generateFront(cfg);
+    if (!blob) return null;
+    return rescaleBlob(blob, cw, ch);
+  }
+
+  async function generateBackCustom(cfg, cw, ch) {
+    var blob = await generateBack(cfg);
+    if (!blob) return null;
+    return rescaleBlob(blob, cw, ch);
+  }
+
   async function generatePrintReadyCustom(cfg, cw, ch) {
-    var origW = W, origH = H;
-    W = cw; H = ch;
-    try {
-      var result = await generatePrintReady(cfg);
-      return result;
-    } finally {
-      W = origW; H = origH;
-    }
+    var blob = await generatePrintReady(cfg);
+    if (!blob) return null;
+    // Print-ready is 2 cards stacked: scale width to cw, height proportionally
+    var scale = cw / W;
+    var origPrintH = H + 120 + 80 + H + 120 + 80; // matches generatePrintReady totalH
+    var targetPrintH = Math.round(origPrintH * scale);
+    return rescaleBlob(blob, cw, targetPrintH);
   }
 
   /* ══════════════════════════════════════════════════════════════════════
@@ -1042,6 +1071,8 @@ var KodSpotQR = (function () {
     generateFront: generateFront,
     generateBack: generateBack,
     generatePrintReady: generatePrintReady,
+    generateFrontCustom: generateFrontCustom,
+    generateBackCustom: generateBackCustom,
     generatePrintReadyCustom: generatePrintReadyCustom,
     downloadBlob: downloadBlob,
     safeName: safeName,
