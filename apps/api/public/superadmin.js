@@ -1186,6 +1186,7 @@ function setupEventListeners() {
   document.getElementById('qrDownloadPrintReadyBtn').addEventListener('click', downloadSaQrPrintReady);
   document.getElementById('qrDownloadSvgBtn').addEventListener('click', downloadSaQrSvg);
   document.getElementById('qrShareBtn').addEventListener('click', shareSaQr);
+  document.getElementById('qrCustomPrintBtn').addEventListener('click', downloadSaQrCustomPrint);
   document.getElementById('saReviewUrlSaveBtn').addEventListener('click', saveSaReviewUrl);
   document.getElementById('saReviewUrlClearBtn').addEventListener('click', clearSaReviewUrl);
 
@@ -1552,6 +1553,8 @@ function closeQrModal() {
 
 // ── QR Card Generation (delegates to shared qr-card.js module) ──────────
 
+var _qrBusy = false; // concurrency guard — prevents W/H race in generatePrintReadyCustom
+
 function getSaQrCardConfig() {
   if (!qrModalState.svgCache || !qrModalState.slug) return null;
   var cfg = {
@@ -1576,8 +1579,10 @@ function getSaQrCardConfig() {
 }
 
 async function downloadSaQrPng() {
+  if (_qrBusy) { showToast('Please wait, another download is generating...', 'error'); return; }
   var cfg = getSaQrCardConfig();
   if (!cfg) { showToast('QR code not loaded yet', 'error'); return; }
+  _qrBusy = true;
   showToast('Generating high-res QR card (600 DPI)...');
   try {
     var blob = await KodSpotQR.generateFront(cfg);
@@ -1587,12 +1592,16 @@ async function downloadSaQrPng() {
   } catch (e) {
     console.error('PNG download error:', e);
     showToast('Failed to generate PNG', 'error');
+  } finally {
+    _qrBusy = false;
   }
 }
 
 async function downloadSaQrBackPng() {
+  if (_qrBusy) { showToast('Please wait, another download is generating...', 'error'); return; }
   var cfg = getSaQrCardConfig();
   if (!cfg) { showToast('QR code not loaded yet', 'error'); return; }
+  _qrBusy = true;
   showToast('Generating back side...');
   try {
     var blob = await KodSpotQR.generateBack(cfg);
@@ -1602,12 +1611,16 @@ async function downloadSaQrBackPng() {
   } catch (e) {
     console.error('PNG download error:', e);
     showToast('Failed to generate PNG', 'error');
+  } finally {
+    _qrBusy = false;
   }
 }
 
 async function downloadSaQrPrintReady() {
+  if (_qrBusy) { showToast('Please wait, another download is generating...', 'error'); return; }
   var cfg = getSaQrCardConfig();
   if (!cfg) { showToast('QR code not loaded yet', 'error'); return; }
+  _qrBusy = true;
   showToast('Generating print-ready file (both sides)...');
   try {
     var blob = await KodSpotQR.generatePrintReady(cfg);
@@ -1617,6 +1630,27 @@ async function downloadSaQrPrintReady() {
   } catch (e) {
     console.error('Print-ready download error:', e);
     showToast('Failed to generate. Please try again.', 'error');
+  } finally {
+    _qrBusy = false;
+  }
+}
+
+async function downloadSaQrCustomPrint() {
+  if (_qrBusy) { showToast('Please wait, another download is generating...', 'error'); return; }
+  var cfg = getSaQrCardConfig();
+  if (!cfg) { showToast('QR code not loaded yet', 'error'); return; }
+  _qrBusy = true;
+  showToast('Generating 10.1×15.2 cm print file...');
+  try {
+    var blob = await KodSpotQR.generatePrintReadyCustom(cfg, 2387, 3591);
+    if (!blob) return;
+    KodSpotQR.downloadBlob(blob, KodSpotQR.safeName(qrModalState.name) + '_QR_Print_101x152.png');
+    showToast('Custom print file downloaded!', 'success');
+  } catch (e) {
+    console.error('Custom print download error:', e);
+    showToast('Failed to generate. Please try again.', 'error');
+  } finally {
+    _qrBusy = false;
   }
 }
 
@@ -1629,6 +1663,8 @@ function downloadSaQrSvg() {
 }
 
 async function shareSaQr() {
+  if (_qrBusy) { showToast('Please wait, another download is generating...', 'error'); return; }
+  _qrBusy = true;
   try {
     var cfg = getSaQrCardConfig();
     if (!cfg) { showToast('QR code not ready', 'error'); return; }
@@ -1653,13 +1689,16 @@ async function shareSaQr() {
       });
       showToast('Link shared!', 'success');
     } else {
-      downloadSaQrPng();
+      KodSpotQR.downloadBlob(blob, sn + '_QR_Front.png');
+      showToast('Downloaded! (Share not supported on this device)', 'success');
     }
   } catch (e) {
     if (e.name !== 'AbortError') {
       console.error('Share error:', e);
       showToast('Sharing failed. Try downloading instead.', 'error');
     }
+  } finally {
+    _qrBusy = false;
   }
 }
 
