@@ -1009,6 +1009,20 @@ var KodSpotQR = (function () {
   }
 
   /* ══════════════════════════════════════════════════════════════════════
+   *  CUSTOM SIZE — temporarily override W/H for custom print dimensions
+   * ══════════════════════════════════════════════════════════════════════ */
+  async function generatePrintReadyCustom(cfg, cw, ch) {
+    var origW = W, origH = H;
+    W = cw; H = ch;
+    try {
+      var result = await generatePrintReady(cfg);
+      return result;
+    } finally {
+      W = origW; H = origH;
+    }
+  }
+
+  /* ══════════════════════════════════════════════════════════════════════
    *  DOWNLOAD HELPER
    * ══════════════════════════════════════════════════════════════════════ */
   function downloadBlob(blob, filename) {
@@ -1028,6 +1042,7 @@ var KodSpotQR = (function () {
     generateFront: generateFront,
     generateBack: generateBack,
     generatePrintReady: generatePrintReady,
+    generatePrintReadyCustom: generatePrintReadyCustom,
     downloadBlob: downloadBlob,
     safeName: safeName,
     W: W,
