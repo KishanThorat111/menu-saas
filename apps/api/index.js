@@ -3037,6 +3037,46 @@ function registerRoutes() {
       return { success: true, reviewUrl: updated.reviewUrl || '' };
     });
 
+    // ==================== SUPERADMIN: SET QR THEME FOR ANY HOTEL ====================
+    app.patch('/admin/hotels/:id/qr-theme', async (request, reply) => {
+      const { id } = request.params;
+      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
+        return reply.code(400).send({ error: 'Invalid hotel ID format' });
+      }
+      const schema = z.object({
+        qrTheme: z.enum(ALL_QR_THEMES)
+      });
+      let data;
+      try {
+        data = schema.parse(request.body);
+      } catch (err) {
+        if (err.name === 'ZodError') return reply.code(400).send({ error: 'Invalid theme' });
+        throw err;
+      }
+
+      const hotel = await prisma.hotel.findUnique({ where: { id }, select: { id: true, qrTheme: true } });
+      if (!hotel) return reply.code(404).send({ error: 'Hotel not found' });
+
+      const updated = await prisma.hotel.update({
+        where: { id },
+        data: { qrTheme: data.qrTheme }
+      });
+
+      await prisma.auditLog.create({
+        data: {
+          hotelId: id,
+          actorType: 'admin',
+          action: 'qr_theme_changed',
+          entityType: 'Hotel',
+          entityId: id,
+          oldValue: { qrTheme: hotel.qrTheme },
+          newValue: { qrTheme: data.qrTheme }
+        }
+      });
+
+      return { success: true, qrTheme: updated.qrTheme };
+    });
+
     // ==================== SUPERADMIN: LOGO UPLOAD FOR ANY HOTEL ====================
     app.post('/admin/hotels/:id/logo', async (request, reply) => {
       const { id } = request.params;

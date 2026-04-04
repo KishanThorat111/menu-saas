@@ -1186,6 +1186,8 @@ function setupEventListeners() {
   document.getElementById('qrDownloadPrintReadyBtn').addEventListener('click', downloadSaQrPrintReady);
   document.getElementById('qrDownloadSvgBtn').addEventListener('click', downloadSaQrSvg);
   document.getElementById('qrShareBtn').addEventListener('click', shareSaQr);
+  document.getElementById('qrCustomFrontBtn').addEventListener('click', downloadSaQrCustomFront);
+  document.getElementById('qrCustomBackBtn').addEventListener('click', downloadSaQrCustomBack);
   document.getElementById('qrCustomPrintBtn').addEventListener('click', downloadSaQrCustomPrint);
   document.getElementById('saReviewUrlSaveBtn').addEventListener('click', saveSaReviewUrl);
   document.getElementById('saReviewUrlClearBtn').addEventListener('click', clearSaReviewUrl);
@@ -1529,6 +1531,9 @@ function openQrModal(hotelId, hotelName, slug, city, logoUrl, plan, reviewUrl, u
   // Init review URL UI
   initSaReviewUrlUI();
 
+  // Render theme picker
+  renderSaQrThemePicker();
+
   // Fetch review QR SVG if reviewUrl exists
   if (reviewUrl) {
     fetch('/api/qr/review/' + hotelId, { credentials: 'include' })
@@ -1635,6 +1640,44 @@ async function downloadSaQrPrintReady() {
   }
 }
 
+async function downloadSaQrCustomFront() {
+  if (_qrBusy) { showToast('Please wait, another download is generating...', 'error'); return; }
+  var cfg = getSaQrCardConfig();
+  if (!cfg) { showToast('QR code not loaded yet', 'error'); return; }
+  _qrBusy = true;
+  showToast('Generating 10.1×15.2 cm front...');
+  try {
+    var blob = await KodSpotQR.generateFrontCustom(cfg, 2387, 3591);
+    if (!blob) return;
+    KodSpotQR.downloadBlob(blob, KodSpotQR.safeName(qrModalState.name) + '_QR_Front_101x152.png');
+    showToast('Custom front downloaded!', 'success');
+  } catch (e) {
+    console.error('Custom front download error:', e);
+    showToast('Failed to generate. Please try again.', 'error');
+  } finally {
+    _qrBusy = false;
+  }
+}
+
+async function downloadSaQrCustomBack() {
+  if (_qrBusy) { showToast('Please wait, another download is generating...', 'error'); return; }
+  var cfg = getSaQrCardConfig();
+  if (!cfg) { showToast('QR code not loaded yet', 'error'); return; }
+  _qrBusy = true;
+  showToast('Generating 10.1×15.2 cm back...');
+  try {
+    var blob = await KodSpotQR.generateBackCustom(cfg, 2387, 3591);
+    if (!blob) return;
+    KodSpotQR.downloadBlob(blob, KodSpotQR.safeName(qrModalState.name) + '_QR_Back_101x152.png');
+    showToast('Custom back downloaded!', 'success');
+  } catch (e) {
+    console.error('Custom back download error:', e);
+    showToast('Failed to generate. Please try again.', 'error');
+  } finally {
+    _qrBusy = false;
+  }
+}
+
 async function downloadSaQrCustomPrint() {
   if (_qrBusy) { showToast('Please wait, another download is generating...', 'error'); return; }
   var cfg = getSaQrCardConfig();
@@ -1699,6 +1742,54 @@ async function shareSaQr() {
     }
   } finally {
     _qrBusy = false;
+  }
+}
+
+// ==================== QR THEME PICKER (SUPERADMIN) ====================
+function renderSaQrThemePicker() {
+  var container = document.getElementById('saQrThemePicker');
+  if (!container) return;
+  var themes = KodSpotQR.THEMES;
+  var current = qrModalState.qrTheme || 'walnut';
+  var html = '';
+  Object.keys(themes).forEach(function(key) {
+    var t = themes[key];
+    var active = key === current;
+    var pillTxt = t.pillTxt || t.bgDark;
+    html += '<div style="min-width:72px;max-width:72px;border:2px solid ' + (active ? '#f59e0b' : '#e2e8f0') + ';border-radius:8px;cursor:pointer;overflow:hidden;text-align:center;transition:all 0.2s;scroll-snap-align:start;' + (active ? 'box-shadow:0 0 0 3px rgba(245,158,11,0.18);' : '') + '" onclick="changeSaQrTheme(\'' + key + '\')">'
+      + '<div style="aspect-ratio:5/7;padding:5px 4px 3px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;background:linear-gradient(160deg,' + t.bgLight + ',' + t.bgMid + ',' + t.bgDark + ');position:relative;">'
+      + '<div style="position:absolute;inset:3px;border:1px solid ' + t.gold + ';opacity:0.5;border-radius:2px;pointer-events:none;"></div>'
+      + '<div style="font-family:Georgia,serif;font-weight:700;font-size:0.45rem;color:' + t.gold + ';letter-spacing:0.1em;">MENU</div>'
+      + '<div style="width:36%;aspect-ratio:1;background:' + t.white + ';border-radius:2px;"></div>'
+      + '<div style="font-family:Georgia,serif;font-size:0.25rem;color:' + t.cream + ';">Scan ➜ View</div>'
+      + '<div style="border-radius:99px;padding:0 4px;font-size:0.25rem;font-weight:600;font-family:Georgia,serif;background:' + t.gold + ';color:' + pillTxt + ';">kodspot</div>'
+      + '</div>'
+      + '<div style="font-size:0.56rem;font-weight:600;padding:2px 1px;border-top:1px solid #e2e8f0;background:#f8fafc;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;' + (active ? 'background:#fffbeb;color:#92400e;' : '') + '">' + (active ? '✓ ' : '') + t.label + '</div>'
+      + '</div>';
+  });
+  container.innerHTML = html;
+}
+
+async function changeSaQrTheme(themeId) {
+  if (!qrModalState.id) return;
+  if (qrModalState.qrTheme === themeId) return;
+  try {
+    var res = await fetch('/admin/hotels/' + qrModalState.id + '/qr-theme', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ qrTheme: themeId })
+    });
+    var data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to change theme');
+    qrModalState.qrTheme = data.qrTheme || themeId;
+    // Update the source button data attribute so re-opening preserves the choice
+    var srcBtn = document.querySelector('.qr-hotel-btn[data-id="' + qrModalState.id + '"]');
+    if (srcBtn) srcBtn.dataset.qrtheme = qrModalState.qrTheme;
+    renderSaQrThemePicker();
+    showToast('Theme updated to ' + (KodSpotQR.THEMES[themeId] || {}).label, 'success');
+  } catch (e) {
+    showToast(e.message || 'Failed to change theme', 'error');
   }
 }
 
