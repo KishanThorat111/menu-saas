@@ -515,6 +515,11 @@
           <input type="email" id="trialEmail" placeholder="info@restaurant.com" maxlength="200">
         </div>
       </div>
+      <!-- Honeypot — hidden from real users, bots auto-fill it -->
+      <div style="position:absolute;left:-9999px;top:-9999px;" aria-hidden="true" tabindex="-1">
+        <label for="trialWebsite">Website</label>
+        <input type="text" id="trialWebsite" name="website" autocomplete="off" tabindex="-1">
+      </div>
       <div class="consent-row">
         <input type="checkbox" id="trialConsent">
         <label for="trialConsent">I agree to KodSpot's <a href="/privacy.html" target="_blank">Privacy Policy</a> and <a href="/terms.html" target="_blank">Terms of Service</a></label>
@@ -615,12 +620,16 @@ async function submitTrialRequest(){
   var city=document.getElementById('trialCity').value.trim();
   var phone=document.getElementById('trialPhone').value.trim();
   var email=document.getElementById('trialEmail').value.trim();
+  var website=document.getElementById('trialWebsite').value; // honeypot
   if(!name||!city||!phone){alert('Please fill in restaurant name, city, and phone number.');return;}
   if(!/^\d{10,15}$/.test(phone)){alert('Please enter a valid phone number (10-15 digits).');return;}
   if(!document.getElementById('trialConsent').checked){alert('Please agree to the Privacy Policy and Terms of Service.');return;}
   btn.disabled=true;btn.textContent='Submitting...';
   try{
-    var res=await fetch('/auth/request-trial',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:name,city:city,phone:phone,email:email||undefined})});
+    var body={name:name,city:city,phone:phone,consent:true};
+    if(email)body.email=email;
+    if(website)body.website=website;
+    var res=await fetch('/auth/request-trial',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
     var data=await res.json();
     if(!res.ok)throw new Error(data.error||'Request failed');
     document.getElementById('trialForm').style.display='none';
