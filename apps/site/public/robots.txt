@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://kodspot.com/sitemap-index.xml

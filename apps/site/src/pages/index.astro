@@ -1,0 +1,116 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import ProductCard from '../components/ProductCard.astro';
+import Stats from '../components/Stats.astro';
+import SectionHeading from '../components/SectionHeading.astro';
+import FeatureGrid from '../components/FeatureGrid.astro';
+import CTASection from '../components/CTASection.astro';
+import { PRODUCTS, SITE, CLIENT_LOGOS } from '../lib/site';
+
+const pillars = [
+  { title: 'Multi-tenant by design', desc: 'One platform, many organisations. Strict tenant isolation at every database row, route, and cache key.' },
+  { title: 'AI with cost discipline', desc: 'SQL-first router with per-tenant token caps. Vertex AI, Gemini, Azure OpenAI — chosen per workload.' },
+  { title: 'DPDPA-aligned compliance', desc: 'Soft delete with scheduled purge, encrypted PII, audit logs on every privileged action, IP hashing for analytics.' },
+  { title: 'Production-grade delivery', desc: 'Containerised, health-checked, encrypted backups, GitHub Actions CI/CD, PWA with offline queues for field use.' },
+  { title: 'Built for India', desc: 'UPI Pay, Razorpay, regional carriers, low-bandwidth mobile flows, vernacular-ready surfaces.' },
+  { title: 'Single founder, full stack', desc: 'No hand-offs. The same engineer designs the schema, ships the APIs, hardens the infra and writes this paragraph.' }
+];
+---
+<BaseLayout title={SITE.tagline} description={SITE.description}>
+  {/* HERO */}
+  <section class="relative overflow-hidden">
+    <div class="absolute inset-0 grid-bg opacity-60 pointer-events-none"></div>
+    <div class="absolute inset-x-0 top-0 h-[480px] ambient-glow pointer-events-none"></div>
+
+    <div class="container-page relative pt-20 sm:pt-28 lg:pt-32 pb-16 sm:pb-24">
+      <div class="max-w-3xl">
+        <span class="chip" data-reveal>
+          <span class="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+          Three SaaS platforms in production
+        </span>
+        <h1 class="heading-1 mt-6" data-reveal data-reveal-delay="1">
+          Operations technology for
+          <span class="gradient-text">physical businesses.</span>
+        </h1>
+        <p class="lead mt-6" data-reveal data-reveal-delay="2">
+          {SITE.description}
+        </p>
+        <div class="mt-8 flex flex-wrap gap-3" data-reveal data-reveal-delay="3">
+          <a href="/products" class="btn-primary">
+            Explore products
+            <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14M13 5l7 7-7 7"/></svg>
+          </a>
+          <a href="/technology" class="btn-outline">See the technology</a>
+          <a href="/contact" class="btn-ghost">Talk to us</a>
+        </div>
+
+        <dl class="mt-10 grid grid-cols-3 gap-6 max-w-xl" data-reveal data-reveal-delay="4">
+          <div>
+            <dt class="text-xs muted uppercase tracking-wider">Hosting</dt>
+            <dd class="mt-1 text-sm font-medium">GCP · multi-cloud ready</dd>
+          </div>
+          <div>
+            <dt class="text-xs muted uppercase tracking-wider">Stack</dt>
+            <dd class="mt-1 text-sm font-medium">Fastify · Prisma · Postgres</dd>
+          </div>
+          <div>
+            <dt class="text-xs muted uppercase tracking-wider">AI</dt>
+            <dd class="mt-1 text-sm font-medium">Vertex · Gemini · Azure OpenAI</dd>
+          </div>
+        </dl>
+      </div>
+    </div>
+  </section>
+
+  {/* STATS */}
+  <Stats />
+
+  {/* TRUSTED BY */}
+  <section class="container-page mt-20 sm:mt-24">
+    <p class="text-center text-xs font-semibold uppercase tracking-[0.2em] text-ink-500 dark:text-ink-400" data-reveal>
+      Trusted by institutions in Belagavi
+    </p>
+    <ul class="mt-8 grid gap-4 sm:grid-cols-3" role="list">
+      {CLIENT_LOGOS.map((c, i) => (
+        <li
+          data-reveal
+          data-reveal-delay={i + 1}
+          class="surface-solid p-6 flex flex-col items-center justify-center text-center min-h-[112px]"
+        >
+          <span class="font-display text-lg font-semibold tracking-tight">{c.short}</span>
+          <span class="mt-1 text-xs muted leading-snug">{c.name}</span>
+        </li>
+      ))}
+    </ul>
+    <p class="mt-6 text-center text-xs muted" data-reveal>
+      KLE Society — one of South India’s largest education and healthcare groups.
+    </p>
+  </section>
+
+  {/* PRODUCTS */}
+  <section class="container-page mt-24 sm:mt-32">
+    <SectionHeading
+      eyebrow="Products"
+      title="Three production platforms, one engineering foundation."
+      lead="Each KodSpot product solves a specific operational problem for hospitals, hotels, and restaurants — built on the same multi-tenant core."
+    />
+    <div class="mt-12 grid gap-6 lg:grid-cols-3">
+      {PRODUCTS.map((p, i) => <ProductCard product={p} delay={i + 1} />)}
+    </div>
+  </section>
+
+  {/* PILLARS */}
+  <section class="container-page mt-24 sm:mt-32">
+    <SectionHeading
+      eyebrow="What makes KodSpot different"
+      title="Engineering discipline, not feature count."
+      lead="Every platform we ship inherits the same security, compliance, and cost-control posture from day one."
+    />
+    <div class="mt-12">
+      <FeatureGrid features={pillars} />
+    </div>
+  </section>
+
+  {/* CTA */}
+  <CTASection />
+</BaseLayout>

@@ -1,0 +1,54 @@
+---
+import Logo from './Logo.astro';
+import { FOOTER_GROUPS, SITE } from '../lib/site';
+const year = new Date().getFullYear();
+---
+<footer class="mt-24 border-t border-ink-200/70 dark:border-ink-800/70 bg-ink-50/40 dark:bg-ink-950/60">
+  <div class="container-page py-16">
+    <div class="grid gap-12 lg:grid-cols-12">
+      <div class="lg:col-span-4">
+        <a href="/" class="flex items-center gap-2 font-display font-semibold">
+          <Logo class="h-8 w-8" />
+          <span class="text-lg">{SITE.name}</span>
+        </a>
+        <p class="mt-4 max-w-sm text-sm text-ink-600 dark:text-ink-400 leading-relaxed">
+          {SITE.description}
+        </p>
+        <p class="mt-6 text-xs muted">
+          {SITE.legal.structure} · {SITE.legal.udyam}<br />
+          {SITE.city}
+        </p>
+      </div>
+
+      <div class="lg:col-span-8 grid gap-8 grid-cols-2 sm:grid-cols-4">
+        {FOOTER_GROUPS.map((group) => (
+          <div>
+            <h3 class="text-xs font-semibold uppercase tracking-wider text-ink-500 dark:text-ink-400">
+              {group.title}
+            </h3>
+            <ul class="mt-4 space-y-2.5">
+              {group.links.map((link) => (
+                <li>
+                  <a
+                    href={link.href}
+                    class="text-sm text-ink-700 dark:text-ink-300 hover:text-brand-600 dark:hover:text-brand-300 transition-colors"
+                  >
+                    {link.label}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </div>
+    </div>
+
+    <div class="mt-14 border-t border-ink-200/70 dark:border-ink-800/70 pt-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-xs muted">
+      <p>© {year} {SITE.legalName}. All rights reserved.</p>
+      <p>
+        Built in {SITE.city}.
+        <a href="/contact" class="link-underline ml-1">Get in touch</a>
+      </p>
+    </div>
+  </div>
+</footer>

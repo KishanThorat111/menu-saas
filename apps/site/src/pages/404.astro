@@ -1,0 +1,16 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+<BaseLayout title="Page not found" noindex>
+  <section class="container-page pt-32 pb-24 text-center">
+    <p class="text-sm font-semibold uppercase tracking-[0.18em] text-brand-600 dark:text-brand-300">404</p>
+    <h1 class="heading-1 mt-4">This page does not exist.</h1>
+    <p class="lead mt-4 max-w-xl mx-auto">
+      The link you followed may be broken, or the page may have moved.
+    </p>
+    <div class="mt-8 flex justify-center gap-3">
+      <a href="/" class="btn-primary">Back to homepage</a>
+      <a href="/contact" class="btn-outline">Contact us</a>
+    </div>
+  </section>
+</BaseLayout>

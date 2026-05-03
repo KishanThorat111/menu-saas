@@ -97,10 +97,32 @@ services:
     depends_on:
       api:
         condition: service_healthy
+      site:
+        condition: service_healthy
     deploy:
       resources:
         limits:
           memory: 100M
+    networks:
+      - menu-network
+
+  site:
+    build: ./apps/site
+    container_name: menu-site
+    restart: unless-stopped
+    # Port NOT exposed to host — only reachable via Caddy on the internal network
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1/health.txt || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          memory: 96M
+        reservations:
+          memory: 32M
     networks:
       - menu-network
 

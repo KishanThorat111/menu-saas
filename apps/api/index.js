@@ -1521,6 +1521,98 @@ function registerRoutes() {
     };
   });
 
+  // ==================== CONTACT FORM (PUBLIC, ADDITIVE) ====================
+  // Powers the contact form on the new KodSpot company website (apps/site).
+  // Email-only — no DB write, no schema changes. Sends an SES notification
+  // to ADMIN_NOTIFICATION_EMAIL.
+  const CONTACT_NOTIFY_EMAIL = process.env.ADMIN_NOTIFICATION_EMAIL || 'support@kodspot.com';
+
+  fastify.post('/api/contact', {
+    config: {
+      rateLimit: {
+        max: 10,
+        timeWindow: 3600000,
+        keyGenerator: (req) => `contact:${req.ip}`
+      }
+    }
+  }, async (request, reply) => {
+    const schema = z.object({
+      name: z.string().min(1).max(200).transform(v => v.trim()),
+      email: z.string().email().max(200).transform(v => v.trim()),
+      phone: z.string().max(20).optional().default('').transform(v => (v || '').trim()),
+      interest: z.enum(['menu', 'housekeeping', 'electrical', 'services', 'partnership', 'other']).default('other'),
+      message: z.string().min(10).max(4000).transform(v => v.trim()),
+      consent: z.literal(true, { errorMap: () => ({ message: 'Consent is required' }) }),
+      website: z.string().max(500).optional().default('') // Honeypot
+    });
+
+    const data = schema.parse(request.body);
+
+    // Honeypot — silently succeed for bots
+    if (data.website) {
+      return { success: true, message: 'Thanks — we will get back to you within one business day.' };
+    }
+
+    const interestLabel = ({
+      menu: 'KodSpot Menu',
+      housekeeping: 'KodSpot Housekeeping',
+      electrical: 'KodSpot Electrical',
+      services: 'Services / custom build',
+      partnership: 'Partnership / press',
+      other: 'Other'
+    })[data.interest] || 'Other';
+
+    try {
+      const transporter = getSesTransporter();
+      if (transporter) {
+        const messageHtml = escapeEmailHtml(data.message).replace(/\n/g, '<br>');
+        const htmlBody = `<!DOCTYPE html><html><body style="margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f8fafc;">
+<div style="max-width:560px;margin:24px auto;background:#fff;border-radius:12px;border:1px solid #e2e8f0;overflow:hidden;">
+  <div style="background:linear-gradient(135deg,#c68b52,#a0714a);padding:20px 24px;">
+    <h2 style="margin:0;color:#fff;font-size:18px;">📬 New Contact Enquiry</h2>
+    <p style="margin:4px 0 0;color:#fde9d6;font-size:13px;">${escapeEmailHtml(interestLabel)}</p>
+  </div>
+  <div style="padding:24px;">
+    <table style="width:100%;border-collapse:collapse;font-size:14px;color:#334155;">
+      <tr><td style="padding:8px 0;font-weight:600;width:110px;">Name</td><td style="padding:8px 0;">${escapeEmailHtml(data.name)}</td></tr>
+      <tr><td style="padding:8px 0;font-weight:600;">Email</td><td style="padding:8px 0;"><a href="mailto:${escapeEmailHtml(data.email)}" style="color:#c68b52;">${escapeEmailHtml(data.email)}</a></td></tr>
+      <tr><td style="padding:8px 0;font-weight:600;">Phone</td><td style="padding:8px 0;">${data.phone ? escapeEmailHtml(data.phone) : '<span style="color:#94a3b8;">Not provided</span>'}</td></tr>
+      <tr><td style="padding:8px 0;font-weight:600;vertical-align:top;">Interest</td><td style="padding:8px 0;">${escapeEmailHtml(interestLabel)}</td></tr>
+    </table>
+    <div style="margin-top:20px;padding:16px;background:#f8fafc;border-radius:8px;border:1px solid #e2e8f0;">
+      <p style="margin:0 0 8px;font-size:12px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;">Message</p>
+      <p style="margin:0;color:#1e293b;font-size:14px;line-height:1.6;">${messageHtml}</p>
+    </div>
+    <p style="margin:16px 0 0;font-size:12px;color:#94a3b8;">From IP ${escapeEmailHtml(request.ip)} · ${new Date().toISOString()}</p>
+  </div>
+  <div style="padding:12px 24px;background:#f8fafc;text-align:center;font-size:12px;color:#94a3b8;">KodSpot — kodspot.com</div>
+</div></body></html>`;
+
+        const textBody = `New Contact Enquiry (${interestLabel})\n\nName: ${data.name}\nEmail: ${data.email}\nPhone: ${data.phone || 'Not provided'}\nInterest: ${interestLabel}\n\nMessage:\n${data.message}\n\nFrom IP ${request.ip} · ${new Date().toISOString()}`;
+
+        await transporter.sendMail({
+          from: `KodSpot <${SES_FROM}>`,
+          to: CONTACT_NOTIFY_EMAIL,
+          replyTo: data.email,
+          subject: `📬 New Contact: ${data.name} (${interestLabel})`,
+          text: textBody,
+          html: htmlBody
+        });
+        fastify.log.info(`Contact enquiry from ${data.email} (${data.interest}) sent to ${CONTACT_NOTIFY_EMAIL}`);
+      } else {
+        fastify.log.warn(`Contact enquiry from ${data.email} — SES not configured, email skipped`);
+      }
+    } catch (emailErr) {
+      fastify.log.error(`Contact enquiry email failed for ${data.email}: ${emailErr.message}`);
+      // Do not 500 the user — they shouldn't see infra errors. Acknowledge and rely on logs.
+    }
+
+    return {
+      success: true,
+      message: 'Thanks — we will get back to you within one business day.'
+    };
+  });
+
   // Hotel Owner Login — 6-char base32 code + 8-digit PIN
   fastify.post('/auth/login', {
     config: { rateLimit: loginSlugRateLimit }

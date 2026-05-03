@@ -1,0 +1,32 @@
+# Internal Caddy serving the static Astro build on port 80.
+# This sits behind the front-door Caddy at the project root, on the docker network only.
+
+{
+	auto_https off
+	admin off
+}
+
+:80 {
+	root * /srv
+	encode zstd gzip
+
+	# Long-cache hashed assets emitted by Astro
+	@astro_assets path /_astro/* /assets/*
+	header @astro_assets Cache-Control "public, max-age=31536000, immutable"
+
+	# Static fonts/images at root
+	@static_files path *.woff2 *.woff *.ttf *.svg *.png *.jpg *.jpeg *.webp *.avif *.ico
+	header @static_files Cache-Control "public, max-age=2592000"
+
+	# HTML — short cache; outer Caddy may still set its own
+	@html path *.html
+	header @html Cache-Control "public, max-age=300, must-revalidate"
+
+	# Liveness probe
+	respond /health.txt 200 {
+		body "ok"
+	}
+
+	try_files {path} {path}.html {path}/index.html
+	file_server
+}

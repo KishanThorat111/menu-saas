@@ -3,44 +3,91 @@ www.kodspot.com {
 }
 
 kodspot.com {
-    reverse_proxy api:3000 {
-        header_up Host {host}
-        header_up X-Real-IP {remote}
-        header_up X-Forwarded-For {remote}
-        header_up X-Forwarded-Proto {scheme}
-        header_down -Content-Security-Policy
-    }
-
     encode zstd gzip
 
-    # No-cache for admin pages (security-sensitive)
-    header /admin Cache-Control "no-cache, no-store, must-revalidate"
-    header /superadmin Cache-Control "no-cache, no-store, must-revalidate"
-    header /superadmin.html Cache-Control "no-cache, no-store, must-revalidate"
-    header /admin.html Cache-Control "no-cache, no-store, must-revalidate"
-    header /superadmin.js Cache-Control "no-cache, no-store, must-revalidate"
-    header /admin.js Cache-Control "no-cache, no-store, must-revalidate"
-    header /qr-card.js Cache-Control "no-cache, no-store, must-revalidate"
-    header /admin-sw.js Cache-Control "no-cache, no-store, must-revalidate"
-    header /admin.webmanifest Cache-Control "no-cache, must-revalidate"
-    header /superadmin.webmanifest Cache-Control "no-cache, must-revalidate"
-    header /menu.html Cache-Control "public, max-age=0, must-revalidate"
-    header /menu.js Cache-Control "public, max-age=300, stale-while-revalidate=3600"
-    header /m/* Cache-Control "no-cache, must-revalidate"
-    header /privacy.html Cache-Control "public, max-age=86400"
-    header /terms.html Cache-Control "public, max-age=86400"
-    header /fonts/* Cache-Control "public, max-age=31536000, immutable"
+    # ──────────────────────────────────────────────────────────────────────
+    # ALLOWLIST: paths that MUST keep going to the existing Fastify monolith
+    # (paying customer surfaces — public menus, admin/superadmin SPAs, APIs,
+    #  auth, webhooks, PWA assets, legal pages, fonts, favicons referenced
+    #  by the existing PWAs).
+    # Anything NOT in this list falls through to the new static company site.
+    # ──────────────────────────────────────────────────────────────────────
+    @fastify {
+        path /api/*
+        path /auth/*
+        path /webhooks/*
+        path /health
+        path /m/*
+        path /admin /admin/*
+        path /superadmin /superadmin/*
+        path /admin.html /admin.js /admin-sw.js /admin.webmanifest
+        path /superadmin.html /superadmin.js /superadmin.webmanifest
+        path /menu.html /menu.js /qr-card.js
+        path /privacy /privacy.html
+        path /terms /terms.html
+        path /refund /refund.html
+        path /favicon.ico
+        path /favicon-16x16.png /favicon-32x32.png /favicon-48x48.png
+        path /apple-touch-icon.png
+        path /android-chrome-192x192.png /android-chrome-512x512.png
+        path /mstile-150x150.png /browserconfig.xml
+        path /fonts/*
+    }
+
+    handle @fastify {
+        # No-cache for admin pages (security-sensitive)
+        header /admin Cache-Control "no-cache, no-store, must-revalidate"
+        header /superadmin Cache-Control "no-cache, no-store, must-revalidate"
+        header /superadmin.html Cache-Control "no-cache, no-store, must-revalidate"
+        header /admin.html Cache-Control "no-cache, no-store, must-revalidate"
+        header /superadmin.js Cache-Control "no-cache, no-store, must-revalidate"
+        header /admin.js Cache-Control "no-cache, no-store, must-revalidate"
+        header /qr-card.js Cache-Control "no-cache, no-store, must-revalidate"
+        header /admin-sw.js Cache-Control "no-cache, no-store, must-revalidate"
+        header /admin.webmanifest Cache-Control "no-cache, must-revalidate"
+        header /superadmin.webmanifest Cache-Control "no-cache, must-revalidate"
+        header /menu.html Cache-Control "public, max-age=0, must-revalidate"
+        header /menu.js Cache-Control "public, max-age=300, stale-while-revalidate=3600"
+        header /m/* Cache-Control "no-cache, must-revalidate"
+        header /privacy.html Cache-Control "public, max-age=86400"
+        header /terms.html Cache-Control "public, max-age=86400"
+        header /fonts/* Cache-Control "public, max-age=31536000, immutable"
+
+        reverse_proxy api:3000 {
+            header_up Host {host}
+            header_up X-Real-IP {remote}
+            header_up X-Forwarded-For {remote}
+            header_up X-Forwarded-Proto {scheme}
+            header_down -Content-Security-Policy
+        }
+    }
+
+    # ──────────────────────────────────────────────────────────────────────
+    # DEFAULT: new KodSpot company website (static Astro build) on `site:80`
+    # ──────────────────────────────────────────────────────────────────────
+    handle {
+        # Astro emits hashed assets in /_astro/* — long cache + immutable
+        header /_astro/* Cache-Control "public, max-age=31536000, immutable"
+        header /assets/*  Cache-Control "public, max-age=31536000, immutable"
+
+        reverse_proxy site:80 {
+            header_up Host {host}
+            header_up X-Real-IP {remote}
+            header_up X-Forwarded-For {remote}
+            header_up X-Forwarded-Proto {scheme}
+        }
+    }
 
     # Security headers - STRICT for production
     header {
-        Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' https://checkout.razorpay.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' blob: data: https: *.r2.dev; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://lumberjack-cx.razorpay.com https://api.razorpay.com; frame-src https://api.razorpay.com https://checkout.razorpay.com; worker-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests;"
-        
+        Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' https://checkout.razorpay.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' blob: data: https: *.r2.dev; font-src 'self' https://fonts.gstatic.com data:; connect-src 'self' https://lumberjack-cx.razorpay.com https://api.razorpay.com; frame-src https://api.razorpay.com https://checkout.razorpay.com; worker-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests;"
+
         X-Content-Type-Options "nosniff"
         X-Frame-Options "DENY"
         X-XSS-Protection "1; mode=block"
         Referrer-Policy "strict-origin-when-cross-origin"
         Permissions-Policy "accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(self), usb=()"
-        
+
         # HTTPS enforcement
         Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
         -Server
