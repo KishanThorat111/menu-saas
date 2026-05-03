@@ -1,0 +1,65 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import SectionHeading from '../../components/SectionHeading.astro';
+import FeatureGrid from '../../components/FeatureGrid.astro';
+import CTASection from '../../components/CTASection.astro';
+
+const features = [
+  { title: 'Templated inspections', desc: 'Standardised checklists per location type, response types (status / reading / yes-no), per-item thresholds and seeded defaults for new orgs.' },
+  { title: 'Asset lifecycle', desc: 'Twenty-plus asset categories with install date, warranty, maintenance cycles, condition, and a full event timeline per asset.' },
+  { title: 'Failure tracking', desc: 'Severity-tagged failures with acknowledgement, resolution evidence, downtime and resolver attribution. Exportable for compliance.' },
+  { title: 'Alerts & escalations', desc: 'Rule-based engine for late inspections, unresolved failures, overdue maintenance and low attendance. Auto-creates tickets and escalates by round.' },
+  { title: 'Public QR complaints', desc: 'Guest scans a location QR, raises a complaint, and is auto-assigned to the right supervisor. Resolution requires guest review with reject/reopen.' },
+  { title: 'Predictions & AI insights', desc: 'Risk scoring per asset and location, anomaly detection, weekly reports — with per-org token caps and usage logs.' }
+];
+
+const personas = [
+  { title: 'Super Admin', desc: 'Cross-org administration, AI key management and global audit visibility.' },
+  { title: 'Org Admin', desc: 'Locations, templates, assets, alerts, analytics, AI panel and audit logs.' },
+  { title: 'Supervisor', desc: 'Inspections, ticket triage, attendance and roster management for assigned locations.' },
+  { title: 'Electrician', desc: 'PIN login, assigned tickets, evidence-based resolution, real-time notifications, offline queue.' },
+  { title: 'Public Guest', desc: 'QR-scan-based complaint with image, anonymous or named, with a private review link to confirm or reject the resolution.' }
+];
+---
+<BaseLayout
+  title="KodSpot Electrical — Inspection, assets, and complaints"
+  description="Production electrical operations platform for hospitals, hotels and facilities. Inspections, assets, failures, alerts, and a public QR complaint loop with guest review."
+>
+  <section class="container-page pt-20 sm:pt-28">
+    <span class="chip" data-reveal>Production · kodspot.in</span>
+    <h1 class="heading-1 mt-5 max-w-3xl" data-reveal data-reveal-delay="1">
+      Electrical reliability — measured, alerted, and answered.
+    </h1>
+    <p class="lead mt-5 max-w-2xl" data-reveal data-reveal-delay="2">
+      KodSpot Electrical connects inspection, asset lifecycle, failure tracking, alerting and a public QR complaint loop into a single multi-tenant platform — with offline-capable PWA delivery for the field.
+    </p>
+    <div class="mt-8 flex flex-wrap gap-3" data-reveal data-reveal-delay="3">
+      <a href="/contact" class="btn-accent">Talk to us</a>
+      <a href="/case-studies" class="btn-outline">Read a case study</a>
+    </div>
+  </section>
+
+  <section class="container-page mt-20 sm:mt-28">
+    <SectionHeading eyebrow="Capabilities" title="A complete electrical operations loop, from QR to resolution." />
+    <div class="mt-12">
+      <FeatureGrid features={features} />
+    </div>
+  </section>
+
+  <section class="container-page mt-24">
+    <SectionHeading eyebrow="Roles" title="Five role surfaces — production-tested." />
+    <div class="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+      {personas.map((p, i) => (
+        <div data-reveal data-reveal-delay={(i % 3) + 1} class="surface-solid p-6">
+          <h3 class="text-base font-semibold">{p.title}</h3>
+          <p class="mt-2 text-sm muted leading-relaxed">{p.desc}</p>
+        </div>
+      ))}
+    </div>
+  </section>
+
+  <CTASection
+    title="Replace your spreadsheet inspection trail."
+    body="We’ll set up a templated electrical inspection deployment, asset registry and alert rules — talk to us about a guided migration."
+  />
+</BaseLayout>

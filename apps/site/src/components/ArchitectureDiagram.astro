@@ -1,0 +1,120 @@
+---
+// Self-contained inline SVG architecture diagram. Scales fluidly, dark-mode aware via CSS vars.
+---
+<div class="surface-solid p-6 sm:p-8 overflow-hidden">
+  <svg viewBox="0 0 900 540" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="KodSpot multi-tenant platform architecture" class="w-full h-auto text-ink-800 dark:text-ink-100">
+    <defs>
+      <linearGradient id="ark-grad" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%"  stop-color="#e08e3f" stop-opacity="0.85"/>
+        <stop offset="100%" stop-color="#aa5a1d" stop-opacity="0.85"/>
+      </linearGradient>
+      <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+        <path d="M0,0 L10,5 L0,10 z" fill="currentColor" opacity="0.55"/>
+      </marker>
+      <style>
+        .lbl { font: 600 13px Inter, sans-serif; fill: currentColor; }
+        .sub { font: 500 11px Inter, sans-serif; fill: currentColor; opacity: 0.65; }
+        .grp { fill: none; stroke: currentColor; stroke-opacity: 0.18; stroke-dasharray: 4 4; rx: 16; }
+        .box { fill: rgb(255 255 255 / 0.0); stroke: currentColor; stroke-opacity: 0.5; }
+        :root.dark .box-fill { fill: rgb(15 23 42 / 0.6); }
+        .box-fill { fill: rgb(255 255 255 / 0.7); }
+        .conn { stroke: currentColor; stroke-opacity: 0.45; fill: none; }
+      </style>
+    </defs>
+
+    {/* Clients */}
+    <g>
+      <rect x="40" y="40" width="820" height="80" rx="16" class="grp"/>
+      <text x="56" y="32" class="sub">Clients</text>
+      <g transform="translate(60,60)">
+        <rect width="170" height="40" rx="10" class="box-fill" stroke="currentColor" stroke-opacity="0.4"/>
+        <text x="85" y="25" text-anchor="middle" class="lbl">Restaurant Customers</text>
+      </g>
+      <g transform="translate(250,60)">
+        <rect width="170" height="40" rx="10" class="box-fill" stroke="currentColor" stroke-opacity="0.4"/>
+        <text x="85" y="25" text-anchor="middle" class="lbl">Hotel Owners</text>
+      </g>
+      <g transform="translate(440,60)">
+        <rect width="170" height="40" rx="10" class="box-fill" stroke="currentColor" stroke-opacity="0.4"/>
+        <text x="85" y="25" text-anchor="middle" class="lbl">Hospital Supervisors</text>
+      </g>
+      <g transform="translate(630,60)">
+        <rect width="210" height="40" rx="10" class="box-fill" stroke="currentColor" stroke-opacity="0.4"/>
+        <text x="105" y="25" text-anchor="middle" class="lbl">Workers / Electricians (PWA)</text>
+      </g>
+    </g>
+
+    {/* Edge */}
+    <g>
+      <rect x="40" y="150" width="820" height="64" rx="16" fill="url(#ark-grad)" opacity="0.18"/>
+      <rect x="40" y="150" width="820" height="64" rx="16" fill="none" stroke="currentColor" stroke-opacity="0.4"/>
+      <text x="60" y="180" class="lbl">Edge</text>
+      <text x="60" y="200" class="sub">Caddy 2 · auto-TLS · HSTS · CSP · rate limits · gzip/zstd</text>
+    </g>
+
+    {/* Application services */}
+    <g>
+      <rect x="40" y="240" width="820" height="160" rx="16" class="grp"/>
+      <text x="56" y="232" class="sub">Application Tier — multi-tenant Fastify services</text>
+
+      <g transform="translate(60,260)">
+        <rect width="240" height="120" rx="14" class="box-fill" stroke="currentColor" stroke-opacity="0.55"/>
+        <text x="16" y="28" class="lbl">KodSpot Menu</text>
+        <text x="16" y="50" class="sub">QR menu · billing · UPI · analytics</text>
+        <text x="16" y="74" class="sub">Razorpay · per-tenant plans</text>
+        <text x="16" y="96" class="sub">In-memory menu cache (60s TTL)</text>
+      </g>
+      <g transform="translate(330,260)">
+        <rect width="240" height="120" rx="14" class="box-fill" stroke="currentColor" stroke-opacity="0.55"/>
+        <text x="16" y="28" class="lbl">KodSpot Housekeeping</text>
+        <text x="16" y="50" class="sub">Attendance · cleaning · tickets</text>
+        <text x="16" y="74" class="sub">Multi-floor supervisor flows</text>
+        <text x="16" y="96" class="sub">Selfie / QR / geo validation</text>
+      </g>
+      <g transform="translate(600,260)">
+        <rect width="240" height="120" rx="14" class="box-fill" stroke="currentColor" stroke-opacity="0.55"/>
+        <text x="16" y="28" class="lbl">KodSpot Electrical</text>
+        <text x="16" y="50" class="sub">Inspections · assets · failures</text>
+        <text x="16" y="74" class="sub">Alert &amp; escalation engine</text>
+        <text x="16" y="96" class="sub">Public QR complaints + review</text>
+      </g>
+    </g>
+
+    {/* Data + AI + Object */}
+    <g>
+      <rect x="40" y="430" width="820" height="90" rx="16" class="grp"/>
+      <text x="56" y="422" class="sub">Platform Services</text>
+
+      <g transform="translate(60,448)">
+        <rect width="180" height="56" rx="12" class="box-fill" stroke="currentColor" stroke-opacity="0.55"/>
+        <text x="16" y="24" class="lbl">PostgreSQL 15</text>
+        <text x="16" y="44" class="sub">Per-tenant rows · audit · retention</text>
+      </g>
+      <g transform="translate(258,448)">
+        <rect width="180" height="56" rx="12" class="box-fill" stroke="currentColor" stroke-opacity="0.55"/>
+        <text x="16" y="24" class="lbl">AI Routing Layer</text>
+        <text x="16" y="44" class="sub">SQL-first · token caps · multi-provider</text>
+      </g>
+      <g transform="translate(456,448)">
+        <rect width="180" height="56" rx="12" class="box-fill" stroke="currentColor" stroke-opacity="0.55"/>
+        <text x="16" y="24" class="lbl">Cloudflare R2</text>
+        <text x="16" y="44" class="sub">Photos · evidence · QR cards</text>
+      </g>
+      <g transform="translate(654,448)">
+        <rect width="186" height="56" rx="12" class="box-fill" stroke="currentColor" stroke-opacity="0.55"/>
+        <text x="16" y="24" class="lbl">SES · Razorpay · Webhooks</text>
+        <text x="16" y="44" class="sub">Email · payments · alerts</text>
+      </g>
+    </g>
+
+    {/* Connectors */}
+    <g class="conn" stroke-width="1.5" marker-end="url(#arrow)">
+      <line x1="450" y1="120" x2="450" y2="148"/>
+      <line x1="450" y1="214" x2="450" y2="238"/>
+      <line x1="180" y1="380" x2="180" y2="446"/>
+      <line x1="450" y1="380" x2="350" y2="446"/>
+      <line x1="450" y1="380" x2="546" y2="446"/>
+      <line x1="720" y1="380" x2="745" y2="446"/>
+    </g>
+  </svg>
+</div>

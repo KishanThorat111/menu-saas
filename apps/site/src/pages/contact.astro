@@ -1,0 +1,175 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { SITE } from '../lib/site';
+---
+<BaseLayout
+  title="Contact"
+  description="Talk to KodSpot about products, services, partnerships, or cloud architecture engagements."
+>
+  <section class="container-page pt-20 sm:pt-28 max-w-5xl">
+    <div class="grid gap-12 lg:grid-cols-12">
+      <div class="lg:col-span-5" data-reveal>
+        <span class="chip">Contact</span>
+        <h1 class="heading-1 mt-5">Let’s talk.</h1>
+        <p class="lead mt-5">
+          Tell us what you’re building or what you need. We respond to every message — usually within one business day.
+        </p>
+
+        <ul class="mt-10 space-y-4 text-sm">
+          <li class="flex gap-3">
+            <svg class="h-5 w-5 flex-none text-brand-500" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+            <a class="link-underline" href={`mailto:${SITE.email}`}>{SITE.email}</a>
+          </li>
+          <li class="flex gap-3">
+            <svg class="h-5 w-5 flex-none text-brand-500" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg>
+            <a class="link-underline" href={SITE.whatsappUrl} target="_blank" rel="noreferrer">WhatsApp · {SITE.whatsapp}</a>
+          </li>
+          <li class="flex gap-3">
+            <svg class="h-5 w-5 flex-none text-brand-500" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a2 2 0 01-2.828 0l-4.243-4.243a8 8 0 1111.314 0zM15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+            <span>{SITE.city}</span>
+          </li>
+        </ul>
+      </div>
+
+      <div class="lg:col-span-7" data-reveal data-reveal-delay="1">
+        <form id="contact-form" class="surface-solid p-7 sm:p-8 space-y-5" novalidate>
+          {/* Honeypot — hidden from real users */}
+          <div class="hidden" aria-hidden="true">
+            <label>Website<input type="text" name="website" tabindex="-1" autocomplete="off" /></label>
+          </div>
+
+          <div class="grid gap-5 sm:grid-cols-2">
+            <label class="block">
+              <span class="text-xs font-semibold uppercase tracking-wider text-ink-500 dark:text-ink-400">Name</span>
+              <input
+                type="text" name="name" required maxlength="200"
+                class="mt-2 w-full rounded-xl border border-ink-200 dark:border-ink-800 bg-white dark:bg-ink-950 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+              />
+            </label>
+            <label class="block">
+              <span class="text-xs font-semibold uppercase tracking-wider text-ink-500 dark:text-ink-400">Email</span>
+              <input
+                type="email" name="email" required maxlength="200"
+                class="mt-2 w-full rounded-xl border border-ink-200 dark:border-ink-800 bg-white dark:bg-ink-950 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+              />
+            </label>
+          </div>
+
+          <div class="grid gap-5 sm:grid-cols-2">
+            <label class="block">
+              <span class="text-xs font-semibold uppercase tracking-wider text-ink-500 dark:text-ink-400">Phone (optional)</span>
+              <input
+                type="tel" name="phone" maxlength="20"
+                class="mt-2 w-full rounded-xl border border-ink-200 dark:border-ink-800 bg-white dark:bg-ink-950 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+              />
+            </label>
+            <label class="block">
+              <span class="text-xs font-semibold uppercase tracking-wider text-ink-500 dark:text-ink-400">I’m interested in</span>
+              <select name="interest" class="mt-2 w-full rounded-xl border border-ink-200 dark:border-ink-800 bg-white dark:bg-ink-950 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+                <option value="menu">KodSpot Menu (QR menus)</option>
+                <option value="housekeeping">KodSpot Housekeeping</option>
+                <option value="electrical">KodSpot Electrical</option>
+                <option value="services">Services / custom build</option>
+                <option value="partnership">Partnership / press</option>
+                <option value="other">Other</option>
+              </select>
+            </label>
+          </div>
+
+          <label class="block">
+            <span class="text-xs font-semibold uppercase tracking-wider text-ink-500 dark:text-ink-400">Message</span>
+            <textarea
+              name="message" required minlength="10" maxlength="4000" rows="5"
+              class="mt-2 w-full rounded-xl border border-ink-200 dark:border-ink-800 bg-white dark:bg-ink-950 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 resize-y"
+            ></textarea>
+          </label>
+
+          <label class="flex items-start gap-3 text-xs muted">
+            <input type="checkbox" name="consent" required class="mt-1 h-4 w-4 rounded border-ink-300 dark:border-ink-700 text-brand-600 focus:ring-brand-500" />
+            <span>
+              I agree to KodSpot’s
+              <a class="link-underline" href="/privacy">Privacy Policy</a> and
+              <a class="link-underline" href="/terms">Terms</a>, and to be contacted regarding this enquiry.
+            </span>
+          </label>
+
+          <div class="flex flex-wrap items-center gap-3">
+            <button type="submit" class="btn-accent" id="contact-submit">
+              <span id="contact-submit-label">Send message</span>
+              <svg id="contact-submit-spinner" class="hidden h-4 w-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" class="opacity-25"></circle><path fill="currentColor" class="opacity-75" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path></svg>
+            </button>
+            <a href={SITE.whatsappUrl} target="_blank" rel="noreferrer" class="btn-outline">
+              Or message us on WhatsApp
+            </a>
+          </div>
+
+          <p id="contact-status" role="status" aria-live="polite" class="hidden text-sm"></p>
+        </form>
+      </div>
+    </div>
+  </section>
+</BaseLayout>
+
+<script is:inline>
+  (function () {
+    var form = document.getElementById('contact-form');
+    if (!form) return;
+    var status = document.getElementById('contact-status');
+    var submit = document.getElementById('contact-submit');
+    var label = document.getElementById('contact-submit-label');
+    var spinner = document.getElementById('contact-submit-spinner');
+
+    function setStatus(msg, kind) {
+      if (!status) return;
+      status.classList.remove('hidden', 'text-emerald-600', 'text-red-600', 'dark:text-emerald-400', 'dark:text-red-400');
+      status.textContent = msg;
+      if (kind === 'ok') status.classList.add('text-emerald-600', 'dark:text-emerald-400');
+      else if (kind === 'err') status.classList.add('text-red-600', 'dark:text-red-400');
+    }
+
+    form.addEventListener('submit', async function (e) {
+      e.preventDefault();
+      if (!form.checkValidity()) {
+        form.reportValidity();
+        return;
+      }
+      var fd = new FormData(form);
+      var payload = {
+        name: String(fd.get('name') || '').trim(),
+        email: String(fd.get('email') || '').trim(),
+        phone: String(fd.get('phone') || '').trim(),
+        interest: String(fd.get('interest') || 'other'),
+        message: String(fd.get('message') || '').trim(),
+        consent: fd.get('consent') === 'on' || fd.get('consent') === 'true' || !!fd.get('consent'),
+        website: String(fd.get('website') || '') // honeypot
+      };
+
+      submit.setAttribute('disabled', 'true');
+      label.textContent = 'Sending…';
+      spinner.classList.remove('hidden');
+      setStatus('', '');
+
+      try {
+        var res = await fetch('/api/contact', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        var data = {};
+        try { data = await res.json(); } catch (_) {}
+        if (res.ok && data.success) {
+          setStatus(data.message || 'Thanks — we’ll get back to you shortly.', 'ok');
+          form.reset();
+        } else {
+          setStatus((data && data.error) || 'Something went wrong. Please try email or WhatsApp.', 'err');
+        }
+      } catch (_) {
+        setStatus('Network error. Please try email or WhatsApp.', 'err');
+      } finally {
+        submit.removeAttribute('disabled');
+        label.textContent = 'Send message';
+        spinner.classList.add('hidden');
+      }
+    });
+  })();
+</script>

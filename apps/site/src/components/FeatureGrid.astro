@@ -1,0 +1,21 @@
+---
+interface Feature { title: string; desc: string; icon?: string }
+interface Props { features: Feature[]; columns?: 2 | 3 }
+const { features, columns = 3 } = Astro.props;
+const gridCols = columns === 2 ? 'sm:grid-cols-2' : 'sm:grid-cols-2 lg:grid-cols-3';
+---
+<div class:list={['grid gap-5', gridCols]}>
+  {features.map((f, i) => (
+    <div
+      class="surface-solid p-6 sm:p-7 hover:border-brand-300 dark:hover:border-brand-600/60 hover:shadow-soft transition-all"
+      data-reveal
+      data-reveal-delay={Math.min((i % 3) + 1, 4)}
+    >
+      <div class="flex items-center justify-center h-10 w-10 rounded-xl bg-brand-50 dark:bg-brand-500/10 text-brand-600 dark:text-brand-300">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+      </div>
+      <h3 class="mt-5 text-base font-semibold">{f.title}</h3>
+      <p class="mt-2 text-sm text-ink-600 dark:text-ink-400 leading-relaxed">{f.desc}</p>
+    </div>
+  ))}
+</div>

@@ -1,0 +1,96 @@
+---
+import Logo from './Logo.astro';
+import ThemeToggle from './ThemeToggle.astro';
+import { NAV_LINKS, SITE } from '../lib/site';
+
+const pathname = Astro.url.pathname;
+function isActive(href: string) {
+  if (href === '/') return pathname === '/';
+  return pathname === href || pathname.startsWith(href + '/');
+}
+---
+<header class="sticky top-0 z-40 border-b border-ink-200/60 dark:border-ink-800/70 bg-white/75 dark:bg-ink-950/70 backdrop-blur-md">
+  <div class="container-page flex h-16 items-center justify-between">
+    <a href="/" class="flex items-center gap-2 font-display font-semibold tracking-tight" aria-label={`${SITE.name} home`}>
+      <Logo class="h-8 w-8" />
+      <span class="text-lg">{SITE.name}</span>
+    </a>
+
+    <nav aria-label="Primary" class="hidden md:flex items-center gap-1">
+      {NAV_LINKS.map((link) => (
+        <a
+          href={link.href}
+          class:list={[
+            'px-3 py-2 rounded-full text-sm transition-colors',
+            isActive(link.href)
+              ? 'text-ink-900 dark:text-white'
+              : 'text-ink-600 dark:text-ink-300 hover:text-ink-900 dark:hover:text-white hover:bg-ink-100/70 dark:hover:bg-ink-900/60'
+          ]}
+        >
+          {link.label}
+        </a>
+      ))}
+    </nav>
+
+    <div class="flex items-center gap-2">
+      <ThemeToggle />
+      <a href="/contact" class="hidden sm:inline-flex btn-accent">
+        Talk to us
+      </a>
+      <button
+        type="button"
+        id="nav-toggle"
+        class="md:hidden inline-flex h-9 w-9 items-center justify-center rounded-full border border-ink-200 dark:border-ink-800 text-ink-700 dark:text-ink-200"
+        aria-controls="mobile-nav"
+        aria-expanded="false"
+        aria-label="Open menu"
+      >
+        <svg id="nav-icon-open" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/></svg>
+        <svg id="nav-icon-close" xmlns="http://www.w3.org/2000/svg" class="hidden h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <div id="mobile-nav" class="hidden md:hidden border-t border-ink-200/70 dark:border-ink-800/70">
+    <nav aria-label="Mobile" class="container-page py-4 flex flex-col gap-1">
+      {NAV_LINKS.map((link) => (
+        <a
+          href={link.href}
+          class:list={[
+            'px-3 py-3 rounded-xl text-base',
+            isActive(link.href)
+              ? 'bg-ink-100 dark:bg-ink-900 text-ink-900 dark:text-white'
+              : 'text-ink-700 dark:text-ink-300 hover:bg-ink-100/70 dark:hover:bg-ink-900/60'
+          ]}
+        >
+          {link.label}
+        </a>
+      ))}
+      <a href="/contact" class="mt-2 btn-accent w-full">Talk to us</a>
+    </nav>
+  </div>
+</header>
+
+<script is:inline>
+  (function () {
+    var btn = document.getElementById('nav-toggle');
+    var menu = document.getElementById('mobile-nav');
+    var openIcon = document.getElementById('nav-icon-open');
+    var closeIcon = document.getElementById('nav-icon-close');
+    if (!btn || !menu) return;
+    btn.addEventListener('click', function () {
+      var open = !menu.classList.contains('hidden');
+      if (open) {
+        menu.classList.add('hidden');
+        btn.setAttribute('aria-expanded', 'false');
+        openIcon && openIcon.classList.remove('hidden');
+        closeIcon && closeIcon.classList.add('hidden');
+      } else {
+        menu.classList.remove('hidden');
+        btn.setAttribute('aria-expanded', 'true');
+        openIcon && openIcon.classList.add('hidden');
+        closeIcon && closeIcon.classList.remove('hidden');
+      }
+    });
+  })();
+</script>

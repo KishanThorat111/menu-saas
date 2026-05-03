@@ -1,0 +1,124 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import SectionHeading from '../components/SectionHeading.astro';
+import ArchitectureDiagram from '../components/ArchitectureDiagram.astro';
+import CTASection from '../components/CTASection.astro';
+import { TECH_STACK } from '../lib/site';
+
+const security = [
+  'JWT auth · bcrypt + server-side pepper · timing-safe comparisons',
+  'Per-IP and per-tenant rate limits across login, OTP and public surfaces',
+  'AES-256-GCM encryption for sensitive PII at rest',
+  'Strict CSP, HSTS, X-Frame-Options DENY, Referrer-Policy strict-origin',
+  'Image upload magic-byte validation and size limits',
+  'Audit logs on every privileged action with old/new value JSON',
+  'Containerised: read-only filesystem, non-root user, no privilege escalation',
+  'Encrypted nightly database backups · health-checked services'
+];
+
+const ai = [
+  { title: 'SQL-first router', desc: 'Roughly 80% of operational questions are answered by classified SQL queries with zero LLM tokens.' },
+  { title: 'Cost ceilings', desc: 'Per-organisation monthly token cap, per-user daily query cap, and a global rate limit. Usage is logged with provider, model, latency, and key source.' },
+  { title: 'Multi-provider', desc: 'Vertex AI (GCE metadata auth), Gemini (API key), and Azure OpenAI / OpenAI-compatible — chosen per workload and per organisation.' },
+  { title: 'Safe prompts', desc: 'Domain-locked system prompts, prompt-injection detection, input length limits, and PII sanitisation in error alerts.' }
+];
+
+const compliance = [
+  { title: 'DPDPA-aligned', desc: 'Built around the Digital Personal Data Protection Act framework: consent capture, audit, retention windows, and data subject controls.' },
+  { title: 'Soft-delete + scheduled purge', desc: 'Deleted hotels are anonymised immediately and hard-purged after 30 days. Visitor analytics rows expire after 90 days.' },
+  { title: 'Privacy-safe analytics', desc: 'Visitor uniqueness is determined by hashed identifiers — never raw IPs. Plan-aware soft caps prevent the menu from going dark on overage.' },
+  { title: 'Audit by default', desc: 'Privileged actions write old/new value JSON, actor, IP, user agent, device class, and session ID — across all three platforms.' }
+];
+---
+<BaseLayout
+  title="Technology"
+  description="Multi-tenant Fastify + PostgreSQL platform with cost-controlled AI routing, DPDPA-aligned compliance, container-isolated services, and PWA delivery."
+>
+  <section class="container-page pt-20 sm:pt-28">
+    <span class="chip" data-reveal>Engineering</span>
+    <h1 class="heading-1 mt-5 max-w-3xl" data-reveal data-reveal-delay="1">
+      The platform behind every KodSpot product.
+    </h1>
+    <p class="lead mt-5 max-w-2xl" data-reveal data-reveal-delay="2">
+      One multi-tenant core. Three production surfaces. Built around the discipline that determines whether a SaaS scales: data isolation, cost-controlled AI, container hardening, and audit-everything compliance.
+    </p>
+  </section>
+
+  <section class="container-page mt-16 sm:mt-20">
+    <ArchitectureDiagram />
+  </section>
+
+  <section class="container-page mt-24">
+    <SectionHeading eyebrow="Stack" title="The tools we run in production." />
+    <div class="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+      {TECH_STACK.map((g, i) => (
+        <div data-reveal data-reveal-delay={(i % 3) + 1} class="surface-solid p-6">
+          <h3 class="text-xs font-semibold uppercase tracking-wider text-brand-600 dark:text-brand-300">{g.group}</h3>
+          <ul class="mt-4 space-y-2 text-sm">
+            {g.items.map((it) => (
+              <li class="flex gap-2">
+                <span class="mt-2 h-1 w-1 flex-none rounded-full bg-ink-400"></span>
+                <span class="text-ink-700 dark:text-ink-300">{it}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ))}
+    </div>
+  </section>
+
+  <section class="container-page mt-24">
+    <SectionHeading eyebrow="AI / ML" title="Cost-controlled AI, not a chatbot bill." />
+    <div class="mt-12 grid gap-5 lg:grid-cols-2">
+      {ai.map((a, i) => (
+        <div data-reveal data-reveal-delay={(i % 2) + 1} class="surface-solid p-7">
+          <h3 class="text-lg font-semibold">{a.title}</h3>
+          <p class="mt-3 muted leading-relaxed">{a.desc}</p>
+        </div>
+      ))}
+    </div>
+  </section>
+
+  <section class="container-page mt-24">
+    <SectionHeading eyebrow="Security" title="Hardened by default." />
+    <ul class="mt-10 grid gap-3 sm:grid-cols-2 lg:grid-cols-2">
+      {security.map((s, i) => (
+        <li data-reveal data-reveal-delay={(i % 4) + 1} class="surface-solid p-5 flex gap-3">
+          <svg class="h-5 w-5 flex-none text-brand-500 mt-0.5" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          <span class="text-sm text-ink-700 dark:text-ink-300">{s}</span>
+        </li>
+      ))}
+    </ul>
+  </section>
+
+  <section class="container-page mt-24">
+    <SectionHeading eyebrow="Compliance" title="DPDPA-aligned data lifecycle." />
+    <div class="mt-12 grid gap-5 lg:grid-cols-2">
+      {compliance.map((c, i) => (
+        <div data-reveal data-reveal-delay={(i % 2) + 1} class="surface-solid p-7">
+          <h3 class="text-lg font-semibold">{c.title}</h3>
+          <p class="mt-3 muted leading-relaxed">{c.desc}</p>
+        </div>
+      ))}
+    </div>
+  </section>
+
+  <section class="container-page mt-24">
+    <div class="surface-solid p-8 sm:p-10">
+      <h3 class="heading-3" data-reveal>Cloud strategy</h3>
+      <p class="lead mt-4" data-reveal data-reveal-delay="1">
+        We run today on Google Cloud Platform — Compute Engine VMs, Docker Compose orchestration, Cloudflare R2 for object storage, AWS SES for transactional email, Razorpay for payments. The architecture is intentionally portable: the same containers can move to AWS ECS / Fargate or Azure Container Apps without code changes.
+      </p>
+      <p class="mt-4 muted" data-reveal data-reveal-delay="2">
+        We are actively expanding to a multi-cloud footprint to leverage AWS Bedrock, Azure OpenAI and the broader managed-AI ecosystem alongside Vertex AI — chosen per workload, controlled per organisation.
+      </p>
+    </div>
+  </section>
+
+  <CTASection
+    title="Want the architecture deep dive?"
+    body="We share an annotated walk-through of the multi-tenant core, AI router and compliance pipeline with prospective partners and cloud reviewers."
+    primary={{ label: 'Request a walk-through', href: '/contact' }}
+    secondary={{ label: 'See products', href: '/products' }}
+  />
+</BaseLayout>

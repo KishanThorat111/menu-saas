@@ -1,0 +1,67 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import SectionHeading from '../components/SectionHeading.astro';
+import CTASection from '../components/CTASection.astro';
+import { SERVICES } from '../lib/site';
+---
+<BaseLayout
+  title="Services"
+  description="Custom web development, e-commerce platforms, AI automation and cloud architecture — built with the same engineering discipline as our SaaS products."
+>
+  <section class="container-page pt-20 sm:pt-28">
+    <span class="chip" data-reveal>Services</span>
+    <h1 class="heading-1 mt-5 max-w-3xl" data-reveal data-reveal-delay="1">
+      Production engineering, not freelance prototypes.
+    </h1>
+    <p class="lead mt-5 max-w-2xl" data-reveal data-reveal-delay="2">
+      Beyond our SaaS products, we take on selected engagements for businesses that want the same engineering rigor — multi-tenant data, cost-controlled AI, hardened delivery — applied to their own surface area.
+    </p>
+  </section>
+
+  <section class="container-page mt-20 sm:mt-28">
+    <SectionHeading eyebrow="What we build" title="Four service lines." />
+    <div class="mt-12 grid gap-6 sm:grid-cols-2">
+      {SERVICES.map((s, i) => (
+        <div data-reveal data-reveal-delay={(i % 2) + 1} class="surface-solid p-7 hover:border-brand-300 dark:hover:border-brand-600/60 transition-colors">
+          <div class="h-10 w-10 rounded-xl bg-brand-50 dark:bg-brand-500/10 text-brand-600 dark:text-brand-300 flex items-center justify-center">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6l4 2M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          </div>
+          <h3 class="mt-5 text-lg font-semibold">{s.name}</h3>
+          <p class="mt-3 muted leading-relaxed">{s.desc}</p>
+        </div>
+      ))}
+    </div>
+  </section>
+
+  <section class="container-page mt-24">
+    <div class="surface-solid p-8 sm:p-12">
+      <div class="grid gap-10 lg:grid-cols-2">
+        <div data-reveal>
+          <h2 class="heading-3">How we work.</h2>
+          <p class="mt-4 muted leading-relaxed">
+            Every engagement starts with an architecture decision record — what we’re building, what we’re explicitly not building, and how we’ll know it works in production. We ship in containerised, health-checked, audit-logged increments.
+          </p>
+        </div>
+        <ul class="space-y-3 self-center" data-reveal data-reveal-delay="1">
+          {[
+            'Architecture-first proposals with a written ADR',
+            'Container-deployed from day one — no “it works on my machine”',
+            'Audit logging and rate limits as default, not an afterthought',
+            'Cost-controlled AI integration with provider abstraction',
+            'Hand-off documentation and operational run-books'
+          ].map((it) => (
+            <li class="flex gap-3 text-sm">
+              <svg class="mt-0.5 h-5 w-5 flex-none text-brand-500" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+              <span class="text-ink-700 dark:text-ink-300">{it}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <CTASection
+    title="Have a project in mind?"
+    body="Tell us what you’re building. If it’s a fit, we’ll come back with a written architecture proposal in 5 working days."
+  />
+</BaseLayout>

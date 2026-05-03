@@ -1,0 +1,64 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import SectionHeading from '../../components/SectionHeading.astro';
+import FeatureGrid from '../../components/FeatureGrid.astro';
+import CTASection from '../../components/CTASection.astro';
+
+const features = [
+  { title: 'Three attendance modes', desc: 'Basic, Semi, and Advanced — from a single tap by the supervisor up to multi-punch IN/OUT with selfie, QR location and geolocation validation.' },
+  { title: 'Multi-floor supervisors', desc: 'A single supervisor selects two or more floors for a shift. The system auto-creates a roster per floor and lets them switch with unsaved-change protection.' },
+  { title: 'Cleaning evidence, by design', desc: 'Every cleaning record is shift-aware, photo-verified and linked to the worker who completed it. Late submissions are flagged automatically.' },
+  { title: 'Maintenance ticketing', desc: 'Internal and public tickets with priority, assignment, photo evidence, resolution capture, and guest review with reject/reopen.' },
+  { title: 'Duty roster + leave', desc: 'Roster planning per shift and location, leave types and balances, approval workflow, and a full audit trail.' },
+  { title: 'AI analytics with budget', desc: 'SQL-first router answers most questions with zero LLM tokens. Per-org monthly token caps. Vertex AI, Gemini, or Azure OpenAI per workload.' }
+];
+
+const personas = [
+  { title: 'Super Admin', desc: 'Manages organisations, AI configuration, audit logs and global analytics.' },
+  { title: 'Org Admin', desc: 'Owns the deployment — locations, workers, supervisors, shifts, schedules, analytics.' },
+  { title: 'Supervisor', desc: 'Marks attendance, verifies cleaning with photos, manages tickets and rosters across multiple floors.' },
+  { title: 'Worker', desc: 'Self-attendance with selfie, time punches, leave requests and the day’s task view.' }
+];
+---
+<BaseLayout
+  title="KodSpot Housekeeping — Multi-tenant facility operations"
+  description="Production housekeeping & facility platform for hotels and hospitals. Attendance, cleaning, tickets, rosters, AI analytics — multi-tenant on PostgreSQL."
+>
+  <section class="container-page pt-20 sm:pt-28">
+    <span class="chip" data-reveal>Production · kodspot.in</span>
+    <h1 class="heading-1 mt-5 max-w-3xl" data-reveal data-reveal-delay="1">
+      Housekeeping operations, evidenced and audited.
+    </h1>
+    <p class="lead mt-5 max-w-2xl" data-reveal data-reveal-delay="2">
+      A multi-tenant cloud platform for hotels and hospitals to run housekeeping with photo evidence, multi-floor supervisor workflows, AI-powered analytics, and a full compliance audit trail.
+    </p>
+    <div class="mt-8 flex flex-wrap gap-3" data-reveal data-reveal-delay="3">
+      <a href="/contact" class="btn-accent">Talk to us</a>
+      <a href="/case-studies" class="btn-outline">Read a case study</a>
+    </div>
+  </section>
+
+  <section class="container-page mt-20 sm:mt-28">
+    <SectionHeading eyebrow="Capabilities" title="Built for the realities of housekeeping at scale." />
+    <div class="mt-12">
+      <FeatureGrid features={features} />
+    </div>
+  </section>
+
+  <section class="container-page mt-24">
+    <SectionHeading eyebrow="Roles" title="One platform. Four well-defined roles." />
+    <div class="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+      {personas.map((p, i) => (
+        <div data-reveal data-reveal-delay={i + 1} class="surface-solid p-6">
+          <h3 class="text-base font-semibold">{p.title}</h3>
+          <p class="mt-2 text-sm muted leading-relaxed">{p.desc}</p>
+        </div>
+      ))}
+    </div>
+  </section>
+
+  <CTASection
+    title="See it running for a real hospital."
+    body="Anonymised demo deployments available. We’ll walk you through the multi-floor supervisor flow live."
+  />
+</BaseLayout>

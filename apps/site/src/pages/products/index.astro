@@ -1,0 +1,51 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import ProductCard from '../../components/ProductCard.astro';
+import SectionHeading from '../../components/SectionHeading.astro';
+import CTASection from '../../components/CTASection.astro';
+import { PRODUCTS } from '../../lib/site';
+---
+<BaseLayout
+  title="Products"
+  description="Three production SaaS platforms — Menu, Housekeeping, Electrical — for hospitals, hotels, and restaurants across India."
+>
+  <section class="container-page pt-20 sm:pt-28">
+    <SectionHeading
+      eyebrow="Products"
+      title="Specialised SaaS for physical operations."
+      lead="Menu for hospitality. Housekeeping for hospitals and hotels. Electrical for facility reliability. All multi-tenant, all production."
+    />
+    <div class="mt-12 grid gap-6 lg:grid-cols-3">
+      {PRODUCTS.map((p, i) => <ProductCard product={p} delay={i + 1} />)}
+    </div>
+  </section>
+
+  <section class="container-page mt-24">
+    <div class="surface-solid p-8 sm:p-12">
+      <div class="grid gap-10 lg:grid-cols-2">
+        <div data-reveal>
+          <h2 class="heading-3">Same foundation, different surfaces.</h2>
+          <p class="mt-4 muted leading-relaxed">
+            Every product runs on the same multi-tenant Fastify + PostgreSQL core, the same audit-log discipline, the same encrypted-PII rules and the same SQL-first AI routing. We build vertical surfaces — but never a vertical stack.
+          </p>
+        </div>
+        <ul class="space-y-3" data-reveal data-reveal-delay="1">
+          {[
+            'Per-tenant data isolation enforced at the route, query, and cache layer',
+            'Soft-delete with scheduled hard purge for DPDPA-aligned data retention',
+            'Health-checked, container-isolated services with encrypted DB backups',
+            'PWA with offline queues so field workers stay productive without connectivity',
+            'Per-organisation AI configuration with token caps and usage logs'
+          ].map((it) => (
+            <li class="flex gap-3 text-sm">
+              <svg class="mt-0.5 h-5 w-5 flex-none text-brand-500" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+              <span class="text-ink-700 dark:text-ink-300">{it}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <CTASection />
+</BaseLayout>

@@ -1,0 +1,30 @@
+---
+interface Props {
+  title?: string;
+  body?: string;
+  primary?: { label: string; href: string };
+  secondary?: { label: string; href: string };
+}
+const {
+  title = 'Ready to digitise your operations?',
+  body = 'Talk to us about housekeeping, electrical, menu — or a custom platform built on the same engineering foundation.',
+  primary = { label: 'Talk to us', href: '/contact' },
+  secondary = { label: 'See the technology', href: '/technology' }
+} = Astro.props;
+---
+<section class="container-page mt-24 sm:mt-32">
+  <div class="relative overflow-hidden rounded-3xl border border-ink-200 dark:border-ink-800 bg-gradient-to-br from-ink-50 to-white dark:from-ink-900 dark:to-ink-950 p-8 sm:p-14">
+    <div class="absolute inset-0 ambient-glow opacity-60 pointer-events-none"></div>
+    <div class="relative max-w-2xl" data-reveal>
+      <h2 class="heading-2">{title}</h2>
+      <p class="mt-4 lead">{body}</p>
+      <div class="mt-8 flex flex-wrap gap-3">
+        <a href={primary.href} class="btn-accent">
+          {primary.label}
+          <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14M13 5l7 7-7 7"/></svg>
+        </a>
+        <a href={secondary.href} class="btn-outline">{secondary.label}</a>
+      </div>
+    </div>
+  </div>
+</section>

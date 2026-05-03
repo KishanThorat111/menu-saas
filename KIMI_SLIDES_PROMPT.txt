@@ -1,0 +1,294 @@
+═══════════════════════════════════════════════════════════════════
+KIMI SLIDES PROMPT — KodSpot Client Sales Presentation
+═══════════════════════════════════════════════════════════════════
+
+Copy everything below this line into Kimi Slides:
+
+───────────────────────────────────────────────────────────────────
+
+Create a 16-slide ultra-premium sales presentation for "KodSpot" — a digital QR menu SaaS platform built exclusively for Indian restaurants, cafes, and hotels. This presentation will be shown to a restaurant owner client in a face-to-face meeting.
+
+BRAND IDENTITY & DESIGN SYSTEM:
+- Brand name: KodSpot (logo text style: "Kod" in dark navy #0f172a, "Spot" in gold gradient #c68b52 to #e2a86b)
+- Primary color: Warm gold #c68b52
+- Secondary: Deep navy #0f172a
+- Accent: Soft cream #fffbf5
+- Text dark: #1e293b
+- Text light: #64748b
+- Success green: #059669
+- Background: Clean white with subtle warm gold radial gradients
+- Typography: Modern sans-serif (Inter or similar), bold headings, clean body
+- Design mood: Ultra-premium fintech/SaaS aesthetic — think Stripe, Linear, or Razorpay pitch decks. Minimal, lots of whitespace, refined
+
+DESIGN RULES:
+- Every slide must have generous whitespace — never crowded
+- Use warm gold (#c68b52) as the dominant accent, not blue
+- Dark navy (#0f172a) for headers and contrast sections
+- Subtle gradient backgrounds (cream to white, or dark navy to slate)
+- Use rounded cards with soft shadows for feature callouts
+- Icons should be simple line-style or emoji-style, never clipart
+- No stock photos of people or generic restaurant images
+- Instead of fake screenshots, use abstract representations: colored cards, simple rectangles with rounded corners showing layout hints, or use flat illustration style showing phone outlines with colored blocks inside
+- For phone mockups: use a simple flat phone frame (rounded rectangle with notch) and inside show colored blocks and text labels that represent the UI layout — NOT realistic screenshots
+- Charts/graphs should use gold (#c68b52) and navy (#0f172a) color scheme
+- Every slide should feel like it belongs in a ₹10 crore startup pitch deck
+
+═══════════════════════════════════════════════════════════════════
+SLIDE-BY-SLIDE SPECIFICATION
+═══════════════════════════════════════════════════════════════════
+
+——— SLIDE 1: TITLE SLIDE ———
+Layout: Full-slide dark navy (#0f172a) background with a subtle radial gold glow in the center
+Content:
+- Top-left small text: "Confidential — Client Presentation"
+- Center: Large "KodSpot" brand text (Kod in white, Spot in gold #c68b52), font size very large
+- Below brand: Tagline in white: "India's Premium Digital QR Menu Platform"
+- Below tagline: Thin gold horizontal line (decorative divider)
+- Below divider: "for [Restaurant Name]" in light gray #94a3b8 (leave bracket as placeholder)
+- Bottom-right: Date "April 2026" in small gray text
+- Subtle gold particle/dot accent pattern in the background corners
+Design: This should feel like opening a luxury brand portfolio — dark, confident, minimal
+
+——— SLIDE 2: THE PROBLEM ———
+Layout: White background, content centered
+Heading: "The Problem Every Restaurant Faces" in navy #0f172a
+Content — show 4 pain point cards in a 2×2 grid, each card with:
+  Card 1: 💸 icon | "Reprinting Costs" | "Every price change or new dish means reprinting hundreds of paper menus — ₹2,000 to ₹5,000 each time"
+  Card 2: ⏱️ icon | "Slow Updates" | "Paper menus take days to design, print, and distribute. Meanwhile, customers see outdated prices and unavailable items"
+  Card 3: 🤷 icon | "Unhygienic Menus" | "Shared paper and laminated menus are touched by hundreds of hands daily — a hygiene concern customers now notice"
+  Card 4: 📉 icon | "No Data" | "Paper menus give you zero insight — you don't know how many customers viewed your menu, which items they looked at, or when traffic peaks"
+Each card: White background, subtle border (#e2e8f0), rounded corners 16px, light shadow
+Bottom note: "India has 7.5 million+ restaurants. Most still use paper menus." in gray
+
+——— SLIDE 3: THE SOLUTION ———
+Layout: Split layout — left 55% text, right 45% visual
+Left side:
+- Label: "THE SOLUTION" in gold #c68b52, uppercase, small, letter-spaced
+- Heading: "One QR Code. Your Entire Menu. Always Updated." in navy, large bold
+- 3 bullet points with gold checkmarks:
+  ✓ "Customers scan & browse your full menu on their phone — no app needed"
+  ✓ "Update prices, add dishes, change photos — changes go live instantly"
+  ✓ "One QR code works forever — print once, use always"
+- Small note: "Works on every smartphone. No download required."
+Right side: Show a simple flat illustration of a phone frame (rounded rectangle) with inside it: a gold header bar, 3 horizontal card-like rectangles in cream/white representing menu items, and a small QR code icon next to the phone. Keep it abstract and clean, NOT a realistic screenshot.
+
+——— SLIDE 4: HOW IT WORKS ———
+Layout: White background, horizontal 3-step flow
+Heading: "Live in 3 Simple Steps" in navy
+3 large step cards arranged horizontally with connecting arrows between them:
+  Step 1: 📋 icon in gold circle | "We Set You Up" | "Share your restaurant name and phone number. We create your account with a unique menu code and secure PIN — ready in minutes."
+  Step 2: 🍽️ icon in gold circle | "You Add Your Menu" | "Log in from any phone or computer. Add categories, items, prices, and dish photos. Mark veg or non-veg. Update anytime."
+  Step 3: 📲 icon in gold circle | "Print & Go Live" | "Download your premium QR card. Place on tables, counters, walls. Customers scan and see your complete menu instantly."
+Each step card: White with gold top border accent, rounded corners, shadow
+Arrows between cards: Gold colored, right-pointing
+
+——— SLIDE 5: FEATURE SHOWCASE — MENU THEMES ———
+Layout: Dark navy (#0f172a) background, content in center
+Heading: "15 Premium Menu Themes" in white
+Sub: "Choose a theme that matches your restaurant's personality. Change anytime." in #94a3b8
+Show 6 theme preview cards in a 3×2 grid. Each card is a small rounded rectangle with the theme's color at the top (as a gradient strip) and the theme name below in white text. Use these real themes:
+  Row 1: "Celebration" (gold #be7928 strip) | "Heritage Gold" (navy-gold #0b1121 strip, dark card) | "Morning Fresh" (emerald #059669 strip)
+  Row 2: "Royal Velvet" (purple #7c3aed strip) | "Crimson Spice" (red #dc2626 strip) | "Italian Marble" (warm gray #736b63 strip)
+Below grid: "4 themes on Starter • 8 on Standard • All 15 on Pro" in gold text
+Small text: "Every theme is mobile-first, fast-loading, and looks professional on any phone"
+
+——— SLIDE 6: FEATURE SHOWCASE — QR CARD DESIGNS ———
+Layout: Cream/warm background (#fffbf5), centered content
+Heading: "Premium Branded QR Cards" in navy
+Sub: "Not just a QR code — a branded print-ready card that represents your restaurant" in gray
+Show 5 QR card mockups as small vertical cards (aspect ratio 5:7) arranged in a fan or row:
+  Card 1: Dark brown gradient background, gold text "MENU" at top, white QR square in center, gold "kodspot" pill at bottom — label "Royal Walnut"
+  Card 2: Near-black background, rose-gold accents — label "Obsidian Noir"
+  Card 3: Deep navy background, steel blue accents — label "Sapphire Regal"
+  Card 4: Dark green, gold accents — label "Emerald Imperial"
+  Card 5: Deep wine/burgundy, antique gold — label "Bordeaux Velvet"
+Below: "Print-ready A6 size (600 DPI) • Front + Back design • Your logo & restaurant name" in navy text
+Note: "10 premium card themes available — including Carrara Marble, Royal Navy, Crimson Imperial, Champagne Pearl, and Midnight Teal"
+
+——— SLIDE 7: FEATURE DEEP-DIVE — KEY FEATURES ———
+Layout: White background, 3×2 grid of feature cards
+Heading: "Built for Indian Restaurants" in navy
+6 feature cards:
+  Card 1: 📱 "Instant QR Menu" — "Unique short URL (kodspot.com/m/XXXXXX). Customers scan with any phone camera. Opens in browser — zero friction."
+  Card 2: ✅ "Veg & Non-Veg Badges" — "Familiar green and red indicators on every item. Essential for Indian diners. Clearly visible on all themes."
+  Card 3: 📷 "Dish Photos" — "Upload photos for each dish. Auto-compressed to WebP for fast loading. Visual menus help customers decide faster."
+  Card 4: 📊 "Menu View Analytics" — "Track daily unique visitors and total scans. See usage trends over 7 or 30 days. Know when customers are scanning."
+  Card 5: 🔒 "Bank-Grade Security" — "PIN-protected dashboard. HTTPS encryption. Data privacy aligned with India's DPDPA framework."
+  Card 6: ₹ "UPI Pay Integration" — "Customers tap 'Pay Now' and pay directly to your UPI ID from the menu. No middleman. No commission. (Standard & Pro plans)"
+Each card: White bg, thin gold left border, subtle shadow, icon on left
+
+——— SLIDE 8: FEATURE DEEP-DIVE — ADMIN DASHBOARD ———
+Layout: Light gray (#f8fafc) background
+Heading: "Your Dashboard — Manage Everything" in navy
+Sub: "Works on phone, tablet, or computer. No app install needed." in gray
+Show a simplified abstract dashboard layout using flat colored blocks (NOT a real screenshot):
+- A rounded rectangle representing a browser/phone screen
+- Inside: a gold header bar with "KodSpot" text
+- Below header: 4 tab-like buttons in a row: "📖 Menu", "➕ Add Items", "💳 Billing", "📱 QR Code"
+- Below tabs: abstract card shapes in cream/white showing a simplified list layout
+- Keep this very abstract and clean — just colored rectangles and labels
+Right side callouts (3 text bullets):
+  → "Add categories and items with one tap"
+  → "Upload dish photos — auto-compressed"
+  → "Switch themes, upload logo, manage billing"
+Bottom text: "Everything your staff needs — simple enough for anyone to use"
+
+——— SLIDE 9: FEATURE — UPI PAY ———
+Layout: White background, split layout
+Left side:
+- Gold label: "NEW FEATURE" in uppercase
+- Heading: "Accept UPI Payments Directly From Your Menu" in navy, bold
+- Bullet points:
+  • "Customer taps 'Pay Now' on your digital menu"
+  • "Opens their UPI app (Google Pay, PhonePe, Paytm, etc.)"
+  • "Payment goes directly to your bank — zero commission"
+  • "Works on all Android phones + iOS"
+- Small trust note with lock icon: "KodSpot never touches your money. Payment is direct between customer and restaurant."
+Right side: Abstract phone frame showing:
+  - A colored header (gold)
+  - A "₹ Pay Now" pill button in gold at the bottom
+  - A simplified bottom sheet overlay below: restaurant name, UPI icon, and a gold "Pay Now" button
+  Keep this schematic, not realistic.
+
+——— SLIDE 10: PRICING ———
+Layout: White background, 3 pricing columns
+Heading: "Simple, Honest Pricing" in navy
+Sub: "Start with a 14-day free trial. No hidden fees." in gray
+3 pricing cards side by side:
+
+Card 1 — "Starter" (white card, gray border):
+  "For small restaurants & cafes"
+  ₹499/mo in large navy text
+  Features: Unlimited menu items • QR code & URL • 4 classic themes • 150 unique visitors/day • Today's analytics
+  CTA: "Get 14-Day Free Trial" (outline button)
+
+Card 2 — "Standard" ★ HIGHLIGHTED (gold border, subtle gold glow shadow, "RECOMMENDED" gold pill tag on top):
+  "For growing restaurants"
+  ₹999/mo in large navy text
+  Features: Everything in Starter • 8 themes (4 basic + 4 premium) • 500 unique visitors/day • 7-day analytics • UPI Pay integration • Priority support
+  CTA: "Get 14-Day Free Trial" (solid gold button)
+
+Card 3 — "Pro" (white card, gray border):
+  "For hotels & restaurant chains"
+  ₹1,499/mo in large navy text
+  Features: Everything in Standard • All 15 themes • Unlimited visitors • 30-day analytics • No "Powered by KodSpot" branding
+  CTA: "Get 14-Day Free Trial" (outline button)
+
+Bottom note: "All prices in INR. No auto-renewal — you pay only when you choose to. Cancel anytime."
+
+——— SLIDE 11: WHAT YOUR CUSTOMERS SEE ———
+Layout: Dark navy background with gold accents
+Heading: "What Your Customers Experience" in white
+Sub: "From scan to browse in under 2 seconds" in #94a3b8
+Show a horizontal flow with 3 abstract phone frames side by side:
+
+Phone 1 — "Scan QR":
+  Show a simplified phone with a camera viewfinder rectangle and a small QR code icon in center
+  Label below: "1. Customer scans QR code on table"
+
+Phone 2 — "Browse Menu":
+  Show a phone frame with: gold header bar (restaurant name), horizontal category pills below header, and 2-3 menu item card rectangles (each with a small image square on left, text lines on right, green/red veg badge dot)
+  Label below: "2. Full menu loads instantly in browser"
+
+Phone 3 — "Filter & Pay":
+  Show a phone frame with: a search bar at top, item cards below, and a gold "₹ Pay Now" floating pill at bottom
+  Label below: "3. Search, filter, and pay via UPI"
+
+Bottom text: "Works on every smartphone — Android, iPhone, any browser. No app download needed."
+
+——— SLIDE 12: SECURITY & TRUST ———
+Layout: White background with subtle shield/lock illustrations
+Heading: "Enterprise-Grade Security" in navy
+Sub: "Your data is safe. Your customers' privacy is protected." in gray
+Show 4 trust cards in 2×2 grid:
+  Card 1: 🔐 "HTTPS Everywhere" — "256-bit TLS encryption on every connection. Menu pages, admin dashboard, and all API calls."
+  Card 2: 🛡️ "DPDPA Compliant" — "Privacy practices aligned with India's Digital Personal Data Protection Act, 2023. Registered Data Fiduciary."
+  Card 3: 🏗️ "Hardened Infrastructure" — "Hosted on Google Cloud. Docker containers with read-only filesystem. Daily automated backups."
+  Card 4: 🔑 "PIN Security" — "8-digit PIN with military-grade hashing (bcrypt + HMAC pepper). No one — not even us — can see your PIN."
+Below: Udyam Registration badge: "Registered MSME — UDYAM-KR-04-0179635" in small gold text
+Small text: "Built in India, hosted in India, regulated by Indian law"
+
+——— SLIDE 13: COMPETITIVE ADVANTAGE ———
+Layout: Clean white background
+Heading: "Why KodSpot?" in navy
+Comparison table with gold header row:
+| Feature | Paper Menu | Generic QR Tools | KodSpot |
+| Price updates | Reprint entire batch | Limited | ✅ Instant, unlimited |
+| Dish photos | ❌ Reprint needed | Basic | ✅ Auto-compressed WebP |
+| Veg/Non-veg badges | Manual printing | ❌ Not available | ✅ Built-in, all themes |
+| Analytics | ❌ Zero insight | Basic clicks | ✅ Daily unique visitors + trends |
+| QR card design | Plain QR sticker | Generic | ✅ 10 premium branded card themes |
+| Menu themes | N/A | 1-2 generic | ✅ 15 curated premium themes |
+| UPI payments | Separate QR | ❌ Not available | ✅ Built-in Pay Now button |
+| Data security | N/A | Unknown | ✅ DPDPA compliant, encrypted |
+| India-specific | ❌ | ❌ | ✅ Purpose-built for Indian restaurants |
+Use gold checkmarks (✅) for KodSpot column, red ❌ for competitors
+KodSpot column should be highlighted with a light gold background (#fffbf5)
+
+——— SLIDE 14: SOCIAL PROOF & TRACTION ———
+Layout: Cream (#fffbf5) background
+Heading: "Built for Indian Restaurants" in navy
+Content — 3 highlight cards:
+  Card 1: 🇮🇳 "Made in India" — "Designed, built, and hosted in India. For Indian restaurants, by an Indian founder. Not a foreign product resold in India."
+  Card 2: 🏗️ "Purpose-Built SaaS" — "Not a generic website builder. Every feature — veg badges, UPI pay, Indian pricing — is designed specifically for how Indian restaurants work."
+  Card 3: 💬 "Personal Support" — "Direct WhatsApp support. We set up your account personally. No chatbots, no ticket queues."
+Below: Founder info card with gold left border:
+  "Kishan Thorat — Founder & Developer"
+  "Based in Belagavi, Karnataka. Building KodSpot as a purpose-built SaaS platform for India's restaurant industry."
+  "Registered Micro Enterprise • Udyam: UDYAM-KR-04-0179635"
+
+——— SLIDE 15: OFFER SLIDE — THE DEAL ———
+Layout: Gold gradient background (#c68b52 to #e2a86b), white text
+Heading: "Your Exclusive Offer" in white, large
+Content centered:
+- Large text: "14-Day Free Trial" in white, very bold
+- Sub: "Full access to all features. No credit card. No commitment."
+- Divider line in white
+- What's included (3 items with white checkmarks):
+  ✓ "We set up your restaurant's digital menu — ready in minutes"
+  ✓ "Premium QR card designed with your restaurant name & logo"
+  ✓ "Full dashboard access — add items, photos, categories"
+- After trial pricing:
+  "Plans start at just ₹499/month — less than the cost of one round of menu reprinting"
+- Bottom: "No auto-charges. You decide if and when to subscribe."
+
+——— SLIDE 16: CLOSING / CONTACT ———
+Layout: Dark navy (#0f172a) background, centered text
+Content:
+- Large "KodSpot" brand text (Kod in white, Spot in gold)
+- Tagline: "Your Digital Menu, Ready in Minutes" in white
+- Thin gold divider line
+- Contact details in white/gold:
+  📧 contact@kodspot.com
+  📱 WhatsApp: +91 76766 99291
+  🌐 kodspot.com
+- Small text: "See a live menu: kodspot.com/m/33OONR" in gold, underlined
+- Bottom: "© 2025–2026 KodSpot • Belagavi, Karnataka, India" in #64748b small text
+
+═══════════════════════════════════════════════════════════════════
+GLOBAL DESIGN RESTRICTIONS (IMPORTANT — DO NOT IGNORE):
+═══════════════════════════════════════════════════════════════════
+
+1. DO NOT use any real screenshots or fake UI images. Use ONLY abstract flat colored shapes (rectangles, circles) to represent phone screens, dashboards, or menus.
+2. DO NOT use stock photos of people, food, or restaurants.
+3. DO NOT invent features that are not listed above. Stick to exactly what is described.
+4. DO NOT use blue as the primary accent color. The brand color is WARM GOLD (#c68b52). Navy (#0f172a) is for dark backgrounds and headings only.
+5. DO NOT make any slide look crowded. Every slide must have at least 25% whitespace.
+6. DO NOT use generic clipart. Icons should be clean emoji-style or simple line icons.
+7. DO NOT add animations or transitions in the design — this is for a static slide deck.
+8. DO NOT use any competitor brand names (Zomato, Swiggy, etc.) anywhere in the slides.
+9. DO NOT show any fake user testimonials or made-up statistics. All numbers must be exactly as provided.
+10. Keep all text in English. No Hindi or regional language text.
+11. The "RECOMMENDED" tag on the Standard plan should be a gold pill badge, NOT red or green.
+12. Slide aspect ratio: 16:9 widescreen
+13. Every slide must feel cohesive — same color palette, same typography weight hierarchy, same spacing ratios.
+14. Phone frame mockups should be simple flat rectangles with rounded corners (radius ~40px for outer border, ~30px for screen area) and a small notch cutout at the top center. Inside the screen, use solid colored rectangles and text labels only — never photorealistic content.
+
+TONE:
+- Professional but warm, not corporate-cold
+- Confident but not arrogant
+- Premium but accessible — this is an affordable product positioned as high-quality
+- Speak as a founder who personally cares about the client's restaurant
+- Use "your restaurant", "your customers", "your menu" — make it personal
+
+═══════════════════════════════════════════════════════════════════

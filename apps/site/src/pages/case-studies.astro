@@ -1,0 +1,53 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import SectionHeading from '../components/SectionHeading.astro';
+import CTASection from '../components/CTASection.astro';
+import { CASE_STUDIES } from '../lib/site';
+---
+<BaseLayout
+  title="Case Studies"
+  description="Anonymised case studies from production deployments of KodSpot Housekeeping, Electrical and Menu across hospitals, hotels and restaurants."
+>
+  <section class="container-page pt-20 sm:pt-28">
+    <span class="chip" data-reveal>Case Studies</span>
+    <h1 class="heading-1 mt-5 max-w-3xl" data-reveal data-reveal-delay="1">
+      Production deployments. Real operations.
+    </h1>
+    <p class="lead mt-5 max-w-2xl" data-reveal data-reveal-delay="2">
+      Anonymised summaries of where KodSpot is running today. Names withheld out of respect for our clients’ confidentiality — full references available on request.
+    </p>
+  </section>
+
+  <section class="container-page mt-20 sm:mt-24">
+    <div class="grid gap-6 lg:grid-cols-3">
+      {CASE_STUDIES.map((cs, i) => (
+        <article
+          data-reveal
+          data-reveal-delay={i + 1}
+          class="surface-solid p-7 flex flex-col"
+        >
+          <div class="flex items-center justify-between">
+            <span class="chip">{cs.industry}</span>
+            <span class="text-xs muted">{cs.product}</span>
+          </div>
+          <p class="mt-4 text-xs font-semibold uppercase tracking-wider text-brand-600 dark:text-brand-300">{cs.client}</p>
+          <h3 class="mt-2 text-xl font-semibold leading-snug">{cs.title}</h3>
+          <p class="mt-3 muted leading-relaxed text-sm flex-1">{cs.summary}</p>
+          <dl class="mt-6 space-y-3 border-t border-ink-200 dark:border-ink-800 pt-5">
+            {cs.metrics.map((m) => (
+              <div class="flex items-baseline justify-between gap-3">
+                <dt class="text-xs uppercase tracking-wider muted">{m.l}</dt>
+                <dd class="font-display text-sm font-semibold text-brand-600 dark:text-brand-300">{m.v}</dd>
+              </div>
+            ))}
+          </dl>
+        </article>
+      ))}
+    </div>
+  </section>
+
+  <CTASection
+    title="Need a reference call?"
+    body="We can connect you with a current operator using KodSpot in production, subject to their availability."
+  />
+</BaseLayout>
