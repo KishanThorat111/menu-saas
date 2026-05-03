@@ -8,7 +8,7 @@ export const SITE = {
   description:
     'KodSpot builds specialised, multi-tenant SaaS platforms that digitise housekeeping, electrical maintenance, and customer engagement for hospitals, hotels, and restaurants across India.',
   url: 'https://kodspot.com',
-  email: 'support@kodspot.com',
+  email: 'kishan@kodspot.com',
   founderEmail: 'kishan@kodspot.com',
   whatsapp: '+91 76766 99291',
   whatsappUrl: 'https://wa.me/917676699291',

@@ -23,9 +23,6 @@ kodspot.com {
         path /admin.html /admin.js /admin-sw.js /admin.webmanifest
         path /superadmin.html /superadmin.js /superadmin.webmanifest
         path /menu.html /menu.js /qr-card.js
-        path /privacy /privacy.html
-        path /terms /terms.html
-        path /refund /refund.html
         path /favicon.ico
         path /favicon-16x16.png /favicon-32x32.png /favicon-48x48.png
         path /apple-touch-icon.png
@@ -49,8 +46,6 @@ kodspot.com {
         header /menu.html Cache-Control "public, max-age=0, must-revalidate"
         header /menu.js Cache-Control "public, max-age=300, stale-while-revalidate=3600"
         header /m/* Cache-Control "no-cache, must-revalidate"
-        header /privacy.html Cache-Control "public, max-age=86400"
-        header /terms.html Cache-Control "public, max-age=86400"
         header /fonts/* Cache-Control "public, max-age=31536000, immutable"
 
         reverse_proxy api:3000 {

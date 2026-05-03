@@ -1,0 +1,106 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import PageHero from '../components/PageHero.astro';
+import LegalPage from '../components/LegalPage.astro';
+import { SITE } from '../lib/site';
+
+const sections = [
+  { id: 'collect',     title: 'What we collect' },
+  { id: 'why',         title: 'Why we collect it' },
+  { id: 'storage',     title: 'How we store it' },
+  { id: 'access',      title: 'Who can see your data' },
+  { id: 'rights',      title: 'Your rights (DPDPA 2023)' },
+  { id: 'retention',   title: 'Data retention' },
+  { id: 'third-party', title: 'Third-party services' },
+  { id: 'changes',     title: 'Changes to this policy' },
+  { id: 'breach',      title: 'Data breach notification' },
+  { id: 'grievance',   title: 'Grievance Officer' }
+];
+---
+<BaseLayout
+  title="Privacy Policy"
+  description="How KodSpot collects, uses, stores and protects your data — written in plain English and aligned with India's Digital Personal Data Protection Act, 2023."
+>
+  <PageHero
+    eyebrow="Legal"
+    title="Privacy"
+    highlight="Policy."
+    lead="What we collect, why, and how we protect it. Written for humans, aligned with the Digital Personal Data Protection Act, 2023."
+  />
+
+  <LegalPage updated="April 2026" version="1.2" sections={sections}>
+    <p class="lead-block">
+      KodSpot is operated by <strong>{SITE.founder.legalName}</strong> ({SITE.legal.structure}), based in {SITE.city}. This policy explains what data we collect, why, and how we protect it.
+    </p>
+
+    <h2 id="collect">What we collect</h2>
+    <ul>
+      <li><strong>Trial requests (prospective customers):</strong> When you submit a trial request from our website, we collect your restaurant name, city, phone number, and email (optional). We also record the date and time you consented to this Privacy Policy and our Terms of Service. This data is used solely to process your request and set up your account. If your request is not approved, this data is automatically deleted within 90 days. If approved, it is deleted within 30 days of account creation.</li>
+      <li><strong>Hotel owners (our customers):</strong> Name, city, phone number, email (optional), and an 8-digit PIN for login.</li>
+      <li><strong>Menu visitors (your customers):</strong> We do <em>not</em> use cookies or third-party analytics. To count unique daily visitors per hotel (required for plan limits), we store a one-way hash derived from the visitor's IP address, the date, and a secret salt. No raw IP address is ever stored. These hashes are automatically deleted after 90 days and cannot be used to identify any individual.</li>
+      <li><strong>Menu content:</strong> Category names, item names, prices, descriptions, and images you upload.</li>
+      <li><strong>Activity logs:</strong> We log administrative actions (menu edits, login events, account changes) for security and troubleshooting. These logs may include details of changed fields (e.g. previous and new values of hotel name, phone, or email). Logs are retained for the lifetime of the account and deleted within 30 days of account deletion.</li>
+      <li><strong>Security metadata:</strong> When you request a PIN reset, we temporarily store your IP address, browser type, and device fingerprint to prevent abuse. This data is automatically deleted 7 days after the OTP expires.</li>
+      <li><strong>Payment records:</strong> We store transaction IDs, amounts, and payment method type (not card or bank details) for each subscription payment. These are retained as required by Indian tax and accounting regulations.</li>
+    </ul>
+
+    <h2 id="why">Why we collect it</h2>
+    <ul>
+      <li>To process trial requests and set up new accounts.</li>
+      <li>To create and manage your hotel account.</li>
+      <li>To display your menu to your customers.</li>
+      <li>To contact you about your subscription (if you provided an email).</li>
+    </ul>
+
+    <h2 id="storage">How we store it</h2>
+    <ul>
+      <li>Account data is stored in a PostgreSQL database hosted on a secure server in India.</li>
+      <li>Images are stored on Cloudflare R2, a globally distributed cloud storage service.</li>
+      <li>Your PIN is hashed — we cannot see it.</li>
+      <li>All connections use HTTPS encryption.</li>
+      <li>Automated daily database backups are maintained for disaster recovery.</li>
+    </ul>
+
+    <h2 id="access">Who can see your data</h2>
+    <ul>
+      <li>Only you (the hotel owner) and the platform admin can access your account details.</li>
+      <li>Your menu content (items, prices, images) is public — that's the point of the service.</li>
+      <li>We do not sell, share, or give your data to anyone else.</li>
+    </ul>
+
+    <h2 id="rights">Your rights</h2>
+    <p>Under India's Digital Personal Data Protection Act, 2023, you have the right to:</p>
+    <ul>
+      <li>Know what data we hold about you.</li>
+      <li>Correct inaccurate data.</li>
+      <li>Request deletion of your account and data.</li>
+    </ul>
+    <p>To exercise any of these, email us at <a href={`mailto:${SITE.email}`}>{SITE.email}</a> or message us on <a href={SITE.whatsappUrl} target="_blank" rel="noreferrer">WhatsApp</a>.</p>
+
+    <h2 id="retention">Data retention</h2>
+    <p>We keep your data as long as your account is active. If you ask us to delete your account, we will remove all your data within 30 days.</p>
+
+    <h2 id="third-party">Third-party services</h2>
+    <p>We use the following services to operate KodSpot. Your data is shared with them only as needed to provide the service:</p>
+    <ul>
+      <li><strong>Razorpay</strong> (payment processing) — processes your subscription payments. We do not store card or bank details.</li>
+      <li><strong>Cloudflare R2</strong> (image storage) — stores menu images you upload.</li>
+      <li><strong>Amazon SES</strong> (email) — sends OTP and notification emails to hotel owners only.</li>
+    </ul>
+
+    <h2 id="changes">Changes to this policy</h2>
+    <p>If we update this policy, we'll change the date at the top. For major changes, we'll notify you by email (if provided).</p>
+
+    <h2 id="breach">Data breach notification</h2>
+    <p>In the event of a data breach affecting your personal data, we will notify you and the Data Protection Board of India as required under the Digital Personal Data Protection Act, 2023. We aim to provide such notification within 72 hours of becoming aware of the breach.</p>
+
+    <h2 id="grievance">Grievance Officer</h2>
+    <p>As required under the Digital Personal Data Protection Act, 2023, the Grievance Officer for KodSpot is:</p>
+    <p>
+      <strong>{SITE.founder.legalName}</strong> ({SITE.legal.structure} &amp; Grievance Officer)<br />
+      Email: <a href={`mailto:${SITE.email}`}>{SITE.email}</a><br />
+      WhatsApp: <a href={SITE.whatsappUrl} target="_blank" rel="noreferrer">{SITE.whatsapp}</a><br />
+      Response time: Within 15 days of receiving your complaint.
+    </p>
+  </LegalPage>
+</BaseLayout>
