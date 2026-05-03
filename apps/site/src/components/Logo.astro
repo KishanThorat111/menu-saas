@@ -1,24 +1,27 @@
 ---
-interface Props { class?: string }
-const { class: className = '' } = Astro.props;
+interface Props {
+  class?: string;
+  glow?: boolean;
+  size?: number;
+}
+const { class: className = '', glow = true, size } = Astro.props;
+const inlineSize = size ? `width:${size}px;height:${size}px;` : '';
 ---
-<svg
-  class={className}
-  viewBox="0 0 32 32"
-  xmlns="http://www.w3.org/2000/svg"
-  role="img"
-  aria-label="KodSpot logomark"
->
-  <defs>
-    <linearGradient id="ks-grad" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
-      <stop offset="0%"  stop-color="#e08e3f" />
-      <stop offset="100%" stop-color="#aa5a1d" />
-    </linearGradient>
-  </defs>
-  <rect x="1" y="1" width="30" height="30" rx="8" fill="url(#ks-grad)" />
-  <path
-    d="M11 9.5h2.6v5.1l4.4-5.1h3.1l-4.6 5.4 4.9 7.6h-3.2l-3.6-5.7-1 1.2v4.5H11V9.5Z"
-    fill="#fff"
+<span class:list={["relative inline-flex items-center justify-center shrink-0", className]} style={inlineSize} aria-label="KodSpot logo" role="img">
+  {glow && (
+    <span
+      aria-hidden="true"
+      class="absolute inset-0 -z-10 rounded-[28%] bg-brand-400/45 blur-xl opacity-70 transition-opacity duration-500 group-hover:opacity-100"
+    ></span>
+  )}
+  <img
+    src="/kodspot-logo.png"
+    alt=""
+    width={size ?? 64}
+    height={size ?? 64}
+    decoding="async"
+    loading="eager"
+    fetchpriority="high"
+    class="h-full w-full object-contain drop-shadow-[0_4px_14px_rgba(201,116,38,0.45)] select-none pointer-events-none"
   />
-  <circle cx="23" cy="23" r="2" fill="#fff" />
-</svg>
+</span>

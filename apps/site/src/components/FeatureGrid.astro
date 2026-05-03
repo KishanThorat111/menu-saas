@@ -7,15 +7,21 @@ const gridCols = columns === 2 ? 'sm:grid-cols-2' : 'sm:grid-cols-2 lg:grid-cols
 <div class:list={['grid gap-5', gridCols]}>
   {features.map((f, i) => (
     <div
-      class="surface-solid p-6 sm:p-7 hover:border-brand-300 dark:hover:border-brand-600/60 hover:shadow-soft transition-all"
+      class="card-glow spotlight surface-solid p-7 sm:p-8 transition-all hover:border-brand-300/70 dark:hover:border-brand-500/40"
       data-reveal
       data-reveal-delay={Math.min((i % 3) + 1, 4)}
+      data-tilt="4"
     >
-      <div class="flex items-center justify-center h-10 w-10 rounded-xl bg-brand-50 dark:bg-brand-500/10 text-brand-600 dark:text-brand-300">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+      <div class="flex items-center justify-between">
+        <span class="font-mono text-[11px] tracking-[0.18em] muted uppercase">
+          0{i + 1}
+        </span>
+        <span class="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-brand-400 to-brand-600 text-white shadow-ring-brand">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+        </span>
       </div>
-      <h3 class="mt-5 text-base font-semibold">{f.title}</h3>
-      <p class="mt-2 text-sm text-ink-600 dark:text-ink-400 leading-relaxed">{f.desc}</p>
+      <h3 class="mt-7 text-xl font-display tracking-tight">{f.title}</h3>
+      <p class="mt-3 text-sm text-ink-600 dark:text-ink-400 leading-relaxed">{f.desc}</p>
     </div>
   ))}
 </div>

@@ -6,14 +6,15 @@ interface Props {
   align?: 'left' | 'center';
 }
 const { eyebrow, title, lead, align = 'left' } = Astro.props;
-const alignClass = align === 'center' ? 'text-center mx-auto' : '';
+const alignClass = align === 'center' ? 'text-center mx-auto items-center' : '';
 ---
-<div class:list={['max-w-3xl', alignClass]} data-reveal>
+<div class:list={['max-w-3xl flex flex-col', alignClass]}>
   {eyebrow && (
-    <p class="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-brand-600 dark:text-brand-300">
+    <p class="eyebrow" data-reveal>
+      <span class="h-1.5 w-1.5 rounded-full bg-brand-500"></span>
       {eyebrow}
     </p>
   )}
-  <h2 class="heading-2">{title}</h2>
-  {lead && <p class="mt-4 lead">{lead}</p>}
+  <h2 class="heading-2 mt-4 text-balance" data-reveal data-reveal-delay="1">{title}</h2>
+  {lead && <p class="mt-5 lead text-pretty" data-reveal data-reveal-delay="2">{lead}</p>}
 </div>

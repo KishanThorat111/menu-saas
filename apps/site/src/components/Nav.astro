@@ -9,21 +9,25 @@ function isActive(href: string) {
   return pathname === href || pathname.startsWith(href + '/');
 }
 ---
-<header class="sticky top-0 z-40 border-b border-ink-200/60 dark:border-ink-800/70 bg-white/75 dark:bg-ink-950/70 backdrop-blur-md">
-  <div class="container-page flex h-16 items-center justify-between">
-    <a href="/" class="flex items-center gap-2 font-display font-semibold tracking-tight" aria-label={`${SITE.name} home`}>
-      <Logo class="h-8 w-8" />
-      <span class="text-lg">{SITE.name}</span>
+<header
+  id="site-nav"
+  class="group fixed top-0 inset-x-0 z-50 transition-all duration-300"
+>
+  <div class="absolute inset-0 -z-10 bg-white/70 dark:bg-ink-950/70 backdrop-blur-xl border-b border-ink-200/40 dark:border-ink-800/40 opacity-0 transition-opacity duration-300" id="nav-bg"></div>
+  <div class="container-page flex h-[68px] items-center justify-between transition-all duration-300" id="nav-inner">
+    <a href="/" class="group flex items-center gap-2.5 font-sans font-semibold tracking-tight" aria-label={`${SITE.name} home`}>
+      <Logo class="h-9 w-9 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-[-6deg]" size={36} />
+      <span class="text-lg tracking-tight">{SITE.name}</span>
     </a>
 
-    <nav aria-label="Primary" class="hidden md:flex items-center gap-1">
+    <nav aria-label="Primary" class="hidden md:flex items-center gap-1 rounded-full border border-ink-200/60 dark:border-ink-800/60 bg-white/50 dark:bg-ink-900/40 backdrop-blur px-1.5 py-1.5">
       {NAV_LINKS.map((link) => (
         <a
           href={link.href}
           class:list={[
-            'px-3 py-2 rounded-full text-sm transition-colors',
+            'px-3.5 py-1.5 rounded-full text-[13px] font-medium transition-colors',
             isActive(link.href)
-              ? 'text-ink-900 dark:text-white'
+              ? 'text-white bg-ink-900 dark:bg-white dark:text-ink-900 shadow-soft'
               : 'text-ink-600 dark:text-ink-300 hover:text-ink-900 dark:hover:text-white hover:bg-ink-100/70 dark:hover:bg-ink-900/60'
           ]}
         >
@@ -34,13 +38,14 @@ function isActive(href: string) {
 
     <div class="flex items-center gap-2">
       <ThemeToggle />
-      <a href="/contact" class="hidden sm:inline-flex btn-accent">
+      <a href="/contact" class="hidden sm:inline-flex btn-accent magnetic" data-magnetic="0.25">
         Talk to us
+        <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14M13 5l7 7-7 7"/></svg>
       </a>
       <button
         type="button"
         id="nav-toggle"
-        class="md:hidden inline-flex h-9 w-9 items-center justify-center rounded-full border border-ink-200 dark:border-ink-800 text-ink-700 dark:text-ink-200"
+        class="md:hidden inline-flex h-10 w-10 items-center justify-center rounded-full border border-ink-200 dark:border-ink-800 bg-white/80 dark:bg-ink-900/80 backdrop-blur text-ink-700 dark:text-ink-200"
         aria-controls="mobile-nav"
         aria-expanded="false"
         aria-label="Open menu"
@@ -51,7 +56,7 @@ function isActive(href: string) {
     </div>
   </div>
 
-  <div id="mobile-nav" class="hidden md:hidden border-t border-ink-200/70 dark:border-ink-800/70">
+  <div id="mobile-nav" class="hidden md:hidden bg-white/95 dark:bg-ink-950/95 backdrop-blur-xl border-t border-ink-200/70 dark:border-ink-800/70">
     <nav aria-label="Mobile" class="container-page py-4 flex flex-col gap-1">
       {NAV_LINKS.map((link) => (
         <a
@@ -71,26 +76,42 @@ function isActive(href: string) {
   </div>
 </header>
 
+{/* Spacer to offset fixed nav */}
+<div aria-hidden="true" class="h-[68px]"></div>
+
 <script is:inline>
   (function () {
     var btn = document.getElementById('nav-toggle');
     var menu = document.getElementById('mobile-nav');
     var openIcon = document.getElementById('nav-icon-open');
     var closeIcon = document.getElementById('nav-icon-close');
-    if (!btn || !menu) return;
-    btn.addEventListener('click', function () {
-      var open = !menu.classList.contains('hidden');
-      if (open) {
-        menu.classList.add('hidden');
-        btn.setAttribute('aria-expanded', 'false');
-        openIcon && openIcon.classList.remove('hidden');
-        closeIcon && closeIcon.classList.add('hidden');
-      } else {
-        menu.classList.remove('hidden');
-        btn.setAttribute('aria-expanded', 'true');
-        openIcon && openIcon.classList.add('hidden');
-        closeIcon && closeIcon.classList.remove('hidden');
-      }
-    });
+    if (btn && menu) {
+      btn.addEventListener('click', function () {
+        var open = !menu.classList.contains('hidden');
+        if (open) {
+          menu.classList.add('hidden');
+          btn.setAttribute('aria-expanded', 'false');
+          openIcon && openIcon.classList.remove('hidden');
+          closeIcon && closeIcon.classList.add('hidden');
+        } else {
+          menu.classList.remove('hidden');
+          btn.setAttribute('aria-expanded', 'true');
+          openIcon && openIcon.classList.add('hidden');
+          closeIcon && closeIcon.classList.remove('hidden');
+        }
+      });
+    }
+
+    var nav = document.getElementById('site-nav');
+    var bg  = document.getElementById('nav-bg');
+    var inner = document.getElementById('nav-inner');
+    if (!nav || !bg || !inner) return;
+    function onScroll() {
+      var s = window.scrollY > 12;
+      bg.style.opacity = s ? '1' : '0';
+      inner.style.height = s ? '56px' : '68px';
+    }
+    window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
   })();
 </script>
