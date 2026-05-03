@@ -2,56 +2,70 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import SectionHeading from '../components/SectionHeading.astro';
 import CTASection from '../components/CTASection.astro';
+import PageHero from '../components/PageHero.astro';
 import { SERVICES } from '../lib/site';
+
+const iconPath: Record<string, string> = {
+  globe: '<path stroke-linecap="round" stroke-linejoin="round" d="M3.6 9h16.8M3.6 15h16.8M11.5 3a17 17 0 000 18M12.5 3a17 17 0 010 18M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>',
+  cart:  '<path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l3-7H6.4M7 13L5.4 5M7 13l-2 5h13M9 21a1 1 0 100-2 1 1 0 000 2zm9 0a1 1 0 100-2 1 1 0 000 2z"/>',
+  spark: '<path stroke-linecap="round" stroke-linejoin="round" d="M12 3l1.6 4.4L18 9l-4.4 1.6L12 15l-1.6-4.4L6 9l4.4-1.6L12 3zm6 11l.8 2.2L21 17l-2.2.8L18 20l-.8-2.2L15 17l2.2-.8L18 14z"/>',
+  cloud: '<path stroke-linecap="round" stroke-linejoin="round" d="M3 15a4 4 0 014-4 5 5 0 019.58-1.5A4.5 4.5 0 1118 19H7a4 4 0 01-4-4z"/>'
+};
 ---
 <BaseLayout
   title="Services"
   description="Custom web development, e-commerce platforms, AI automation and cloud architecture — built with the same engineering discipline as our SaaS products."
 >
-  <section class="container-page pt-20 sm:pt-28">
-    <span class="chip" data-reveal>Services</span>
-    <h1 class="heading-1 mt-5 max-w-3xl" data-reveal data-reveal-delay="1">
-      Production engineering, not freelance prototypes.
-    </h1>
-    <p class="lead mt-5 max-w-2xl" data-reveal data-reveal-delay="2">
-      Beyond our SaaS products, we take on selected engagements for businesses that want the same engineering rigor — multi-tenant data, cost-controlled AI, hardened delivery — applied to their own surface area.
-    </p>
-  </section>
+  <PageHero
+    eyebrow="Services"
+    title="Production engineering, not"
+    highlight="freelance prototypes."
+    lead="Beyond our SaaS products, we take on selected engagements for businesses that want the same engineering rigor — multi-tenant data, cost-controlled AI, hardened delivery — applied to their own surface area."
+  />
 
-  <section class="container-page mt-20 sm:mt-28">
+  <section class="container-page mt-12 sm:mt-16">
     <SectionHeading eyebrow="What we build" title="Four service lines." />
-    <div class="mt-12 grid gap-6 sm:grid-cols-2">
+    <div class="mt-12 sm:mt-14 grid gap-5 sm:gap-6 sm:grid-cols-2">
       {SERVICES.map((s, i) => (
-        <div data-reveal data-reveal-delay={(i % 2) + 1} class="surface-solid p-7 hover:border-brand-300 dark:hover:border-brand-600/60 transition-colors">
-          <div class="h-10 w-10 rounded-xl bg-brand-50 dark:bg-brand-500/10 text-brand-600 dark:text-brand-300 flex items-center justify-center">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6l4 2M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        <div data-reveal data-reveal-delay={(i % 2) + 1} data-tilt="5" class="card-glow spotlight surface-solid p-7 sm:p-9 transition-all">
+          <div class="flex items-center justify-between">
+            <span class="font-mono text-[11px] tracking-[0.18em] muted uppercase">0{i + 1}</span>
+            <span class="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-400 to-brand-600 text-white shadow-ring-brand">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24" set:html={iconPath[s.icon] || iconPath.globe}></svg>
+            </span>
           </div>
-          <h3 class="mt-5 text-lg font-semibold">{s.name}</h3>
-          <p class="mt-3 muted leading-relaxed">{s.desc}</p>
+          <h3 class="mt-7 font-display text-2xl sm:text-3xl tracking-tight">{s.name}</h3>
+          <p class="mt-4 muted leading-relaxed text-sm sm:text-base">{s.desc}</p>
         </div>
       ))}
     </div>
   </section>
 
-  <section class="container-page mt-24">
-    <div class="surface-solid p-8 sm:p-12">
-      <div class="grid gap-10 lg:grid-cols-2">
+  <section class="container-page mt-24 sm:mt-32">
+    <div class="conic-border surface-solid p-8 sm:p-12 lg:p-16 spotlight">
+      <div class="grid gap-10 lg:grid-cols-2 lg:gap-16 items-start">
         <div data-reveal>
-          <h2 class="heading-3">How we work.</h2>
-          <p class="mt-4 muted leading-relaxed">
-            Every engagement starts with an architecture decision record — what we’re building, what we’re explicitly not building, and how we’ll know it works in production. We ship in containerised, health-checked, audit-logged increments.
+          <p class="eyebrow">
+            <span class="h-1.5 w-1.5 rounded-full bg-brand-500"></span>
+            How we work
+          </p>
+          <h2 class="heading-3 mt-4">Architecture-first. Always.</h2>
+          <p class="mt-5 muted leading-relaxed text-base sm:text-lg">
+            Every engagement starts with an architecture decision record — what we're building, what we're explicitly not building, and how we'll know it works in production. We ship in containerised, health-checked, audit-logged increments.
           </p>
         </div>
-        <ul class="space-y-3 self-center" data-reveal data-reveal-delay="1">
+        <ul class="space-y-4" data-reveal data-reveal-delay="1">
           {[
             'Architecture-first proposals with a written ADR',
-            'Container-deployed from day one — no “it works on my machine”',
+            'Container-deployed from day one — no "it works on my machine"',
             'Audit logging and rate limits as default, not an afterthought',
             'Cost-controlled AI integration with provider abstraction',
             'Hand-off documentation and operational run-books'
-          ].map((it) => (
-            <li class="flex gap-3 text-sm">
-              <svg class="mt-0.5 h-5 w-5 flex-none text-brand-500" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+          ].map((it, i) => (
+            <li class="flex gap-3 text-sm sm:text-base" data-reveal data-reveal-delay={Math.min(i + 1, 5)}>
+              <span class="mt-0.5 inline-flex h-6 w-6 flex-none items-center justify-center rounded-full bg-gradient-to-br from-brand-400 to-brand-600 text-white shadow-ring-brand">
+                <svg class="h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+              </span>
               <span class="text-ink-700 dark:text-ink-300">{it}</span>
             </li>
           ))}
@@ -62,6 +76,6 @@ import { SERVICES } from '../lib/site';
 
   <CTASection
     title="Have a project in mind?"
-    body="Tell us what you’re building. If it’s a fit, we’ll come back with a written architecture proposal in 5 working days."
+    body="Tell us what you're building. If it's a fit, we'll come back with a written architecture proposal in 5 working days."
   />
 </BaseLayout>

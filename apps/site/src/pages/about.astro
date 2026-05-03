@@ -2,6 +2,7 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import SectionHeading from '../components/SectionHeading.astro';
 import CTASection from '../components/CTASection.astro';
+import PageHero from '../components/PageHero.astro';
 import { SITE } from '../lib/site';
 
 const roadmap = [
@@ -12,34 +13,31 @@ const roadmap = [
 
 const principles = [
   { title: 'Operations is everything', desc: 'India runs on physical operations — beds, rooms, panels, kitchens. Software for those teams must work on a 4G phone in a corridor, not on a 4K monitor in a co-working space.' },
-  { title: 'Multi-tenant from day one', desc: 'A SaaS that isn’t multi-tenant from the schema up will rewrite itself in 18 months. We do the harder thing first.' },
-  { title: 'AI with a budget', desc: 'Most “AI features” are SQL queries with extra steps. We answer first with SQL, then with LLMs, and always with a token cap.' },
-  { title: 'Compliance is a feature', desc: 'DPDPA-aligned retention, audit logs, and encrypted PII aren’t a checkbox — they’re what makes a platform trustable for healthcare and hospitality.' }
+  { title: 'Multi-tenant from day one', desc: 'A SaaS that isn\u2019t multi-tenant from the schema up will rewrite itself in 18 months. We do the harder thing first.' },
+  { title: 'AI with a budget', desc: 'Most "AI features" are SQL queries with extra steps. We answer first with SQL, then with LLMs, and always with a token cap.' },
+  { title: 'Compliance is a feature', desc: 'DPDPA-aligned retention, audit logs, and encrypted PII aren\u2019t a checkbox \u2014 they\u2019re what makes a platform trustable for healthcare and hospitality.' }
 ];
 ---
 <BaseLayout
   title="About"
-  description="KodSpot is a single-founder technology company building specialised SaaS platforms for India’s physical-operations economy."
+  description="KodSpot is a single-founder technology company building specialised SaaS platforms for India\u2019s physical-operations economy."
 >
-  <section class="container-page pt-20 sm:pt-28">
-    <span class="chip" data-reveal>About</span>
-    <h1 class="heading-1 mt-5 max-w-3xl" data-reveal data-reveal-delay="1">
-      Building specialised SaaS for India’s physical operations.
-    </h1>
-    <p class="lead mt-5 max-w-2xl" data-reveal data-reveal-delay="2">
-      KodSpot is a single-founder technology company. We build vertical SaaS for hospitals, hotels and restaurants — and we operate every platform we ship.
-    </p>
-  </section>
+  <PageHero
+    eyebrow="About"
+    title="Building specialised SaaS for"
+    highlight="India's physical operations."
+    lead="KodSpot is a single-founder technology company. We build vertical SaaS for hospitals, hotels and restaurants \u2014 and we operate every platform we ship."
+  />
 
   {/* Founder */}
-  <section class="container-page mt-20 sm:mt-24">
-    <div class="surface-solid p-8 sm:p-10">
+  <section class="container-page mt-12 sm:mt-16">
+    <div class="conic-border surface-solid p-7 sm:p-10 lg:p-12 spotlight">
       <div class="grid gap-10 lg:grid-cols-12 items-start">
-        <div class="lg:col-span-4" data-reveal>
-          <div class="founder-photo aspect-square rounded-2xl overflow-hidden bg-gradient-to-br from-brand-300 via-brand-500 to-brand-700 relative">
+        <div class="lg:col-span-4 mx-auto lg:mx-0 max-w-xs lg:max-w-none w-full" data-reveal>
+          <div class="founder-photo aspect-square rounded-3xl overflow-hidden bg-gradient-to-br from-brand-300 via-brand-500 to-brand-700 relative shadow-lift-lg">
             <img
               src={SITE.founder.photo}
-              alt={`${SITE.founder.name} — ${SITE.founder.title}`}
+              alt={`${SITE.founder.name} \u2014 ${SITE.founder.title}`}
               loading="eager"
               decoding="async"
               class="absolute inset-0 h-full w-full object-cover"
@@ -50,51 +48,63 @@ const principles = [
               style="display:none;"
               aria-hidden="true"
             >
-              <span class="font-display text-6xl font-semibold">{SITE.founder.initials}</span>
+              <span class="font-display text-7xl">{SITE.founder.initials}</span>
+            </div>
+            <div class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent p-5">
+              <p class="text-white font-display text-xl tracking-tight">{SITE.founder.name}</p>
+              <p class="text-white/80 text-xs mt-0.5">{SITE.founder.title} · {SITE.founder.location}</p>
             </div>
           </div>
-          <p class="mt-4 text-sm font-semibold">{SITE.founder.name}</p>
-          <p class="text-xs muted">{SITE.founder.title} · {SITE.founder.location}</p>
         </div>
         <div class="lg:col-span-8" data-reveal data-reveal-delay="1">
-          <h2 class="heading-3">Founder’s note.</h2>
-          <p class="mt-4 muted leading-relaxed">
-            I’m {SITE.founder.legalName}. I’m a single-founder, full-stack engineer based in Belagavi, Karnataka. I designed the schema, shipped the APIs, hardened the infrastructure, wrote the docker-compose file and answer the support email — for all three KodSpot platforms.
+          <p class="eyebrow">
+            <span class="h-1.5 w-1.5 rounded-full bg-brand-500"></span>
+            Founder's note
+          </p>
+          <h2 class="heading-3 mt-4">Hi, I'm {SITE.founder.legalName.split(' ')[0]}.</h2>
+          <p class="mt-5 muted leading-relaxed text-base sm:text-lg">
+            I'm {SITE.founder.legalName}. I'm a single-founder, full-stack engineer based in Belagavi, Karnataka. I designed the schema, shipped the APIs, hardened the infrastructure, wrote the docker-compose file and answer the support email \u2014 for all three KodSpot platforms.
           </p>
           <p class="mt-4 muted leading-relaxed">
-            KodSpot exists because the operations layer of physical businesses in India is still mostly paper, spreadsheets, and WhatsApp. The teams running these operations deserve software that respects their time, their bandwidth and their compliance obligations. So we’re building it.
+            KodSpot exists because the operations layer of physical businesses in India is still mostly paper, spreadsheets, and WhatsApp. The teams running these operations deserve software that respects their time, their bandwidth and their compliance obligations. So we're building it.
           </p>
           <p class="mt-4 muted leading-relaxed">
-            We’re a registered {SITE.legal.structure.toLowerCase()} — <span class="font-mono text-ink-700 dark:text-ink-200">{SITE.legal.udyamNumber}</span> ({SITE.legal.classification}), incorporated {SITE.legal.incorporated}. GST is not yet applicable — we have not crossed the threshold. We will register the moment we do.
+            We're a registered {SITE.legal.structure.toLowerCase()} \u2014 <span class="font-mono text-ink-700 dark:text-ink-200">{SITE.legal.udyamNumber}</span> ({SITE.legal.classification}), incorporated {SITE.legal.incorporated}. GST is not yet applicable \u2014 we have not crossed the threshold. We will register the moment we do.
           </p>
         </div>
       </div>
     </div>
   </section>
 
-  <section class="container-page mt-24">
+  <section class="container-page mt-24 sm:mt-32">
     <SectionHeading eyebrow="Principles" title="What we believe." />
-    <div class="mt-12 grid gap-5 lg:grid-cols-2">
+    <div class="mt-12 sm:mt-14 grid gap-5 lg:grid-cols-2">
       {principles.map((p, i) => (
-        <div data-reveal data-reveal-delay={(i % 2) + 1} class="surface-solid p-7">
-          <h3 class="text-lg font-semibold">{p.title}</h3>
-          <p class="mt-3 muted leading-relaxed">{p.desc}</p>
+        <div data-reveal data-reveal-delay={(i % 2) + 1} data-tilt="4" class="card-glow spotlight surface-solid p-7 sm:p-9">
+          <p class="font-mono text-[11px] tracking-[0.18em] muted uppercase">0{i + 1}</p>
+          <h3 class="mt-5 font-display text-2xl sm:text-3xl tracking-tight">{p.title}</h3>
+          <p class="mt-4 muted leading-relaxed text-sm sm:text-base">{p.desc}</p>
         </div>
       ))}
     </div>
   </section>
 
-  <section class="container-page mt-24">
-    <SectionHeading eyebrow="Roadmap" title="What we’re building this year." />
-    <div class="mt-12 grid gap-6 lg:grid-cols-3">
+  <section class="container-page mt-24 sm:mt-32">
+    <SectionHeading eyebrow="Roadmap" title="What we're building this year." />
+    <div class="mt-12 sm:mt-14 grid gap-6 lg:grid-cols-3 lg:auto-rows-fr">
       {roadmap.map((r, i) => (
-        <div data-reveal data-reveal-delay={i + 1} class="surface-solid p-7">
-          <p class="text-xs font-semibold uppercase tracking-wider text-brand-600 dark:text-brand-300">{r.quarter}</p>
-          <ul class="mt-4 space-y-2 text-sm">
+        <div data-reveal data-reveal-delay={i + 1} data-tilt="4" class="card-glow spotlight surface-solid p-7 sm:p-8 flex flex-col h-full">
+          <p class="eyebrow">
+            <span class="h-1 w-1 rounded-full bg-brand-500"></span>
+            {r.quarter}
+          </p>
+          <ul class="mt-6 space-y-3 text-sm">
             {r.items.map((it) => (
-              <li class="flex gap-2">
-                <svg class="mt-0.5 h-4 w-4 flex-none text-brand-500" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
-                <span class="text-ink-700 dark:text-ink-300">{it}</span>
+              <li class="flex gap-3">
+                <span class="mt-0.5 inline-flex h-5 w-5 flex-none items-center justify-center rounded-full bg-brand-50 dark:bg-brand-500/15 text-brand-600 dark:text-brand-300">
+                  <svg class="h-3 w-3" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+                </span>
+                <span class="text-ink-700 dark:text-ink-300 leading-relaxed">{it}</span>
               </li>
             ))}
           </ul>
@@ -104,7 +114,7 @@ const principles = [
   </section>
 
   <CTASection
-    title="Want to work with us — or for us?"
-    body="We’re always open to conversations with operators, partners, and engineers who care about the same problems."
+    title="Want to work with us \u2014 or for us?"
+    body="We're always open to conversations with operators, partners, and engineers who care about the same problems."
   />
 </BaseLayout>

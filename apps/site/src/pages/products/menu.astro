@@ -3,6 +3,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import SectionHeading from '../../components/SectionHeading.astro';
 import FeatureGrid from '../../components/FeatureGrid.astro';
 import CTASection from '../../components/CTASection.astro';
+import PageHero from '../../components/PageHero.astro';
 
 const features = [
   { title: 'Short, brand-safe QR menus', desc: '6-character base32 codes. /m/{code} resolves to a mobile-first menu in milliseconds, with a 60-second in-memory cache.' },
@@ -39,19 +40,14 @@ const plans = [
   title="KodSpot Menu — QR Menu SaaS"
   description="Multi-tenant QR menu platform for restaurants, cafés and hotels. Themes, UPI Pay, analytics, printable QR cards and Razorpay billing — production today on kodspot.com."
 >
-  <section class="container-page pt-20 sm:pt-28">
-    <span class="chip" data-reveal>Live · kodspot.com</span>
-    <h1 class="heading-1 mt-5 max-w-3xl" data-reveal data-reveal-delay="1">
-      QR menus that look like a brand, not a PDF.
-    </h1>
-    <p class="lead mt-5 max-w-2xl" data-reveal data-reveal-delay="2">
-      KodSpot Menu is the multi-tenant QR menu SaaS we run on <span class="font-medium">kodspot.com</span>. Restaurants get a 6-character menu code, a themed mobile menu, UPI Pay, printable QR cards and analytics — and we run the platform.
-    </p>
-    <div class="mt-8 flex flex-wrap gap-3" data-reveal data-reveal-delay="3">
-      <a href="/contact" class="btn-accent">Request a trial</a>
-      <a href="/admin" class="btn-outline">Owner login</a>
-    </div>
-  </section>
+  <PageHero
+    eyebrow="Live · kodspot.com"
+    title="QR menus that look like a brand,"
+    highlight="not a PDF."
+    lead="KodSpot Menu is the multi-tenant QR menu SaaS we run on kodspot.com. Restaurants get a 6-character menu code, a themed mobile menu, UPI Pay, printable QR cards and analytics — and we run the platform."
+    primary={{ label: 'Request a trial', href: '/contact' }}
+    secondary={{ label: 'Owner login', href: '/admin' }}
+  />
 
   <section class="container-page mt-20 sm:mt-28">
     <SectionHeading eyebrow="Capabilities" title="Everything a small restaurant needs, none of the bloat." />
@@ -68,11 +64,12 @@ const plans = [
         <div
           data-reveal
           data-reveal-delay={i + 1}
+          data-tilt="5"
           class:list={[
-            'relative rounded-3xl p-7 border transition-all',
+            'relative rounded-3xl p-7 border transition-all spotlight',
             plan.highlight
-              ? 'bg-gradient-to-br from-brand-500 to-brand-700 text-white border-transparent shadow-lift'
-              : 'surface-solid hover:border-brand-300 dark:hover:border-brand-600/60'
+              ? 'bg-gradient-to-br from-brand-500 to-brand-700 text-white border-transparent shadow-lift-lg'
+              : 'surface-solid card-glow hover:border-brand-300 dark:hover:border-brand-600/60'
           ]}
         >
           {plan.highlight && (

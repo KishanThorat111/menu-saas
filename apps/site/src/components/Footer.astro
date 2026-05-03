@@ -3,19 +3,31 @@ import Logo from './Logo.astro';
 import { FOOTER_GROUPS, SITE } from '../lib/site';
 const year = new Date().getFullYear();
 ---
-<footer class="mt-24 border-t border-ink-200/70 dark:border-ink-800/70 bg-ink-50/40 dark:bg-ink-950/60">
-  <div class="container-page py-16">
+<footer class="relative mt-24 sm:mt-32 border-t border-ink-200/70 dark:border-ink-800/70 bg-gradient-to-b from-ink-50/60 to-ink-100/40 dark:from-ink-950 dark:to-black/60 overflow-hidden">
+  <div class="absolute inset-0 mesh-bg opacity-30 pointer-events-none"></div>
+  <div class="orb orb-1 h-[280px] w-[280px] -bottom-32 -left-16 opacity-25 pointer-events-none"></div>
+
+  <div class="container-page relative py-14 sm:py-20">
     <div class="grid gap-12 lg:grid-cols-12">
       <div class="lg:col-span-4">
-        <a href="/" class="flex items-center gap-2 font-display font-semibold">
-          <Logo class="h-8 w-8" />
-          <span class="text-lg">{SITE.name}</span>
+        <a href="/" class="inline-flex items-center gap-2.5 font-semibold">
+          <Logo class="h-9 w-9" size={36} />
+          <span class="text-lg tracking-tight">{SITE.name}</span>
         </a>
-        <p class="mt-4 max-w-sm text-sm text-ink-600 dark:text-ink-400 leading-relaxed">
+        <p class="mt-5 max-w-sm text-sm text-ink-600 dark:text-ink-400 leading-relaxed">
           {SITE.description}
         </p>
-        <p class="mt-6 text-xs muted">
-          {SITE.legal.structure} · {SITE.legal.udyam}<br />
+        <div class="mt-7 flex items-center gap-3">
+          <a href={SITE.whatsappUrl} target="_blank" rel="noopener" aria-label="WhatsApp" class="inline-flex h-10 w-10 items-center justify-center rounded-full border border-ink-200 dark:border-ink-800 bg-white/60 dark:bg-ink-900/60 text-emerald-600 dark:text-emerald-400 hover:border-emerald-500 hover:text-emerald-500 transition-colors">
+            <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24"><path d="M.057 24l1.687-6.163a11.867 11.867 0 01-1.587-5.946C.16 5.335 5.495 0 12.05 0a11.81 11.81 0 018.413 3.488 11.824 11.824 0 013.48 8.413c-.003 6.557-5.338 11.892-11.892 11.892a11.9 11.9 0 01-5.688-1.448L.057 24zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884a9.86 9.86 0 001.51 5.26L3.516 20.9l5.138-1.346z"/></svg>
+          </a>
+          <a href={`mailto:${SITE.email}`} aria-label="Email" class="inline-flex h-10 w-10 items-center justify-center rounded-full border border-ink-200 dark:border-ink-800 bg-white/60 dark:bg-ink-900/60 text-ink-700 dark:text-ink-200 hover:border-brand-500 hover:text-brand-500 transition-colors">
+            <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+          </a>
+        </div>
+        <p class="mt-7 text-xs muted leading-relaxed">
+          {SITE.legal.structure} · <span class="font-mono">{SITE.legal.udyamNumber}</span><br />
+          {SITE.address.line1}, {SITE.address.line2}<br/>
           {SITE.city}
         </p>
       </div>
@@ -23,16 +35,14 @@ const year = new Date().getFullYear();
       <div class="lg:col-span-8 grid gap-8 grid-cols-2 sm:grid-cols-4">
         {FOOTER_GROUPS.map((group) => (
           <div>
-            <h3 class="text-xs font-semibold uppercase tracking-wider text-ink-500 dark:text-ink-400">
+            <h3 class="text-[11px] font-semibold uppercase tracking-[0.18em] text-ink-500 dark:text-ink-400">
               {group.title}
             </h3>
-            <ul class="mt-4 space-y-2.5">
+            <ul class="mt-5 space-y-3">
               {group.links.map((link) => (
                 <li>
-                  <a
-                    href={link.href}
-                    class="text-sm text-ink-700 dark:text-ink-300 hover:text-brand-600 dark:hover:text-brand-300 transition-colors"
-                  >
+                  <a href={link.href} class="group inline-flex items-center gap-1.5 text-sm text-ink-700 dark:text-ink-300 hover:text-brand-600 dark:hover:text-brand-300 transition-colors">
+                    <span class="h-px w-0 bg-current transition-all duration-300 group-hover:w-3"></span>
                     {link.label}
                   </a>
                 </li>
@@ -43,7 +53,7 @@ const year = new Date().getFullYear();
       </div>
     </div>
 
-    <div class="mt-14 border-t border-ink-200/70 dark:border-ink-800/70 pt-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-xs muted">
+    <div class="mt-14 sm:mt-16 border-t border-ink-200/70 dark:border-ink-800/70 pt-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-xs muted">
       <p>© {year} {SITE.legalName}. All rights reserved.</p>
       <p>
         Built in {SITE.city}.

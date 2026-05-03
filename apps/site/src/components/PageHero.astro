@@ -1,0 +1,49 @@
+---
+interface CTA { label: string; href: string }
+interface Props {
+  eyebrow: string;
+  title: string;
+  highlight?: string;
+  lead?: string;
+  align?: 'left' | 'center';
+  primary?: CTA;
+  secondary?: CTA;
+}
+const { eyebrow, title, highlight, lead, align = 'left', primary, secondary } = Astro.props;
+const alignClass = align === 'center' ? 'text-center mx-auto items-center' : '';
+---
+<section class="relative isolate overflow-hidden">
+  <div class="absolute inset-0 -z-20 mesh-bg opacity-70 pointer-events-none"></div>
+  <div class="absolute inset-0 -z-10 grid-bg opacity-30 pointer-events-none"></div>
+  <div class="orb orb-1 h-[360px] w-[360px] -top-32 -left-24 opacity-40 animate-float-slow"></div>
+  <div class="orb orb-2 h-[320px] w-[320px] top-10 right-[-80px] opacity-35 animate-float-slower"></div>
+
+  <div class={`container-page relative pt-12 sm:pt-20 lg:pt-24 pb-14 sm:pb-20 ${align === 'center' ? 'text-center' : ''}`}>
+    <div class={`flex flex-col ${alignClass}`}>
+      <p class="eyebrow" data-reveal>
+        <span class="h-1.5 w-1.5 rounded-full bg-brand-500"></span>
+        {eyebrow}
+      </p>
+      <h1 class="heading-1 mt-5 max-w-4xl text-balance" data-reveal data-reveal-delay="1">
+        <span data-split data-text={title}></span>
+        {highlight && <span class="block gradient-brand-text italic">{highlight}</span>}
+      </h1>
+      {lead && (
+        <p class="lead mt-6 max-w-2xl text-pretty" data-reveal data-reveal-delay="2">
+          {lead}
+        </p>
+      )}
+      {(primary || secondary) && (
+        <div class={`mt-9 flex flex-wrap gap-3 ${align === 'center' ? 'justify-center' : ''}`} data-reveal data-reveal-delay="3">
+          {primary && (
+            <a href={primary.href} class="btn-accent magnetic" data-magnetic="0.25">{primary.label}</a>
+          )}
+          {secondary && (
+            <a href={secondary.href} class="btn-outline magnetic" data-magnetic="0.2">{secondary.label}</a>
+          )}
+        </div>
+      )}
+      <slot />
+    </div>
+  </div>
+</section>
