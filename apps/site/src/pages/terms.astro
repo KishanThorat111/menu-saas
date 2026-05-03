@@ -1,0 +1,83 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import PageHero from '../components/PageHero.astro';
+import LegalPage from '../components/LegalPage.astro';
+import { SITE } from '../lib/site';
+
+const sections = [
+  { id: 'what',      title: 'What KodSpot does' },
+  { id: 'account',   title: 'Your account' },
+  { id: 'plans',     title: 'Plans & payments' },
+  { id: 'content',   title: 'Your content' },
+  { id: 'liability', title: "What we're responsible for" },
+  { id: 'suspension', title: 'Account suspension' },
+  { id: 'ending',    title: 'Ending your account' },
+  { id: 'changes',   title: 'Changes to these terms' },
+  { id: 'fiduciary', title: 'Data Fiduciary' },
+  { id: 'availability', title: 'Service availability' },
+  { id: 'law',       title: 'Governing law' }
+];
+---
+<BaseLayout
+  title="Terms of Service"
+  description="The terms under which KodSpot's hosted SaaS platforms are provided to restaurants, hotels, and hospitals."
+>
+  <PageHero
+    eyebrow="Legal"
+    title="Terms of"
+    highlight="Service."
+    lead="The terms under which we operate KodSpot's hosted platforms. Plain English. Indian law."
+  />
+
+  <LegalPage updated="April 2026" version="1.1" sections={sections}>
+    <p class="lead-block">
+      By using KodSpot, you agree to these terms. KodSpot is operated by <strong>{SITE.founder.legalName}</strong> ({SITE.legal.structure}), {SITE.city}.
+    </p>
+
+    <h2 id="what">What KodSpot does</h2>
+    <p>KodSpot is a hosted platform that lets restaurants, hotels and hospitals create and operate digital menus, housekeeping workflows and electrical inspections. We handle the hosting, storage and delivery of your data and content.</p>
+
+    <h2 id="account">Your account</h2>
+    <ul>
+      <li>You get a 14-day free trial when you sign up for KodSpot Menu.</li>
+      <li>After the trial, your account status depends on your chosen plan and payment.</li>
+      <li>Keep your login PIN secure. You are responsible for activity under your account.</li>
+    </ul>
+
+    <h2 id="plans">Plans &amp; payments</h2>
+    <ul>
+      <li><strong>Starter:</strong> ₹499 / month — 150 unique visitors/day, 4 themes</li>
+      <li><strong>Standard:</strong> ₹999 / month — 500 unique visitors/day, 8 themes</li>
+      <li><strong>Pro:</strong> ₹1,499 / month — Unlimited visitors, all 15 themes, no branding</li>
+    </ul>
+    <p>Payments are processed securely through Razorpay. Subscriptions do not auto-renew — you will need to manually make a payment to continue your plan after it expires. We will notify you before your subscription expires. If payment is not received, your account may move to a grace period and then expire.</p>
+
+    <h2 id="content">Your content</h2>
+    <ul>
+      <li>You own the content (menus, photos, inspection records) you upload.</li>
+      <li>By uploading, you give us permission to host and display it as part of the service.</li>
+      <li>Don't upload content that is illegal, harmful, or infringes on someone else's rights.</li>
+    </ul>
+
+    <h2 id="liability">What we're responsible for</h2>
+    <p>We do our best to keep the service running and your data safe. However, KodSpot is provided "as is." We are not liable for any losses from downtime, data loss, or bugs.</p>
+
+    <h2 id="suspension">Account suspension</h2>
+    <p>We may suspend your account if you violate these terms, use the service for illegal purposes, or fail to pay after the grace period.</p>
+
+    <h2 id="ending">Ending your account</h2>
+    <p>You can request account deletion at any time by emailing <a href={`mailto:${SITE.email}`}>{SITE.email}</a> or messaging us on <a href={SITE.whatsappUrl} target="_blank" rel="noreferrer">WhatsApp</a>. We will remove your data within 30 days.</p>
+
+    <h2 id="changes">Changes to these terms</h2>
+    <p>We may update these terms from time to time. For material changes, we will notify active subscribers by email at least 15 days before the changes take effect. Continued use of the service after the effective date means you accept the updated terms.</p>
+
+    <h2 id="fiduciary">Data Fiduciary</h2>
+    <p>KodSpot acts as a Data Fiduciary under India's Digital Personal Data Protection Act, 2023. We process your personal data only for the purposes described in our <a href="/privacy">Privacy Policy</a>.</p>
+
+    <h2 id="availability">Service availability</h2>
+    <p>We aim for high availability but do not guarantee uninterrupted service. Scheduled maintenance will be communicated in advance where possible. We are not liable for temporary unavailability due to maintenance, updates, or circumstances beyond our control.</p>
+
+    <h2 id="law">Governing law</h2>
+    <p>These terms are governed by the laws of India. Any disputes will be subject to the jurisdiction of courts in Belagavi, Karnataka.</p>
+  </LegalPage>
+</BaseLayout>

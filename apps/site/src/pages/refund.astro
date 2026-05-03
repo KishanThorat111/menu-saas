@@ -1,0 +1,104 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import PageHero from '../components/PageHero.astro';
+import LegalPage from '../components/LegalPage.astro';
+import { SITE } from '../lib/site';
+
+const sections = [
+  { id: 'trial',        title: 'Free trial' },
+  { id: 'plans',        title: 'Subscription plans' },
+  { id: 'cancellation', title: 'Cancellation' },
+  { id: 'refund',       title: 'Refund policy' },
+  { id: 'request',      title: 'How to request a refund' },
+  { id: 'processing',   title: 'Refund processing' },
+  { id: 'downtime',     title: 'Service downtime' },
+  { id: 'changes',      title: 'Changes to this policy' },
+  { id: 'contact',      title: 'Contact' }
+];
+---
+<BaseLayout
+  title="Refund & Cancellation Policy"
+  description="KodSpot's refund and cancellation policy for monthly subscriptions across Menu, Housekeeping and Electrical."
+>
+  <PageHero
+    eyebrow="Legal"
+    title="Refund &amp;"
+    highlight="Cancellation."
+    lead="How refunds, cancellations and credits work for every KodSpot subscription. Same rules across all products."
+  />
+
+  <LegalPage updated="April 2026" version="1.1" sections={sections}>
+    <p class="lead-block">
+      This policy applies to all subscription plans purchased on <strong>KodSpot</strong> (<a href="https://kodspot.com">https://kodspot.com</a>), operated by <strong>{SITE.founder.legalName}</strong> ({SITE.legal.structure}), {SITE.city}.
+    </p>
+
+    <h2 id="trial">Free trial</h2>
+    <ul>
+      <li>Every new account receives a <strong>14-day free trial</strong> at no cost.</li>
+      <li>No payment is required to start the trial. No credit card is collected upfront.</li>
+      <li>If you choose not to continue after the trial, your account will simply expire. There is nothing to cancel or refund.</li>
+    </ul>
+
+    <h2 id="plans">Subscription plans</h2>
+    <p>KodSpot Menu offers the following monthly subscription plans:</p>
+    <ul>
+      <li><strong>Starter:</strong> ₹499 / month</li>
+      <li><strong>Standard:</strong> ₹999 / month</li>
+      <li><strong>Pro:</strong> ₹1,499 / month</li>
+    </ul>
+    <p>Subscriptions are billed on a monthly basis. Each payment covers one month of service from the date of payment.</p>
+
+    <h2 id="cancellation">Cancellation</h2>
+    <ul>
+      <li>You may cancel your subscription at any time by emailing us at <a href={`mailto:${SITE.email}`}>{SITE.email}</a> or messaging us on <a href={SITE.whatsappUrl} target="_blank" rel="noreferrer">WhatsApp</a>.</li>
+      <li>Upon cancellation, your account will remain active until the end of your current billing period.</li>
+      <li>After the billing period ends, your account will move to a grace period and eventually expire if no renewal is made.</li>
+      <li>Cancellation does not result in immediate loss of access — you can continue using the service until your paid period ends.</li>
+    </ul>
+
+    <h2 id="refund">Refund policy</h2>
+    <ul>
+      <li><strong>Full refund:</strong> If you request a refund within <strong>7 days</strong> of your payment and have not extensively used the service during that period, we will issue a full refund.</li>
+      <li><strong>Pro-rated refunds:</strong> If you cancel after 7 days but before the end of your billing cycle, we may offer a pro-rated refund at our discretion, based on the unused portion of the month.</li>
+      <li><strong>No refund:</strong> Refunds will not be issued for the following:
+        <ul>
+          <li>Accounts suspended due to policy violations.</li>
+          <li>Partial months where the service was actively used.</li>
+          <li>Requests made more than 30 days after payment.</li>
+        </ul>
+      </li>
+    </ul>
+
+    <h2 id="request">How to request a refund</h2>
+    <p>To request a refund, email us at <a href={`mailto:${SITE.email}`}>{SITE.email}</a> with the following details:</p>
+    <ul>
+      <li>Your restaurant / hotel / hospital name</li>
+      <li>Your registered phone number</li>
+      <li>Your 6-character menu code (or organisation ID)</li>
+      <li>Reason for the refund request</li>
+    </ul>
+    <p>We will review your request and respond within <strong>5 business days</strong>.</p>
+
+    <h2 id="processing">Refund processing</h2>
+    <ul>
+      <li>Approved refunds will be processed within <strong>7–10 business days</strong>.</li>
+      <li>Refunds will be credited to the original payment method used for the transaction.</li>
+      <li>For UPI or bank transfer payments, we may request your bank account details to process the refund.</li>
+    </ul>
+
+    <h2 id="downtime">Service downtime</h2>
+    <p>KodSpot aims for 99.9% uptime. In the event of extended, unplanned downtime (more than 24 consecutive hours) caused by our infrastructure, affected customers may request a credit or partial refund for the downtime period. This does not apply to scheduled maintenance communicated in advance.</p>
+
+    <h2 id="changes">Changes to this policy</h2>
+    <p>We may update this policy from time to time. The "Last updated" date at the top will reflect the latest revision. Continued use of KodSpot after any changes constitutes acceptance of the revised policy.</p>
+
+    <h2 id="contact">Contact</h2>
+    <p>
+      For refund or cancellation requests, contact us at:<br /><br />
+      <strong>{SITE.founder.legalName}</strong> ({SITE.legal.structure})<br />
+      Email: <a href={`mailto:${SITE.email}`}>{SITE.email}</a><br />
+      WhatsApp: <a href={SITE.whatsappUrl} target="_blank" rel="noreferrer">{SITE.whatsapp}</a><br />
+      {SITE.address.line1}, {SITE.address.line2}, {SITE.address.city} {SITE.address.pin}
+    </p>
+  </LegalPage>
+</BaseLayout>

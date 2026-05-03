@@ -1,0 +1,113 @@
+---
+// Shared prose styling + table-of-contents wrapper for legal pages.
+interface Section { id: string; title: string }
+interface Props {
+  updated: string;
+  version?: string;
+  sections: Section[];
+}
+const { updated, version, sections } = Astro.props;
+---
+<div class="container-page mt-2 mb-24 sm:mb-32">
+  <div class="grid gap-10 lg:grid-cols-12 lg:gap-14">
+    <aside class="lg:col-span-4">
+      <div class="lg:sticky lg:top-28 surface-solid p-6 sm:p-7 spotlight">
+        <p class="font-mono text-[10px] tracking-[0.18em] muted uppercase">
+          Last updated · {updated}{version ? ` · v${version}` : ''}
+        </p>
+        <h2 class="mt-3 font-display text-lg tracking-tight">On this page</h2>
+        <nav class="mt-5">
+          <ol class="space-y-2.5 text-sm">
+            {sections.map((s, i) => (
+              <li>
+                <a href={`#${s.id}`} class="group flex items-start gap-3 text-ink-700 dark:text-ink-300 hover:text-brand-600 dark:hover:text-brand-300 transition-colors">
+                  <span class="font-mono text-[10px] muted pt-0.5 tracking-wider">0{i + 1}</span>
+                  <span class="leading-snug">{s.title}</span>
+                </a>
+              </li>
+            ))}
+          </ol>
+        </nav>
+      </div>
+    </aside>
+
+    <article class="lg:col-span-8 legal-prose" data-reveal>
+      <slot />
+    </article>
+  </div>
+</div>
+
+<style is:global>
+  .legal-prose { color: rgb(55 65 81); line-height: 1.75; font-size: 15.5px; }
+  :root.dark .legal-prose, .dark .legal-prose { color: rgb(203 213 225); }
+
+  .legal-prose h2 {
+    font-family: var(--font-display, 'Instrument Serif', serif);
+    font-weight: 500;
+    letter-spacing: -0.02em;
+    font-size: 1.75rem;
+    line-height: 1.15;
+    margin-top: 3rem;
+    margin-bottom: 1rem;
+    color: rgb(17 24 39);
+    scroll-margin-top: 6rem;
+  }
+  .dark .legal-prose h2 { color: rgb(241 245 249); }
+  .legal-prose h2::before {
+    content: '';
+    display: inline-block;
+    width: 6px; height: 6px;
+    background: linear-gradient(135deg, #ec8c3f, #c97426);
+    border-radius: 999px;
+    margin-right: 0.7rem;
+    vertical-align: middle;
+    transform: translateY(-3px);
+  }
+
+  .legal-prose p { margin: 0.85rem 0; }
+  .legal-prose strong { color: rgb(17 24 39); font-weight: 600; }
+  .dark .legal-prose strong { color: rgb(241 245 249); }
+
+  .legal-prose a {
+    color: rgb(201 116 38);
+    text-decoration: underline;
+    text-decoration-color: rgba(201 116 38 / 0.4);
+    text-underline-offset: 4px;
+    transition: text-decoration-color 0.2s;
+  }
+  .dark .legal-prose a { color: rgb(238 174 106); text-decoration-color: rgba(238 174 106 / 0.4); }
+  .legal-prose a:hover { text-decoration-color: currentColor; }
+
+  .legal-prose ul, .legal-prose ol { margin: 1rem 0; padding-left: 1.4rem; }
+  .legal-prose ul { list-style: none; padding-left: 0; }
+  .legal-prose ul > li {
+    position: relative;
+    padding-left: 1.6rem;
+    margin: 0.6rem 0;
+  }
+  .legal-prose ul > li::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0.7rem;
+    width: 6px; height: 6px;
+    border-radius: 999px;
+    background: linear-gradient(135deg, #ec8c3f, #c97426);
+    box-shadow: 0 0 0 3px rgba(236 140 63 / 0.12);
+  }
+  .legal-prose ul ul { margin: 0.4rem 0 0.4rem 0.6rem; }
+  .legal-prose ul ul > li::before { background: rgb(148 163 184); box-shadow: none; }
+
+  .legal-prose .lead-block {
+    border-left: 3px solid rgb(201 116 38);
+    padding: 0.4rem 0 0.4rem 1.1rem;
+    margin: 1rem 0 1.5rem;
+    font-size: 1.05rem;
+    color: rgb(75 85 99);
+  }
+  .dark .legal-prose .lead-block { color: rgb(203 213 225); }
+
+  @media (max-width: 640px) {
+    .legal-prose { font-size: 15px; }
+    .legal-prose h2 { font-size: 1.5rem; margin-top: 2.25rem; }
+  }
+</style>
