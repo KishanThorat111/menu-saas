@@ -1,19 +1,43 @@
 ---
 import { STATS } from '../lib/site';
+
+// Parse each stat into a numeric counter where possible
+function parse(value: string) {
+  const m = value.match(/^([^\d.-]*)([\d.]+)(.*)$/);
+  if (!m) return null;
+  return { prefix: m[1] || '', num: parseFloat(m[2]), suffix: m[3] || '', decimals: (m[2].split('.')[1] || '').length };
+}
 ---
-<section class="container-page mt-20 sm:mt-28">
-  <div class="surface-solid grid grid-cols-2 lg:grid-cols-4 gap-px overflow-hidden bg-ink-200/70 dark:bg-ink-800/70">
-    {STATS.map((stat, i) => (
-      <div
-        class="bg-white dark:bg-ink-900 p-6 sm:p-8 flex flex-col gap-2"
-        data-reveal
-        data-reveal-delay={Math.min(i + 1, 4)}
-      >
-        <span class="font-display text-3xl sm:text-4xl font-semibold tracking-tight gradient-text">
-          {stat.value}
-        </span>
-        <span class="text-sm muted leading-snug">{stat.label}</span>
-      </div>
-    ))}
+<section class="container-page mt-24 sm:mt-32">
+  <div class="conic-border surface-solid overflow-hidden">
+    <div class="grid grid-cols-2 lg:grid-cols-4 divide-x divide-y lg:divide-y-0 divide-ink-200/70 dark:divide-ink-800/70">
+      {STATS.map((stat, i) => {
+        const parsed = parse(stat.value);
+        return (
+          <div
+            class="relative bg-white dark:bg-ink-900 p-7 sm:p-9 flex flex-col gap-2 spotlight"
+            data-reveal
+            data-reveal-delay={Math.min(i + 1, 4)}
+          >
+            <span class="font-display text-5xl sm:text-6xl lg:text-7xl font-normal tracking-tight gradient-brand-text num leading-none">
+              {parsed ? (
+                <>
+                  {parsed.prefix}
+                  <span
+                    data-counter={parsed.num}
+                    data-prefix={''}
+                    data-suffix={parsed.suffix}
+                    data-decimals={parsed.decimals}
+                  >0{parsed.suffix}</span>
+                </>
+              ) : (
+                stat.value
+              )}
+            </span>
+            <span class="text-sm muted leading-snug max-w-[18ch]">{stat.label}</span>
+          </div>
+        );
+      })}
+    </div>
   </div>
 </section>

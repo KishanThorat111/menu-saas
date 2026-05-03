@@ -12,18 +12,36 @@ const {
   secondary = { label: 'See the technology', href: '/technology' }
 } = Astro.props;
 ---
-<section class="container-page mt-24 sm:mt-32">
-  <div class="relative overflow-hidden rounded-3xl border border-ink-200 dark:border-ink-800 bg-gradient-to-br from-ink-50 to-white dark:from-ink-900 dark:to-ink-950 p-8 sm:p-14">
-    <div class="absolute inset-0 ambient-glow opacity-60 pointer-events-none"></div>
-    <div class="relative max-w-2xl" data-reveal>
-      <h2 class="heading-2">{title}</h2>
-      <p class="mt-4 lead">{body}</p>
-      <div class="mt-8 flex flex-wrap gap-3">
-        <a href={primary.href} class="btn-accent">
-          {primary.label}
-          <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14M13 5l7 7-7 7"/></svg>
-        </a>
-        <a href={secondary.href} class="btn-outline">{secondary.label}</a>
+<section class="container-page mt-28 sm:mt-36">
+  <div class="conic-border relative overflow-hidden rounded-3xl border border-ink-200/80 dark:border-ink-800/80 bg-gradient-to-br from-ink-50 to-white dark:from-ink-900 dark:to-ink-950">
+    {/* Mesh + orbs */}
+    <div class="absolute inset-0 mesh-bg opacity-60 pointer-events-none"></div>
+    <div class="orb orb-1 h-[360px] w-[360px] -top-24 -left-16 opacity-40"></div>
+    <div class="orb orb-2 h-[300px] w-[300px] bottom-[-100px] right-[-60px] opacity-40"></div>
+
+    <div class="relative p-10 sm:p-16 lg:p-20 grid lg:grid-cols-12 gap-10 items-center">
+      <div class="lg:col-span-8" data-reveal>
+        <p class="eyebrow">
+          <span class="h-1.5 w-1.5 rounded-full bg-brand-500"></span>
+          Let's build something
+        </p>
+        <h2 class="heading-2 mt-4 text-balance">{title}</h2>
+        <p class="mt-5 lead max-w-2xl text-pretty">{body}</p>
+        <div class="mt-9 flex flex-wrap gap-3">
+          <a href={primary.href} class="btn-accent magnetic" data-magnetic="0.3">
+            {primary.label}
+            <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14M13 5l7 7-7 7"/></svg>
+          </a>
+          <a href={secondary.href} class="btn-outline magnetic" data-magnetic="0.2">{secondary.label}</a>
+        </div>
+      </div>
+      <div class="lg:col-span-4 flex justify-center" data-reveal data-reveal-delay="2">
+        <div class="relative">
+          <div class="absolute inset-0 rounded-full bg-brand-400/30 blur-3xl animate-pulse-soft"></div>
+          <div class="relative h-32 w-32 sm:h-40 sm:w-40 rounded-full overflow-hidden flex items-center justify-center border border-brand-300/40 dark:border-brand-500/30 bg-white/30 dark:bg-ink-900/40 backdrop-blur-xl shadow-ring-brand">
+            <img src="/kodspot-logo.png" alt="" width="160" height="160" class="h-3/4 w-3/4 object-contain drop-shadow-[0_4px_14px_rgba(201,116,38,0.45)]" loading="lazy" decoding="async" />
+          </div>
+        </div>
       </div>
     </div>
   </div>

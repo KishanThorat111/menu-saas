@@ -4,8 +4,9 @@ import { PRODUCTS } from '../lib/site';
 interface Props {
   product: typeof PRODUCTS[number];
   delay?: number;
+  featured?: boolean;
 }
-const { product, delay = 0 } = Astro.props;
+const { product, delay = 0, featured = false } = Astro.props;
 
 const iconMap: Record<string, string> = {
   menu: '<path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h10M4 18h16"/>',
@@ -17,23 +18,37 @@ const iconMap: Record<string, string> = {
   href={`/products/${product.slug}`}
   data-reveal
   data-reveal-delay={delay}
-  class="group relative block rounded-3xl border border-ink-200 dark:border-ink-800 bg-white dark:bg-ink-900/60 p-6 sm:p-8 overflow-hidden transition-all hover:-translate-y-1 hover:shadow-lift focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
+  data-tilt="6"
+  class:list={[
+    'group card-glow spotlight relative block rounded-3xl border border-ink-200/80 dark:border-ink-800/80 bg-white dark:bg-ink-900/60 p-7 sm:p-9 overflow-hidden transition-all hover:shadow-lift-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500',
+    featured ? 'lg:col-span-2 lg:row-span-2 lg:p-10' : ''
+  ]}
 >
-  <div class={`pointer-events-none absolute -top-24 -right-24 h-56 w-56 rounded-full bg-gradient-to-br ${product.color} opacity-10 blur-2xl transition-opacity duration-500 group-hover:opacity-20`}></div>
+  {/* Spotlight blob */}
+  <div class={`pointer-events-none absolute -top-32 -right-24 h-72 w-72 rounded-full bg-gradient-to-br ${product.color} opacity-[0.10] blur-3xl transition-opacity duration-500 group-hover:opacity-[0.20]`}></div>
 
-  <div class="relative flex items-center justify-between">
-    <span class={`inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br ${product.color} text-white shadow-soft`}>
-      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" set:html={iconMap[product.icon]}></svg>
+  <div class="relative tilt-inner flex items-start justify-between gap-4">
+    <span class={`inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br ${product.color} text-white shadow-ring-brand`}>
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24" set:html={iconMap[product.icon]}></svg>
     </span>
-    <span class="chip">{product.status}</span>
+    <div class="flex flex-col items-end gap-1.5">
+      <span class="chip">{product.status}</span>
+      <span class="text-[10px] font-mono uppercase tracking-[0.18em] muted">{product.domain}</span>
+    </div>
   </div>
 
-  <h3 class="mt-6 text-xl sm:text-2xl font-display font-semibold tracking-tight">{product.name}</h3>
-  <p class="mt-2 text-sm text-ink-500 dark:text-ink-400">{product.audience}</p>
-  <p class="mt-4 text-sm sm:text-base text-ink-700 dark:text-ink-300 leading-relaxed">{product.short}</p>
+  <h3 class:list={[
+    'relative tilt-inner mt-7 font-display tracking-tight',
+    featured ? 'text-3xl sm:text-4xl lg:text-5xl' : 'text-2xl sm:text-3xl'
+  ]}>{product.name}</h3>
+  <p class="relative tilt-inner mt-2 text-sm muted">{product.audience}</p>
+  <p class:list={[
+    'relative tilt-inner mt-5 text-ink-700 dark:text-ink-300 leading-relaxed',
+    featured ? 'text-base sm:text-lg max-w-2xl' : 'text-sm sm:text-base'
+  ]}>{featured ? product.long : product.short}</p>
 
-  <div class="mt-6 inline-flex items-center gap-1.5 text-sm font-medium text-brand-600 dark:text-brand-300">
-    Explore product
-    <svg class="h-4 w-4 transition-transform group-hover:translate-x-0.5" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14M13 5l7 7-7 7"/></svg>
+  <div class="relative tilt-inner mt-7 inline-flex items-center gap-1.5 text-sm font-medium text-brand-600 dark:text-brand-300">
+    <span class="border-b border-current/40 group-hover:border-current transition-colors">Explore product</span>
+    <svg class="h-4 w-4 transition-transform group-hover:translate-x-1" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14M13 5l7 7-7 7"/></svg>
   </div>
 </a>
