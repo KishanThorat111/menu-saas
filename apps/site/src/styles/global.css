@@ -79,15 +79,15 @@
 
   .heading-1 {
     font-family: 'Instrument Serif', 'Playfair Display', ui-serif, Georgia, serif;
-    @apply text-5xl sm:text-7xl lg:text-8xl font-normal tracking-[-0.02em] leading-[0.96];
+    @apply text-[2.5rem] sm:text-6xl lg:text-7xl xl:text-8xl font-normal tracking-[-0.02em] leading-[0.98];
   }
   .heading-2 {
     font-family: 'Instrument Serif', 'Playfair Display', ui-serif, Georgia, serif;
-    @apply text-4xl sm:text-6xl lg:text-7xl font-normal tracking-[-0.02em] leading-[1.0];
+    @apply text-[2.1rem] sm:text-5xl lg:text-6xl xl:text-7xl font-normal tracking-[-0.02em] leading-[1.02];
   }
   .heading-3 {
     font-family: 'Instrument Serif', 'Playfair Display', ui-serif, Georgia, serif;
-    @apply text-3xl sm:text-5xl font-normal tracking-[-0.018em] leading-[1.05];
+    @apply text-2xl sm:text-4xl lg:text-5xl font-normal tracking-[-0.018em] leading-[1.08];
   }
   .eyebrow {
     @apply inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-brand-600 dark:text-brand-300;

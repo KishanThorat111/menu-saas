@@ -81,8 +81,8 @@ const marqueeWords = ['Hospitals', 'Hotels', 'Restaurants', 'Manufacturing', 'Ed
         </div>
 
         {/* Right: floating logo orb / product preview card */}
-        <div class="lg:col-span-5 relative perspective" data-reveal data-reveal-delay="3">
-          <div class="relative mx-auto max-w-md" data-tilt="10">
+        <div class="lg:col-span-5 relative perspective order-first lg:order-last" data-reveal data-reveal-delay="3">
+          <div class="relative mx-auto max-w-[260px] sm:max-w-sm lg:max-w-md" data-tilt="10">
             {/* Floating logo halo */}
             <div class="relative aspect-square">
               <div class="absolute inset-0 rounded-full bg-gradient-to-br from-brand-300/30 via-brand-500/20 to-transparent blur-3xl animate-pulse-soft"></div>
@@ -91,7 +91,7 @@ const marqueeWords = ['Hospitals', 'Hotels', 'Restaurants', 'Manufacturing', 'Ed
 
               {/* The actual logo */}
               <div class="absolute inset-0 flex items-center justify-center">
-                <Logo class="h-44 w-44 sm:h-56 sm:w-56 drop-shadow-2xl animate-float-slow" size={224} glow={false} />
+                <Logo class="h-32 w-32 sm:h-44 sm:w-44 lg:h-56 lg:w-56 drop-shadow-2xl animate-float-slow" size={224} glow={false} />
               </div>
 
               {/* Floating product chips */}
@@ -176,7 +176,7 @@ const marqueeWords = ['Hospitals', 'Hotels', 'Restaurants', 'Manufacturing', 'Ed
       lead="Each KodSpot product solves a specific operational problem for hospitals, hotels, and restaurants — built on the same multi-tenant core."
     />
     <div class="mt-14 grid gap-6 lg:grid-cols-3 lg:auto-rows-fr">
-      {PRODUCTS.map((p, i) => <ProductCard product={p} delay={i + 1} featured={i === 0} />)}
+      {PRODUCTS.map((p, i) => <ProductCard product={p} delay={i + 1} />)}
     </div>
   </section>
 

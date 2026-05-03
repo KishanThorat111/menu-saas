@@ -1,71 +1,98 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import PageHero from '../components/PageHero.astro';
 import { SITE } from '../lib/site';
 ---
 <BaseLayout
   title="Contact"
   description="Talk to KodSpot about products, services, partnerships, or cloud architecture engagements."
 >
-  <section class="container-page pt-20 sm:pt-28 max-w-5xl">
-    <div class="grid gap-12 lg:grid-cols-12">
-      <div class="lg:col-span-5" data-reveal>
-        <span class="chip">Contact</span>
-        <h1 class="heading-1 mt-5">Let’s talk.</h1>
-        <p class="lead mt-5">
-          Tell us what you’re building or what you need. We respond to every message — usually within one business day.
-        </p>
+  <PageHero
+    eyebrow="Contact"
+    title="Let's"
+    highlight="talk."
+    lead="Tell us what you're building or what you need. We respond to every message — usually within one business day."
+  />
 
-        <ul class="mt-10 space-y-4 text-sm">
-          <li class="flex gap-3">
-            <svg class="h-5 w-5 flex-none text-brand-500" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
-            <a class="link-underline" href={`mailto:${SITE.email}`}>{SITE.email}</a>
-          </li>
-          <li class="flex gap-3">
-            <svg class="h-5 w-5 flex-none text-brand-500" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg>
-            <a class="link-underline" href={SITE.whatsappUrl} target="_blank" rel="noreferrer">WhatsApp · {SITE.whatsapp}</a>
-          </li>
-          <li class="flex gap-3">
-            <svg class="h-5 w-5 flex-none text-brand-500" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a2 2 0 01-2.828 0l-4.243-4.243a8 8 0 1111.314 0zM15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-            <span>{SITE.city}</span>
-          </li>
-        </ul>
+  <section class="container-page mt-8 sm:mt-12 mb-24 sm:mb-32">
+    <div class="grid gap-10 lg:grid-cols-12 lg:gap-14">
+      <div class="lg:col-span-5">
+        <div class="conic-border surface-solid p-7 sm:p-9 spotlight">
+          <p class="eyebrow" data-reveal>
+            <span class="h-1.5 w-1.5 rounded-full bg-brand-500"></span>
+            Direct channels
+          </p>
+          <h2 class="font-display text-2xl sm:text-3xl tracking-tight mt-4" data-reveal data-reveal-delay="1">
+            Talk to us directly.
+          </h2>
+
+          <ul class="mt-8 space-y-5 text-sm" data-reveal data-reveal-delay="2">
+            <li class="flex items-start gap-4">
+              <span class="inline-flex h-10 w-10 flex-none items-center justify-center rounded-2xl bg-gradient-to-br from-brand-400 to-brand-600 text-white shadow-ring-brand">
+                <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+              </span>
+              <div>
+                <p class="text-[11px] uppercase tracking-[0.2em] muted font-semibold">Email</p>
+                <a class="link-underline text-base font-medium" href={`mailto:${SITE.email}`}>{SITE.email}</a>
+              </div>
+            </li>
+            <li class="flex items-start gap-4">
+              <span class="inline-flex h-10 w-10 flex-none items-center justify-center rounded-2xl bg-emerald-500 text-white shadow-soft">
+                <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24"><path d="M.057 24l1.687-6.163a11.867 11.867 0 01-1.587-5.946C.16 5.335 5.495 0 12.05 0a11.81 11.81 0 018.413 3.488 11.824 11.824 0 013.48 8.413c-.003 6.557-5.338 11.892-11.892 11.892a11.9 11.9 0 01-5.688-1.448L.057 24zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884a9.86 9.86 0 001.51 5.26L3.516 20.9l5.138-1.346zM17.472 14.382c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413z"/></svg>
+              </span>
+              <div>
+                <p class="text-[11px] uppercase tracking-[0.2em] muted font-semibold">WhatsApp</p>
+                <a class="link-underline text-base font-medium" href={SITE.whatsappUrl} target="_blank" rel="noreferrer">{SITE.whatsapp}</a>
+              </div>
+            </li>
+            <li class="flex items-start gap-4">
+              <span class="inline-flex h-10 w-10 flex-none items-center justify-center rounded-2xl bg-ink-900 dark:bg-white text-white dark:text-ink-900 shadow-soft">
+                <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a2 2 0 01-2.828 0l-4.243-4.243a8 8 0 1111.314 0zM15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+              </span>
+              <div>
+                <p class="text-[11px] uppercase tracking-[0.2em] muted font-semibold">Office</p>
+                <p class="text-sm font-medium leading-snug">{SITE.address.line1}, {SITE.address.line2}<br/>{SITE.city}</p>
+              </div>
+            </li>
+          </ul>
+
+          <div class="mt-8 pt-7 border-t border-ink-200/70 dark:border-ink-800/70 text-xs muted leading-relaxed">
+            <p>{SITE.legal.structure} · <span class="font-mono">{SITE.legal.udyamNumber}</span></p>
+            <p class="mt-1">{SITE.legal.classification} · Incorporated {SITE.legal.incorporated}</p>
+          </div>
+        </div>
       </div>
 
       <div class="lg:col-span-7" data-reveal data-reveal-delay="1">
-        <form id="contact-form" class="surface-solid p-7 sm:p-8 space-y-5" novalidate>
-          {/* Honeypot — hidden from real users */}
+        <form id="contact-form" class="card-glow surface-solid p-7 sm:p-9 space-y-5" novalidate>
+          {/* Honeypot */}
           <div class="hidden" aria-hidden="true">
             <label>Website<input type="text" name="website" tabindex="-1" autocomplete="off" /></label>
           </div>
 
           <div class="grid gap-5 sm:grid-cols-2">
             <label class="block">
-              <span class="text-xs font-semibold uppercase tracking-wider text-ink-500 dark:text-ink-400">Name</span>
-              <input
-                type="text" name="name" required maxlength="200"
-                class="mt-2 w-full rounded-xl border border-ink-200 dark:border-ink-800 bg-white dark:bg-ink-950 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
-              />
+              <span class="text-[11px] font-semibold uppercase tracking-[0.18em] text-ink-500 dark:text-ink-400">Name</span>
+              <input type="text" name="name" required maxlength="200"
+                class="mt-2 w-full rounded-xl border border-ink-200 dark:border-ink-800 bg-white dark:bg-ink-950 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors" />
             </label>
             <label class="block">
-              <span class="text-xs font-semibold uppercase tracking-wider text-ink-500 dark:text-ink-400">Email</span>
-              <input
-                type="email" name="email" required maxlength="200"
-                class="mt-2 w-full rounded-xl border border-ink-200 dark:border-ink-800 bg-white dark:bg-ink-950 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
-              />
+              <span class="text-[11px] font-semibold uppercase tracking-[0.18em] text-ink-500 dark:text-ink-400">Email</span>
+              <input type="email" name="email" required maxlength="200"
+                class="mt-2 w-full rounded-xl border border-ink-200 dark:border-ink-800 bg-white dark:bg-ink-950 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors" />
             </label>
           </div>
 
           <div class="grid gap-5 sm:grid-cols-2">
             <label class="block">
-              <span class="text-xs font-semibold uppercase tracking-wider text-ink-500 dark:text-ink-400">Phone (optional)</span>
-              <input
-                type="tel" name="phone" maxlength="20"
-                class="mt-2 w-full rounded-xl border border-ink-200 dark:border-ink-800 bg-white dark:bg-ink-950 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
-              />
+              <span class="text-[11px] font-semibold uppercase tracking-[0.18em] text-ink-500 dark:text-ink-400">Phone (optional)</span>
+              <input type="tel" name="phone" maxlength="20"
+                class="mt-2 w-full rounded-xl border border-ink-200 dark:border-ink-800 bg-white dark:bg-ink-950 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors" />
             </label>
             <label class="block">
-              <span class="text-xs font-semibold uppercase tracking-wider text-ink-500 dark:text-ink-400">I’m interested in</span>
-              <select name="interest" class="mt-2 w-full rounded-xl border border-ink-200 dark:border-ink-800 bg-white dark:bg-ink-950 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+              <span class="text-[11px] font-semibold uppercase tracking-[0.18em] text-ink-500 dark:text-ink-400">I'm interested in</span>
+              <select name="interest"
+                class="mt-2 w-full rounded-xl border border-ink-200 dark:border-ink-800 bg-white dark:bg-ink-950 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors">
                 <option value="menu">KodSpot Menu (QR menus)</option>
                 <option value="housekeeping">KodSpot Housekeeping</option>
                 <option value="electrical">KodSpot Electrical</option>
@@ -77,33 +104,31 @@ import { SITE } from '../lib/site';
           </div>
 
           <label class="block">
-            <span class="text-xs font-semibold uppercase tracking-wider text-ink-500 dark:text-ink-400">Message</span>
-            <textarea
-              name="message" required minlength="10" maxlength="4000" rows="5"
-              class="mt-2 w-full rounded-xl border border-ink-200 dark:border-ink-800 bg-white dark:bg-ink-950 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 resize-y"
-            ></textarea>
+            <span class="text-[11px] font-semibold uppercase tracking-[0.18em] text-ink-500 dark:text-ink-400">Message</span>
+            <textarea name="message" required minlength="10" maxlength="4000" rows="5"
+              class="mt-2 w-full rounded-xl border border-ink-200 dark:border-ink-800 bg-white dark:bg-ink-950 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 resize-y transition-colors"></textarea>
           </label>
 
           <label class="flex items-start gap-3 text-xs muted">
             <input type="checkbox" name="consent" required class="mt-1 h-4 w-4 rounded border-ink-300 dark:border-ink-700 text-brand-600 focus:ring-brand-500" />
             <span>
-              I agree to KodSpot’s
+              I agree to KodSpot's
               <a class="link-underline" href="/privacy">Privacy Policy</a> and
               <a class="link-underline" href="/terms">Terms</a>, and to be contacted regarding this enquiry.
             </span>
           </label>
 
-          <div class="flex flex-wrap items-center gap-3">
-            <button type="submit" class="btn-accent" id="contact-submit">
+          <div class="flex flex-wrap items-center gap-3 pt-2">
+            <button type="submit" class="btn-accent magnetic" data-magnetic="0.25" id="contact-submit">
               <span id="contact-submit-label">Send message</span>
               <svg id="contact-submit-spinner" class="hidden h-4 w-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" class="opacity-25"></circle><path fill="currentColor" class="opacity-75" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path></svg>
             </button>
-            <a href={SITE.whatsappUrl} target="_blank" rel="noreferrer" class="btn-outline">
+            <a href={SITE.whatsappUrl} target="_blank" rel="noreferrer" class="btn-outline magnetic" data-magnetic="0.2">
               Or message us on WhatsApp
             </a>
           </div>
 
-          <p id="contact-status" role="status" aria-live="polite" class="hidden text-sm"></p>
+          <p id="contact-status" role="status" aria-live="polite" class="hidden text-sm font-medium"></p>
         </form>
       </div>
     </div>
@@ -129,10 +154,7 @@ import { SITE } from '../lib/site';
 
     form.addEventListener('submit', async function (e) {
       e.preventDefault();
-      if (!form.checkValidity()) {
-        form.reportValidity();
-        return;
-      }
+      if (!form.checkValidity()) { form.reportValidity(); return; }
       var fd = new FormData(form);
       var payload = {
         name: String(fd.get('name') || '').trim(),
@@ -141,11 +163,11 @@ import { SITE } from '../lib/site';
         interest: String(fd.get('interest') || 'other'),
         message: String(fd.get('message') || '').trim(),
         consent: fd.get('consent') === 'on' || fd.get('consent') === 'true' || !!fd.get('consent'),
-        website: String(fd.get('website') || '') // honeypot
+        website: String(fd.get('website') || '')
       };
 
       submit.setAttribute('disabled', 'true');
-      label.textContent = 'Sending…';
+      label.textContent = 'Sending\u2026';
       spinner.classList.remove('hidden');
       setStatus('', '');
 
@@ -158,7 +180,7 @@ import { SITE } from '../lib/site';
         var data = {};
         try { data = await res.json(); } catch (_) {}
         if (res.ok && data.success) {
-          setStatus(data.message || 'Thanks — we’ll get back to you shortly.', 'ok');
+          setStatus(data.message || 'Thanks \u2014 we\u2019ll get back to you shortly.', 'ok');
           form.reset();
         } else {
           setStatus((data && data.error) || 'Something went wrong. Please try email or WhatsApp.', 'err');
