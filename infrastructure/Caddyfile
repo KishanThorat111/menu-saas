@@ -23,6 +23,12 @@ kodspot.com {
         path /admin.html /admin.js /admin-sw.js /admin.webmanifest
         path /superadmin.html /superadmin.js /superadmin.webmanifest
         path /menu.html /menu.js /qr-card.js
+        # Legacy hotel-owner SPA API routes (no /api prefix in Fastify)
+        path /me /me/*
+        path /settings/*
+        path /categories /categories/*
+        path /items /items/*
+        path /payments/*
         path /favicon.ico
         path /favicon-16x16.png /favicon-32x32.png /favicon-48x48.png
         path /apple-touch-icon.png
